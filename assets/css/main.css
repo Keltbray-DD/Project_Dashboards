@@ -1,0 +1,273 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f4;
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgb(245, 243, 243);
+    padding: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* slight box shadow */
+}
+.header-section {
+    flex: 1;
+}
+.header-section h2 {
+    text-align: left; /* Left text horizontally */
+    float: left;
+    margin: 10px;
+    height: 100%;
+}
+.header-section h3 {
+    text-align: right; 
+    float: right;
+    margin: 5px;
+    height: 100%;
+}
+
+img.logo_H {
+    float: left;
+    height: 80px;
+    margin: auto;
+  }
+
+.header-section:nth-child(2) {
+    text-align: center;
+    flex: 2.5; /* 60% of the width */
+
+}
+
+.header-section:first-child,
+.header-section:last-child {
+    flex: 1.5; /* 20% of the width each */
+    justify-content: center; /* Center content horizontally */
+    align-items: center; /* Center content vertically */
+
+}
+
+/* Additional styling */
+.header h1, h3 {
+    margin: 0;
+}
+
+#charts {
+    padding: 20px;
+    background-color: #fff;
+    display: flex;
+    justify-content: space-around;
+    max-height: 250px;
+    padding-bottom: 0;
+
+}
+.chart{
+
+    max-height: 250px;
+}
+
+#dashboard {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    padding: 5px;
+}
+
+#dashboard h1 {
+    width: 40%;
+    display:inline-block;
+    padding-left: 15px;
+}
+
+#dashboard > div {
+    flex: 1;
+    margin: 5px;
+    padding: 5px;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.table-container {
+    flex: 1;
+    overflow-y: auto;
+    height: 50%; /* Allocate half the height to the table */
+    margin-left: 0;
+    margin-right: 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: small;
+}
+
+table, th, td {
+    border: 1px solid black;
+}
+
+th, td {
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #d1cdcd;
+}
+td {
+    background-color: #d1dfda;
+    margin: 10px;
+}
+.main-row {
+
+}
+.expand-icon {
+    cursor: pointer;
+    margin-right: 5px;
+}
+
+.hidden-row {
+    display: none;
+}
+
+.expandable-row td {
+    background-color: #f9f9f9;
+}
+
+.highlight {
+    background-color: #ffcccc; /* Light red background for highlighting */
+    color: #000; /* Ensure the text is readable */
+}
+
+.chart-container {
+    margin-bottom: 20px;
+}
+#StatusDataChart {
+    height: 400px;
+}
+
+#folderFilter{
+    max-width: 20%;
+    font-size: 16px;
+    display:inline-block;
+    padding: 8px;
+    width: 20%;
+}
+#searchInput {
+    margin: auto;
+    padding: 8px;
+    width: 23%;
+    box-sizing: border-box;
+    font-size: 16px;
+    display:inline-block;
+    
+}
+
+.resetbtn{
+    cursor: pointer;
+    margin: 20px;
+    margin-left: 5px;
+    float: right;
+}
+
+/* Define the tooltip alignment custom property */
+.tooltip {
+    --tooltip-align: -50%; /* Default: center */
+    position: relative;
+}
+
+/* Use the --tooltip-align variable to control tooltip positioning */
+.tooltip:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    background-color: #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    white-space: nowrap;
+    z-index: 1000;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(var(--tooltip-align)); /* Use the variable */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+    pointer-events: none;
+}
+
+.tooltip:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+.tooltip:hover::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% - 5px);
+    left: 50%;
+    transform: translateX(var(--tooltip-align)); /* Use the variable */
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent transparent #333 transparent;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+.tooltip:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+.tooltip-left {
+    --tooltip-align: left; /* Default alignment is left */
+    position: relative;
+}
+
+/* Use the --tooltip-align variable to control tooltip positioning */
+.tooltip-left::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    background-color: #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    white-space: nowrap;
+    z-index: 1000;
+    top: 50%;
+    left: 50%;
+    transform: translateY(-50%) translateX(-100%); /* Center vertically and move left */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+    pointer-events: none;
+}
+
+.tooltip-left:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+.tooltip-left:hover::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: calc(100% - 5px); /* Arrow positioning to the left */
+    transform: translateY(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent #333 transparent transparent; /* Arrow color pointing left */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+.tooltip-left:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
