@@ -68,20 +68,20 @@ img.logo_H {
     max-height: 250px;
 }
 
-#dashboard {
+.dashboard {
     width: 100%;
     display: flex;
     flex-wrap: wrap;
     padding: 5px;
 }
 
-#dashboard h1 {
+.dashboard h1 {
     width: 40%;
     display:inline-block;
     padding-left: 15px;
 }
 
-#dashboard > div {
+.dashboard .table-container {
     flex: 1;
     margin: 5px;
     padding: 5px;
@@ -148,14 +148,14 @@ td {
     height: 400px;
 }
 
-#folderFilter{
+.folderFilter{
     max-width: 20%;
     font-size: 16px;
     display:inline-block;
     padding: 8px;
     width: 20%;
 }
-#searchInput {
+.searchInput {
     margin: auto;
     padding: 8px;
     width: 23%;
@@ -271,3 +271,47 @@ td {
     visibility: visible;
 }
 
+.tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+  }
+  
+  /* Style the buttons that are used to open the tab content */
+  .tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+  }
+  
+  /* Change background color of buttons on hover */
+  .tab button:hover {
+    background-color: #ddd;
+  }
+  
+  /* Create an active/current tablink class */
+  .tab button.active {
+    background-color: #ccc;
+  }
+  
+  /* Style the tab content */
+  .tabcontent {
+    display: none;
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    border-top: none;
+  }
+
+  .tabcontent {
+    animation: fadeEffect 1s; /* Fading effect takes 1 second */
+  }
+  
+  /* Go from zero to full opacity */
+  @keyframes fadeEffect {
+    from {opacity: 0;}
+    to {opacity: 1;}
+  }
