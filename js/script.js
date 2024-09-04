@@ -2,35 +2,35 @@ document.addEventListener('DOMContentLoaded',function(){
     tableBody = document.querySelector('#dataTable tbody');
     searchInput = document.getElementById('searchInput');
     folderFilter = document.getElementById('folderFilter');
-
+    document.getElementById("MIDP").style.display = "block";
     getProjectFromURL()
     getData()
-    const table = document.querySelector('#dataTable tbody');
-    const rows = table.getElementsByTagName('tr');
+
+    rows = tableBody.getElementsByTagName('tr');
     
-        searchInput.addEventListener('keyup', function () {
-    
-            const filter = searchInput.value.toLowerCase();
-    
-            for (let i = 0; i < rows.length; i++) { // Start at 1 to skip the header row
-                const cells = rows[i].getElementsByTagName('td');
-                let match = false;
-    
-                for (let j = 0; j < cells.length; j++) {
-                    if (cells[j].textContent.toLowerCase().includes(filter)) {
-                        match = true;
-                        break;
-                    }
-                }
-    
-                if (match) {
-                    rows[i].style.display = ''; // Show the row
-                } else {
-                    rows[i].style.display = 'none'; // Hide the row
+    searchInput.addEventListener('keyup', function () {
+
+        const filter = searchInput.value.toLowerCase();
+
+        for (let i = 0; i < rows.length; i++) { // Start at 1 to skip the header row
+            const cells = rows[i].getElementsByTagName('td');
+            let match = false;
+
+            for (let j = 0; j < cells.length; j++) {
+                if (cells[j].textContent.toLowerCase().includes(filter)) {
+                    match = true;
+                    break;
                 }
             }
-        });
-            // Add event listener to filter the table based on selected folder path
+
+            if (match) {
+                rows[i].style.display = ''; // Show the row
+            } else {
+                rows[i].style.display = 'none'; // Hide the row
+            }
+        }
+    });
+    // Add event listener to filter the table based on selected folder path
     folderFilter.addEventListener('change', function () {
         const selectedPath = this.value;
 
@@ -165,7 +165,9 @@ async function generateFileTable(data) {
 
     Object.values(groupedData).forEach(group => {
         let mainItem = group[0];
-
+        if(selectedTab == "DrawingRegister" && mainItem.form != "DR"){
+                return
+        }
         if (isMissing(mainItem['title_line_1'])) {
             titleLineMissingCount++;
         }else {
@@ -179,7 +181,11 @@ async function generateFileTable(data) {
         } else {
             revisionPresentCount++;
         }
-
+        if (isMissing(mainItem['file_description'])) {
+            descriptionMissingCount++;
+        } else {
+            descriptionPresentCount++;
+        }
         if (isMissing(mainItem['status'])) {
             statusMissingCount++;
         } else {
@@ -412,7 +418,53 @@ async function generateFileTable(data) {
             }
         });
         // Create the bar chart to show Status data presence
+        // Create the pie chart to show Title Line 1 data presence
+        const ctx_Description = document.getElementById('missingDescriptionDataChart').getContext('2d');
+        const chartData_Description = {
+            labels: ['Files with Description', 'Files without Description'],
+            datasets: [{
+                data: [descriptionPresentCount, descriptionMissingCount],
+                backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'],
+                borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                borderWidth: 1
+            }]
+        };
 
+        if(missingDescriptionDataChart){
+            missingDescriptionDataChart.destroy();
+        }
+
+        missingDescriptionDataChart = new Chart(ctx_Description, {
+            id: 1,
+            type: 'pie',
+            data: chartData_Description,
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        datalabels: {
+                            formatter: (value, ctx) => {
+                                const total = ctx.chart.data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                const percentage = (value / total * 100).toFixed(2) + '%';
+                                return percentage;
+                            },
+                            color: '#fff',
+                        }
+                    }
+                },
+                onClick: (evt, activeElements) => {
+                    if (activeElements.length > 0) {
+                        const datasetIndex = activeElements[0].datasetIndex;
+                        const index = activeElements[0].index;
+                        const field = "description"
+                        const label = chartData_Description.labels[index];
+
+                        filterTable(label);
+                    }
+                }
+            }
+        });
         // Generate colors with red for "Unknown"
     const labels = Object.keys(statusCounts);
     const backgroundColors = labels.map(label => label === 'Missing' ? 'rgba(255, 99, 132, 0.6)' : 'rgba(54, 162, 235, 0.6)');
@@ -433,7 +485,7 @@ async function generateFileTable(data) {
     if(statusChart){
         statusChart.destroy();
     }
-
+    
     statusChart = new Chart(ctx_statusCount, {
         type: 'bar',
         data: chartData_statusCount,
@@ -515,97 +567,22 @@ async function generateFileTable(data) {
             const hasTitleLine = item['title_line_1'] !== undefined && item['title_line_1'] !== null && item['title_line_1'] !== '';
             const hasRevisionLine = item['revision'] !== undefined && item['revision'] !== null && item['revision'] !== '';
             const hasStatusLine = item['status'] !== undefined && item['status'] !== null && item['status'] !== '';
+            const hasDescriptionLine = item['file_description'] !== undefined && item['file_description'] !== null && item['file_description'] !== '';
             
             if ((label === 'Files with Title Line 1' && hasTitleLine) || (label === 'Files without Title Line 1' && !hasTitleLine)) {
-                const mainRow = document.createElement('tr');
-                mainRow.classList.add('main-row');
-                mainRow.setAttribute('data-id', item.id);
-                mainRow.innerHTML = `
-                        <td>
-                            
-                        </td>
-                        <td>${item.name}</td>
-                        <td>${highlightCell(item.accversion)}</td>
-                        <td><a href="${item.file_url}" target="_blank">View</a></td>
-                        <td>${highlightCell(item.revision)}</td>
-                        <td>${highlightCell(item.folder_path)}</td>
-                        <td>${highlightCell(item['file_description'])}</td>
-                        <td>${highlightCell(item['title_line_1'])}</td>
-                        <td>${MissingUser(item.last_modified_user)}</td>
-                        <td>${highlightCell(new Date(item.last_modified_date).toLocaleString())}</td>
-                        <td>${highlightCell(item['status'])}</td>
-                `;
-            
-                tableBody.appendChild(mainRow);
+                createTableRow(item)
             }
-
             if ((label === 'Files with Revision' && hasRevisionLine && pattern.test(item['revision'])) || (label === 'Files without Revision' && !hasRevisionLine) || (label === 'Files with Invalid ISO Revision' && !pattern.test(item['revision']) && hasRevisionLine)) {
-
-                const mainRow = document.createElement('tr');
-                mainRow.classList.add('main-row');
-                mainRow.setAttribute('data-id', item.id);
-                mainRow.innerHTML = `
-                        <td>
-                            
-                        </td>
-                        <td>${item.name}</td>
-                        <td>${highlightCell(item.accversion)}</td>
-                        <td><a href="${item.file_url}" target="_blank">View</a></td>
-                        <td>${highlightCell(item.revision)}</td>
-                        <td>${highlightCell(item.folder_path)}</td>
-                        <td>${highlightCell(item['file_description'])}</td>
-                        <td>${highlightCell(item['title_line_1'])}</td>
-                        <td>${MissingUser(item.last_modified_user)}</td>
-                        <td>${highlightCell(new Date(item.last_modified_date).toLocaleString())}</td>
-                        <td>${highlightCell(item['status'])}</td>
-                `;
-            
-                tableBody.appendChild(mainRow);
+                createTableRow(item)
             }
-
+            if ((label === 'Files with Description' && hasDescriptionLine || (label === 'Files without Description' && !hasDescriptionLine))) {
+                createTableRow(item)
+            }
             if ((label === 'Files with Status' && hasStatusLine || (label === 'Files without Status' && !hasStatusLine))) {
-                const mainRow = document.createElement('tr');
-                mainRow.classList.add('main-row');
-                mainRow.setAttribute('data-id', item.id);
-                mainRow.innerHTML = `
-                        <td>
-                            
-                        </td>
-                        <td>${item.name}</td>
-                        <td>${highlightCell(item.accversion)}</td>
-                        <td><a href="${item.file_url}" target="_blank">View</a></td>
-                        <td>${highlightCell(item.revision)}</td>
-                        <td>${highlightCell(item.folder_path)}</td>
-                        <td>${highlightCell(item['file_description'])}</td>
-                        <td>${highlightCell(item['title_line_1'])}</td>
-                        <td>${MissingUser(item.last_modified_user)}</td>
-                        <td>${highlightCell(new Date(item.last_modified_date).toLocaleString())}</td>
-                        <td>${highlightCell(item['status'])}</td>
-                `;
-            
-                tableBody.appendChild(mainRow);
+                createTableRow(item)
             }
             if ((field === 'statusBar' && hasStatusLine  && item['status'] === label) || (field === 'statusBar' && !hasStatusLine  && item['status'] === undefined)) {
-                const mainRow = document.createElement('tr');
-                mainRow.classList.add('main-row');
-                mainRow.setAttribute('data-id', item.id);
-                mainRow.innerHTML = `
-                        <td>
-                            
-                        </td>
-                        <td>${item.name}</td>
-                        <td>${highlightCell(item.accversion)}</td>
-                        <td><a href="${item.file_url}" target="_blank">View</a></td>
-                        <td>${highlightCell(item.revision)}</td>
-                        <td>${highlightCell(item.folder_path)}</td>
-                        <td>${highlightCell(item['file_description'])}</td>
-                        <td>${highlightCell(item['title_line_1'])}</td>
-                        <td>${MissingUser(item.last_modified_user)}</td>
-                        <td>${highlightCell(new Date(item.last_modified_date).toLocaleString())}</td>
-                        <td>${highlightCell(item['status'])}</td>
-                `;
-            
-                tableBody.appendChild(mainRow);
+                createTableRow(item)
             }
             colourParentMissing()
             
@@ -616,6 +593,29 @@ async function generateFileTable(data) {
         statusCheck()
 
     }
+
+async function createTableRow(item) {
+    const mainRow = document.createElement('tr');
+    mainRow.classList.add('main-row');
+    mainRow.setAttribute('data-id', item.id);
+    mainRow.innerHTML = `
+            <td>
+                
+            </td>
+            <td>${item.name}</td>
+            <td>${highlightCell(item.accversion)}</td>
+            <td><a href="${item.file_url}" target="_blank">View</a></td>
+            <td>${highlightCell(item.revision)}</td>
+            <td>${highlightCell(item.folder_path)}</td>
+            <td>${highlightCell(item['file_description'])}</td>
+            <td>${highlightCell(item['title_line_1'])}</td>
+            <td>${MissingUser(item.last_modified_user)}</td>
+            <td>${highlightCell(new Date(item.last_modified_date).toLocaleString())}</td>
+            <td>${highlightCell(item['status'])}</td>
+    `;
+
+    tableBody.appendChild(mainRow);
+}
 
 function countRowsInTable(){
     // Count only the rows within the tbody
@@ -788,3 +788,81 @@ function revisionCheck() {
     }
     return obj;
 }
+
+function openTab(evt, tabName) {
+    // Declare all variables
+    var i, tabcontent, tablinks;
+    selectedTab = tabName
+    // Get all elements with class="tabcontent" and hide them
+    tabcontent = document.getElementsByClassName("tabcontent");
+    for (i = 0; i < tabcontent.length; i++) {
+      tabcontent[i].style.display = "none";
+    }
+  
+    // Get all elements with class="tablinks" and remove the class "active"
+    tablinks = document.getElementsByClassName("tablinks");
+    for (i = 0; i < tablinks.length; i++) {
+      tablinks[i].className = tablinks[i].className.replace(" active", "");
+    }
+  
+    // Show the current tab, and add an "active" class to the button that opened the tab
+    document.getElementById(tabName).style.display = "block";
+    evt.currentTarget.className += " active";
+
+    switch (tabName) {
+        case "MIDP":
+            tableBody = document.querySelector('#dataTable tbody');
+            searchInput = document.getElementById('searchInput');
+            folderFilter = document.getElementById('folderFilter');
+            getData()
+            break;
+
+        case "DrawingRegister":
+            tableBody = document.querySelector('#dataTableDR tbody');
+            searchInput = document.getElementById('searchInputDR');
+            folderFilter = document.getElementById('folderFilterDR');
+            getData()
+            break;
+    
+        default:
+            break;
+    }
+    rows = tableBody.getElementsByTagName('tr');
+    searchInput.addEventListener('keyup', function () {
+
+        const filter = searchInput.value.toLowerCase();
+
+        for (let i = 0; i < rows.length; i++) { // Start at 1 to skip the header row
+            const cells = rows[i].getElementsByTagName('td');
+            let match = false;
+
+            for (let j = 0; j < cells.length; j++) {
+                if (cells[j].textContent.toLowerCase().includes(filter)) {
+                    match = true;
+                    break;
+                }
+            }
+
+            if (match) {
+                rows[i].style.display = ''; // Show the row
+            } else {
+                rows[i].style.display = 'none'; // Hide the row
+            }
+        }
+    });
+    // Add event listener to filter the table based on selected folder path
+    folderFilter.addEventListener('change', function () {
+        const selectedPath = this.value;
+
+        for (let i = 0; i < rows.length; i++) { // Skip the header row
+            const row = rows[i];
+            const folderPath = row.getElementsByTagName('td')[5].textContent.trim();
+
+            if (selectedPath === 'all' || folderPath === selectedPath) {
+                row.style.display = ''; // Show the row
+            } else {
+                row.style.display = 'none'; // Hide the row
+            }
+        }
+    });
+  }

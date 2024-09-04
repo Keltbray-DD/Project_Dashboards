@@ -31,6 +31,9 @@
             <canvas id="missingRevisionDataChart" class="chart"></canvas>
         </div>
         <div class="chart-container">
+            <canvas id="missingDescriptionDataChart" class="chart"></canvas>
+        </div>
+        <div class="chart-container">
             <canvas id="missingStatusDataChart" class="chart"></canvas>
         </div>
         <div class="chart-container">
@@ -38,19 +41,60 @@
         </div>
 
     </section>
+    <section>
+        <div class="tab">
+            <button class="tablinks" onclick="openTab(event, 'MIDP')">MIDP</button>
+            <button class="tablinks" onclick="openTab(event, 'DrawingRegister')">Drawing Register</button>
 
-    <section id="dashboard">
+        </div>
+    </section>
+    <section id="MIDP" class="dashboard tabcontent">
         <div class="table-container">
             <div>
-                <h1>ACC Project Files</h1>
+                <h1>MIDP</h1>
                 <label for="folderFilter">Filter by Folder Path:</label>
-                <select id="folderFilter">
+                <select id="folderFilter" class="folderFilter">
                     <option value="all">All</option>
                 </select>
-                <input type="text" id="searchInput" placeholder="Search for anything...">
+                <input type="text" id="searchInput" class="searchInput" placeholder="Search for anything...">
                 <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
             </div>
             <table id="dataTable">
+                <thead>
+                    <tr>
+                        <th width="10px"></th>
+                        <th width="300px">File Name</th>
+                        <th width="50px">Version</th>
+                        <th width="50px">File URL</th>
+                        <th width="60px">Revision</th>
+                        <th>Folder Path</th>
+                        <th>File Description</th>
+                        <th>Title Line 1</th>
+                        <th width="120px">Last Modified User</th>
+                        <th width="120px">Last Modified Date</th>
+                        <th width="60px">Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be inserted here -->
+                </tbody>
+            </table>
+        </div><!-- Containers for data visualizations -->
+
+    </section>
+
+    <section id="DrawingRegister" class="dashboard tabcontent">
+        <div class="table-container">
+            <div>
+                <h1>Drawing Register</h1>
+                <label for="folderFilterDR">Filter by Folder Path:</label>
+                <select id="folderFilterDR" class="folderFilter">
+                    <option value="all">All</option>
+                </select>
+                <input type="text" id="searchInputDR" class="searchInput" placeholder="Search for anything...">
+                <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
+            </div>
+            <table id="dataTableDR">
                 <thead>
                     <tr>
                         <th width="10px"></th>
