@@ -4,7 +4,8 @@ let projectID
 let tableBody;
 let searchInput;
 let folderFilter;
-let rows
+let rows;
+let overallComplianceScore;
 
 let titleLineMissingCount = 0;
 let titleLinePresentCount = 0;
@@ -17,10 +18,12 @@ let revisionFormatCheckPresentCount = 0;
 let descriptionMissingCount = 0
 let descriptionPresentCount = 0
 
+let files = [];
 let fileData =[];
 let statusCounts = [];
 let filteredData = [];
 let folderPaths = [];
+let invalidObjects = [];
 
 let missingTitleDataChart
 let missingRevisionDataChart

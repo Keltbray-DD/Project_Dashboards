@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded',function(){
     searchInput = document.getElementById('searchInput');
     folderFilter = document.getElementById('folderFilter');
     document.getElementById("MIDP").style.display = "block";
+    document.getElementById("chartsSection").style.display = "block"
     getProjectFromURL()
     getData()
 
@@ -150,7 +151,7 @@ async function generateFileTable(data) {
         acc[item.name].sort((a, b) => b.accversion - a.accversion); // Sort by accversion descending
         return acc;
     }, {});
-
+    tableBody.innerHTML = ''
     folderFilter.options.length = 1
     folderPaths = []
     filteredData = []
@@ -162,9 +163,12 @@ async function generateFileTable(data) {
     statusPresentCount = 0;
     revisionFormatCheckInvaildCount = 0;
     revisionFormatCheckPresentCount = 0;
+    descriptionMissingCount = 0;
+    descriptionPresentCount = 0;
 
     Object.values(groupedData).forEach(group => {
         let mainItem = group[0];
+
         if(selectedTab == "DrawingRegister" && mainItem.form != "DR"){
                 return
         }
@@ -228,6 +232,18 @@ async function generateFileTable(data) {
         `;
     
         tableBody.appendChild(mainRow);
+        files.push({
+            name:mainItem.name,
+            accversion:mainItem.accversion,
+            file_url:mainItem.file_url,
+            revision:mainItem.revision,
+            folder_path:mainItem.folder_path,
+            file_description:mainItem.file_description,
+            title_line_1:mainItem.title_line_1,
+            last_modified_user:mainItem.last_modified_user,
+            last_modified_date:mainItem.last_modified_date,
+            status:mainItem.status
+        })
 
         //console.log(mainRow)
         if (group.length > 1) {
@@ -268,10 +284,8 @@ async function generateFileTable(data) {
         }
 
     });
-    countRowsInTable()
-    revisionCheck()
-    titlelineCheck()
-    statusCheck()
+    console.log(files);
+    runChecks()
     populateFolderDropdown(folderPaths)
         // Create the pie chart to show Title Line 1 data presence
         const ctx_Title = document.getElementById('missingTitleDataChart').getContext('2d');
@@ -530,6 +544,16 @@ async function generateFileTable(data) {
         }
     });
 }
+    // Function to check for undefined, null, or blank fields in an object
+    function hasInvalidFields(obj, ignoredField) {
+        return Object.keys(obj).some(key => {
+            if (key === ignoredField) {
+                return false; // Ignore this field
+            }
+            const value = obj[key];
+            return value === undefined || value === null || value === '';
+        });
+    }
     // Function to highlight cells if the data is undefined, null, or empty
     function highlightCell(value,column) {
         const pattern = /^[A-Z]\d{2}(\.\d{2})?$/;
@@ -587,10 +611,7 @@ async function generateFileTable(data) {
             colourParentMissing()
             
         });
-        countRowsInTable()
-        titlelineCheck()
-        revisionCheck()
-        statusCheck()
+        runChecks()
 
     }
 
@@ -738,7 +759,7 @@ function revisionCheck() {
         }        
     }
  }
- function titlelineCheck() {
+ function descriptionlineCheck() {
 
     const rows = tableBody.getElementsByTagName('tr');
 
@@ -793,6 +814,7 @@ function openTab(evt, tabName) {
     // Declare all variables
     var i, tabcontent, tablinks;
     selectedTab = tabName
+
     // Get all elements with class="tabcontent" and hide them
     tabcontent = document.getElementsByClassName("tabcontent");
     for (i = 0; i < tabcontent.length; i++) {
@@ -866,3 +888,110 @@ function openTab(evt, tabName) {
         }
     });
   }
+
+  function calculatePercentage(part, total) {
+    if (total === 0) {
+        return 0; // Avoid division by zero
+    }
+    const percentage = (part / total) * 100;
+    return parseFloat(percentage.toFixed(2)); // Round to 2 decimal places
+}
+async function runChecks(){
+    countRowsInTable()
+    revisionCheck()
+    descriptionlineCheck()
+    titlelineCheck()
+    statusCheck()
+    await invalidFileCheck()
+    complianceCalc()
+
+}
+
+async function invalidFileCheck(){
+    files.forEach(obj => {
+        if (hasInvalidFields(obj,'last_modified_user')) {
+            invalidObjects.push(obj);
+        }
+    });
+    console.log(invalidObjects)
+}
+
+function complianceCalc(){
+    overallComplianceScore = document.getElementById('OverallCompliance')
+   //overallComplianceScore.innerHTML = `Overall Project Compliance: ${}%`
+    totals = files.length
+    invalidFilesCount = invalidObjects.length
+    overall = titleLinePresentCount + statusPresentCount + revisionPresentCount + descriptionPresentCount
+    overallTotal = totals*4
+    gaugeDisplay("OverallCompliance","Overall Project Compliance",calculatePercentage(overall, overallTotal),100)
+    gaugeDisplay("StatusCompliance","Files with Missing Metadata",invalidFilesCount,totals,true)
+}
+
+function gaugeDisplay(element,title,percentageValue, total,invert){
+    let colourSteps
+    if(!invert){
+        colourSteps = [
+            { range: [0, total*0.20], color: "rgba(207,32,32,0.5)" },
+            { range: [total*0.20, total*0.40], color: "rgba(247,100,32,0.5)" },
+            { range: [total*0.40, total*0.60], color: "rgba(255,187,16,0.5)" },
+            { range: [total*0.60, total*0.80], color: "rgba(207,223,40,0.5)" },
+            { range: [total*0.8, total], color: "rgba(66,183,74,0.5)" }
+          ]
+    }else{
+        colourSteps = [
+            { range: [0, total*0.20], color: "rgba(66,183,74,0.5)" },
+            { range: [total*0.20, total*0.40], color: "rgba(207,223,40,0.5)" },
+            { range: [total*0.40, total*0.60], color: "rgba(255,187,16,0.5)" },
+            { range: [total*0.60, total*0.80], color: "rgba(247,100,32,0.5)" },
+            { range: [total*0.8, total], color: "rgba(207,32,32,0.5)" }
+          ]
+    }
+
+    var data = [
+        {
+            domain: { x: [0, 1], y: [0, 1] },
+            value: percentageValue,
+            title: { text:title },
+            type: "indicator",
+            mode: "gauge+number",
+            gauge: {
+                axis: { range: [null, total], tickwidth: 1, tickcolor: "darkblue" },
+                bar: { color: "rgba(65,105,225,0.8)" },
+                bordercolor: "",
+                borderwidth: 0,
+                steps:colourSteps
+            }  
+        }
+    ];
+    
+    var layout = { 
+        width: "100%", 
+        height: 150, 
+        // Position the chart title using annotation at the bottom
+        annotations: [
+            {
+                text: title,
+                xref: 'paper',
+                yref: 'paper',
+                x: 0.5, // Center it horizontally
+                y: -0.3, // Position it below the chart
+                showarrow: false,
+                font: {
+                    size: 16,
+                    color: 'black'
+                }
+            }
+        ],
+        margin: { t: 20, b: 30 } 
+    };
+
+    Plotly.newPlot(element, data, layout);
+}
+
+function openChartsSelection(tabName){
+    if(document.getElementById(tabName).style.display == "block"){
+        document.getElementById(tabName).style.display = "none";
+    }else{
+        document.getElementById(tabName).style.display = "block"
+    }
+}
