@@ -1016,7 +1016,7 @@ function showPopup(title,message) {
     // Hide the popup after 5 seconds with fade-out
     setTimeout(function() {
         popup.classList.remove("show"); // Remove 'show' class to fade it out
-    }, 5000);
+    }, 10000);
 }
 
 // Call the function to show popup when the page loads
