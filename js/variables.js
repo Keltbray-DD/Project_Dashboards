@@ -1,4 +1,6 @@
 let projectID
+const hubID = "b.24d2d632-e01b-4ca0-b988-385be827cb04"
+let accesToken
 //const projectID = "b.76c59b97-feaf-413c-9bd0-43cf8aaa3133";
 
 let tableBody;
@@ -6,6 +8,13 @@ let searchInput;
 let folderFilter;
 let rows;
 let overallComplianceScore;
+let editableCells
+let toggleEditBtn
+
+let fileDescriptionColumn
+let statusColumn
+let titleline1Column
+let revisionColumn
 
 let titleLineMissingCount = 0;
 let titleLinePresentCount = 0;
@@ -24,6 +33,7 @@ let statusCounts = [];
 let filteredData = [];
 let folderPaths = [];
 let invalidObjects = [];
+let columnNames = [];
 
 let missingTitleDataChart
 let missingRevisionDataChart

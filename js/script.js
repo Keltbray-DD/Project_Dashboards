@@ -2,10 +2,18 @@ document.addEventListener('DOMContentLoaded',function(){
     tableBody = document.querySelector('#dataTable tbody');
     searchInput = document.getElementById('searchInput');
     folderFilter = document.getElementById('folderFilter');
+    
+    fileDescriptionColumn = document.getElementById('fileDescriptionColumn');
+    statusColumn = document.getElementById('statusColumn');
+    titleline1Column = document.getElementById('titleline1Column');
+    revisionColumn = document.getElementById('revisionColumn');
+
     document.getElementById("MIDP").style.display = "block";
     document.getElementById("chartsSection").style.display = "block"
     getProjectFromURL()
     getData()
+
+
 
     rows = tableBody.getElementsByTagName('tr');
     
@@ -86,6 +94,7 @@ async function getData() {
     rawData.forEach(element => {
         processData(element.JSON_data, element.Title, element.Modified, element.Project_Name)
     });
+
     
 
 }
@@ -102,6 +111,8 @@ async function processData(data, fileName, updated,Project_Name) {
         document.getElementById('dateUpdated').innerHTML = `Export: ${formatDate(fileData.updated)}`
         document.getElementById('projectName').innerHTML = `${Project_Name}`
         colourParentMissing()
+        makeCellsEditable()
+        console.log("files",files)
     }
 
 }
@@ -220,15 +231,15 @@ async function generateFileTable(data) {
                     ${group.length > 1 ? '<i class="fas fa-chevron-right expand-icon"></i>' : ''}
                 </td>
                 <td>${mainItem.name}</td>
-                <td>${highlightCell(mainItem.accversion)}</td>
+                <td>${mainItem.accversion}</td>
                 <td><a href="${mainItem.file_url}" target="_blank">View</a></td>
-                <td>${highlightCell(mainItem.revision,"revision")}</td>
-                <td>${highlightCell(mainItem.folder_path)}</td>
-                <td>${highlightCell(mainItem['file_description'])}</td>
-                <td>${highlightCell(mainItem['title_line_1'])}</td>
+                <td class="editable">${highlightCell(mainItem.revision,"revision")}</td>
+                <td>${mainItem.folder_path}</td>
+                <td class="editable">${highlightCell(mainItem['file_description'])}</td>
+                <td class="editable">${highlightCell(mainItem['title_line_1'])}</td>
                 <td>${MissingUser(mainItem.last_modified_user)}</td>
                 <td>${highlightCell(new Date(mainItem.last_modified_date).toLocaleString())}</td>
-                <td>${highlightCell(mainItem['status'])}</td>
+                <td class="editable">${highlightCell(mainItem['status'])}</td>
         `;
     
         tableBody.appendChild(mainRow);
@@ -242,7 +253,8 @@ async function generateFileTable(data) {
             title_line_1:mainItem.title_line_1,
             last_modified_user:mainItem.last_modified_user,
             last_modified_date:mainItem.last_modified_date,
-            status:mainItem.status
+            status:mainItem.status,
+            id:mainItem.id
         })
 
         //console.log(mainRow)
@@ -268,16 +280,16 @@ async function generateFileTable(data) {
                     <td>
                         
                     </td>   
-                    <td>${item.name}</td>
-                    <td>${highlightCell(item.accversion)}</td>
-                    <td><a href="${item.file_url}" target="_blank">View</a></td>
-                    <td>${highlightCell(item.revision)}</td>
-                    <td>${highlightCell(item.folder_path)}</td>
-                    <td>${highlightCell(item['file_description'])}</td>
-                    <td>${highlightCell(item['title_line_1'])}</td>
-                    <td>${MissingUser(item.last_modified_user)}</td>
-                    <td>${highlightCell(new Date(item.last_modified_date).toLocaleString())}</td>
-                    <td>${highlightCell(item['status'])}</td>
+                <td>${item.name}</td>
+                <td>${item.accversion}</td>
+                <td><a href="${item.file_url}" target="_blank">View</a></td>
+                <td class="editable">${highlightCell(item.revision,"revision")}</td>
+                <td>${item.folder_path}</td>
+                <td class="editable">${highlightCell(item['file_description'])}</td>
+                <td class="editable">${highlightCell(item['title_line_1'])}</td>
+                <td>${MissingUser(item.last_modified_user)}</td>
+                <td>${highlightCell(new Date(item.last_modified_date).toLocaleString())}</td>
+                <td class="editable">${highlightCell(item['status'])}</td>
             `;
             tableBody.appendChild(itemRow);
             });
@@ -624,15 +636,15 @@ async function createTableRow(item) {
                 
             </td>
             <td>${item.name}</td>
-            <td>${highlightCell(item.accversion)}</td>
+            <td>${item.accversion}</td>
             <td><a href="${item.file_url}" target="_blank">View</a></td>
-            <td>${highlightCell(item.revision)}</td>
-            <td>${highlightCell(item.folder_path)}</td>
-            <td>${highlightCell(item['file_description'])}</td>
-            <td>${highlightCell(item['title_line_1'])}</td>
+            <td class="editable">${highlightCell(item.revision,"revision")}</td>
+            <td>${item.folder_path}</td>
+            <td class="editable">${highlightCell(item['file_description'])}</td>
+            <td class="editable">${highlightCell(item['title_line_1'])}</td>
             <td>${MissingUser(item.last_modified_user)}</td>
             <td>${highlightCell(new Date(item.last_modified_date).toLocaleString())}</td>
-            <td>${highlightCell(item['status'])}</td>
+            <td class="editable">${highlightCell(item['status'])}</td>
     `;
 
     tableBody.appendChild(mainRow);
@@ -788,11 +800,11 @@ function revisionCheck() {
             if(value == "Missing"){
                 cells[10].classList.add('tooltip-left');
                 if(folder.includes("WIP")){
-                    cells[10].setAttribute('data-tooltip', "Incorrect format. Correct format is P##.## as the file is in the WIP folder");
+                    cells[10].setAttribute('data-tooltip', "Missing status, as the file is in WIP please use S0");
                 }else if(folder.includes("SHARED")){
-                    cells[10].setAttribute('data-tooltip', "Incorrect format. Correct format is P## as the file is in the SHARED folder");
+                    cells[10].setAttribute('data-tooltip', "Missing status, as the file is in WIP please use S1-7");
                 }else if(folder.includes("PUBLISHED")){
-                    cells[10].setAttribute('data-tooltip', "Incorrect format. Correct format is C## as the file is in the PUBLISHED folder");
+                    cells[10].setAttribute('data-tooltip', "Missing status, as the file is in WIP please use A4-7");
                 }else{
                     cells[10].setAttribute('data-tooltip', "Incorrect format. Use formats like P01, C02, or P02.03");
                 }
@@ -913,7 +925,7 @@ async function invalidFileCheck(){
             invalidObjects.push(obj);
         }
     });
-    console.log(invalidObjects)
+    //console.log(invalidObjects)
 }
 
 function complianceCalc(){
@@ -923,11 +935,11 @@ function complianceCalc(){
     invalidFilesCount = invalidObjects.length
     overall = titleLinePresentCount + statusPresentCount + revisionPresentCount + descriptionPresentCount
     overallTotal = totals*4
-    gaugeDisplay("OverallCompliance","Overall Project Compliance",calculatePercentage(overall, overallTotal),100)
+    gaugeDisplay("OverallCompliance","Overall Project Compliance %",calculatePercentage(overall, overallTotal),100)
     gaugeDisplay("StatusCompliance","Files with Missing Metadata",invalidFilesCount,totals,true)
 }
 
-function gaugeDisplay(element,title,percentageValue, total,invert){
+function gaugeDisplay(element,title,percentageValue, total,invert,percentageRequired){
     let colourSteps
     if(!invert){
         colourSteps = [
@@ -946,7 +958,7 @@ function gaugeDisplay(element,title,percentageValue, total,invert){
             { range: [total*0.8, total], color: "rgba(207,32,32,0.5)" }
           ]
     }
-
+    if(percentageRequired){symbol = "%"}
     var data = [
         {
             domain: { x: [0, 1], y: [0, 1] },
@@ -995,3 +1007,279 @@ function openChartsSelection(tabName){
         document.getElementById(tabName).style.display = "block"
     }
 }
+
+// Function to show popup with fade-in
+function showPopup(title,message) {
+    const popup = document.getElementById("popup");
+    popup.classList.add("show"); // Add 'show' class to make the popup visible
+    popup.innerHTML = `<h4>${title}</h4><br><span>${message}</span>`;
+    // Hide the popup after 5 seconds with fade-out
+    setTimeout(function() {
+        popup.classList.remove("show"); // Remove 'show' class to fade it out
+    }, 5000);
+}
+
+// Call the function to show popup when the page loads
+window.onload = function() {
+    //showPopup("Title Test","Test Message");
+};
+/////////////////////////////////////////////////////////////// Metadata Update Section
+
+async function makeCellsEditable() {
+
+    getCustomDetailsData()
+    // Get the toggle button and all editable cells
+    toggleEditBtn = document.getElementById('toggleEditBtn');
+    editableCells = document.querySelectorAll('.editable');
+  
+    let editMode = false; // Keep track of whether cells are editable or not
+  
+    // Define an array where each value corresponds to a column 
+  
+    // Function to toggle the editable state of the cells
+    function toggleEditMode() {
+      editMode = !editMode; // Toggle edit mode
+      
+  
+      editableCells.forEach(cell => {
+        cell.contentEditable = editMode; // Enable or disable contenteditable
+        cell.classList.toggle('edit-mode', editMode); // Toggle the class for edit mode
+        if (editMode) {
+            cell.classList.add('editMode'); // Add the 'missing' class
+          } else {
+            cell.classList.remove('editMode'); // Remove the 'missing' class
+          }
+      });
+  
+      // Update button text
+        toggleEditBtn.textContent = editMode ? 'Disable Edit Mode' : 'Enable Edit Mode';
+        toggleEditBtn.style.backgroundColor = editMode ? 'orange' : '';
+
+    }
+  
+    // Add click event listener to the toggle button
+    toggleEditBtn.addEventListener('click', toggleEditMode);
+  
+    // Attach the 'blur' event listener only once, when the DOM is fully loaded
+    editableCells.forEach(cell => {
+      cell.addEventListener('blur', function() {
+
+
+        if (editMode) {  // Only run the code if in edit mode
+          // Find the parent row (tr) of the cell
+          const row = this.closest('tr');
+          
+          // Get the data-id attribute from the row
+          const dataId = row.getAttribute('data-id');
+          
+          // Get the index of the column (cell index within the row)
+          const columnIndex = this.cellIndex;
+  
+          // Get the corresponding column name from the array
+          const columnData = columnNames.find(column => column.columnIndex === columnIndex);
+          let found = files.find(item => item.id === dataId);
+          // Log the data-id, column index, column name, and updated content
+            console.log(found)
+
+            console.log('Row Data-ID:', dataId);
+            console.log('Cell content updated:', this.textContent);
+            if(
+                this.textContent !== "Missing" &&
+                (found[columnData.columnName] !== this.textContent )
+              ){
+                console.log('Row Data-ID:', dataId);
+                console.log('Column ID:', columnData.columnId);
+                console.log('Cell content updated:', this.textContent);
+                postCustomItemDetails(accesToken,columnData.columnId,this.textContent,dataId)
+                showPopup(`${found.name} Updated`,`${found.name} field ${columnData.columnName} has been updated to ${this.textContent}`);
+            }else{
+                console.log("Attribute not updated: ",dataId)
+            }
+
+        }
+      });
+    });
+  
+}
+    
+    // Initialize cells as non-editable (read-only) by default
+    //toggleEditMode(); // Calls the function once to set the initial state
+
+  
+  async function postCustomItemDetails(AccessToken,columnID,updatedValue,fileID){
+
+    fileURN = encodeURIComponent(fileID)
+      const bodyData = [
+          {
+            "id": columnID,
+            "value": updatedValue
+          }
+        ];
+  
+      const headers = {
+          'Authorization':"Bearer "+AccessToken,
+          'Content-Type': 'application/json',
+      };
+  
+      const requestOptions = {
+          method: 'POST',
+          headers: headers,
+          body: JSON.stringify(bodyData)
+      };
+  
+      const apiUrl = "https://developer.api.autodesk.com/bim360/docs/v1/projects/"+projectID+"/versions/"+fileURN+"/custom-attributes:batch-update";
+      console.log(apiUrl)
+      console.log(requestOptions)
+      signedURLData = await fetch(apiUrl,requestOptions)
+          .then(response => response.json())
+          .then(data => {
+              const JSONdata = data
+          console.log(JSONdata)
+          //console.log(JSONdata.uploadKey)
+          //console.log(JSONdata.urls)
+          return JSONdata
+          })
+          .catch(error => console.error('Error fetching data:', error));
+      return signedURLData
+      }
+
+async function getCustomDetailsData(){
+    try{
+        accesToken = await getAccessToken("data:read data:write")
+    } catch (error) {
+        console.error('Error:', error);
+    }
+    rootData = await getProjectTopFolder(accesToken,hubID,projectID)
+    ProjectFiles = rootData.data.filter(item => {
+        return item.attributes.name === "Project Files"
+    })
+    startFolderID = ProjectFiles[0].id
+
+    customAttributes = await getItemDetails(accesToken,startFolderID)
+    console.log("Custom Attributes:",customAttributes)
+
+    titlelineID = await findObjectByName("Title Line 1",customAttributes)
+    revisionCodeID = await findObjectByName("Revision",customAttributes)
+    revisionDescID = await findObjectByName("Revision Description",customAttributes)
+    statusCodeID = await findObjectByName("Status",customAttributes)
+    StatusCodeDescriptionID = await findObjectByName("Status Code Description",customAttributes)
+    ClassificationID = await findObjectByName("Classification",customAttributes)
+    FileDescriptionID = await findObjectByName("File Description",customAttributes)
+    StateID = await findObjectByName("State",customAttributes)
+
+    columnNames = [
+        {columnName:"revision",columnIndex:4,columnId:revisionCodeID.id}, 
+        {columnName:"file_description",columnIndex:6,columnId:FileDescriptionID.id}, 
+        {columnName:"title_line_1",columnIndex:7,columnId:titlelineID.id}, 
+        {columnName:"status",columnIndex:10,columnId:statusCodeID.id}, 
+    ];
+
+    console.log(columnNames)
+}
+
+async function getItemDetails(AccessToken,FolderID){
+
+    const headers = {
+        'Authorization':"Bearer "+AccessToken,
+    };
+
+    const requestOptions = {
+        method: 'GET',
+        headers: headers,
+    };
+
+    const apiUrl = "https://developer.api.autodesk.com/bim360/docs/v1/projects/"+projectID.replace("b.", "")+"/folders/"+FolderID+"/custom-attribute-definitions";
+    //console.log(apiUrl)
+    //console.log(requestOptions)
+    signedURLData = await fetch(apiUrl,requestOptions)
+        .then(response => response.json())
+        .then(data => {
+            const JSONdata = data
+        //console.log(JSONdata)
+        //console.log(JSONdata.uploadKey)
+        //console.log(JSONdata.urls)
+        return JSONdata.results
+        })
+        .catch(error => console.error('Error fetching data:', error));
+    return signedURLData
+    }
+
+async function getProjectTopFolder(accessTokenDataRead,hubID,projectID){
+
+    const bodyData = {
+
+        };
+
+    const headers = {
+        'Authorization':"Bearer "+accessTokenDataRead,
+        //'Content-Type':'application/json'
+    };
+
+    const requestOptions = {
+        method: 'GET',
+        headers: headers,
+        //body: JSON.stringify(bodyData)
+    };
+
+    const apiUrl = "https://developer.api.autodesk.com/project/v1/hubs/"+hubID+"/projects/b."+projectID.replace("b.", "")+"/topFolders";
+    //console.log(apiUrl)
+    //console.log(requestOptions)
+    responseData = await fetch(apiUrl,requestOptions)
+        .then(response => response.json())
+        .then(data => {
+            const JSONdata = data
+
+        //console.log(JSONdata)
+
+        return JSONdata
+        })
+        .catch(error => console.error('Error fetching data:', error));
+
+    return responseData
+    }
+
+async function getAccessToken(scopeInput){
+
+    const bodyData = {
+        scope: scopeInput,
+        };
+
+    const headers = {
+        'Content-Type':'application/json'
+    };
+
+    const requestOptions = {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify(bodyData)
+    };
+
+    const apiUrl = "https://prod-18.uksouth.logic.azure.com:443/workflows/d8f90f38261044b19829e27d147f0023/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=-N-bYaES64moEe0gFiP5J6XGoZBwCVZTmYZmUbdJkPk";
+    //console.log(apiUrl)
+    //console.log(requestOptions)
+    signedURLData = await fetch(apiUrl,requestOptions)
+        .then(response => response.json())
+        .then(data => {
+            const JSONdata = data
+
+        //console.log(JSONdata)
+
+        return JSONdata.access_token
+        })
+        .catch(error => console.error('Error fetching data:', error));
+
+
+    return signedURLData
+    }
+
+    async function findObjectByName(name,data) {
+        let output
+        output = await data.find(obj => obj.name === name);
+        //console.log(output)
+        if(output && output.arrayValues && output.length === 0){
+    
+        }else{
+            return output
+        }
+    
+        }

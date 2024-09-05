@@ -24,6 +24,10 @@
     <div class="tab">
         <button class="tablinks" onclick="openChartsSelection('chartsSection')">Show/Hide Charts</button>
     </div>
+        <!-- Popup message -->
+        <div id="popup" class="popup">
+            
+        </div>
     <div id="chartsSection" class="">
         <section id="score">
             <div class="tab gaugeChart">
@@ -56,7 +60,7 @@
         <div class="tab">
             <button class="tablinks" onclick="openTab(event, 'MIDP')">MIDP</button>
             <button class="tablinks" onclick="openTab(event, 'DrawingRegister')">Drawing Register</button>
-
+            <button id="toggleEditBtn" class="editButton">Enable Edit Mode</button>
         </div>
     </section>
     <section id="MIDP" class="dashboard tabcontent">
@@ -112,13 +116,13 @@
                         <th width="300px">File Name</th>
                         <th width="50px">Version</th>
                         <th width="50px">File URL</th>
-                        <th width="60px">Revision</th>
+                        <th width="60px" id="revisionColumn">Revision</th>
                         <th>Folder Path</th>
-                        <th>File Description</th>
-                        <th>Title Line 1</th>
+                        <th id="fileDescriptionColumn">File Description</th>
+                        <th id="titleline1Column">Title Line 1</th>
                         <th width="120px">Last Modified User</th>
                         <th width="120px">Last Modified Date</th>
-                        <th width="60px">Status</th>
+                        <th width="60px" id="statusColumn">Status</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -133,6 +137,7 @@
     <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
     <script src="./js/variables.js"></script>
     <script src="./js/script.js"></script>
+
 
 
 </body>
