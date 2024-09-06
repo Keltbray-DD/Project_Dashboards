@@ -1317,11 +1317,12 @@ async function columnEditing() {
     const table = tableHeader
     const columnSelector = document.getElementById('columnSelector');
     const theadThs = table.querySelectorAll('thead tr th');
-
+    const STORAGE_KEY = 'columnPreferences'; // LocalStorage key
     const ignoredColumns = [''];  // You can also use indices like [0, 3]
     // Function to dynamically generate the checkboxes based on the column headers
     // Function to dynamically generate the checkboxes based on the column headers
     function generateCheckboxes() {
+        columnSelector.innerHTML = ''
         theadThs.forEach((th, index) => {
           const columnName = th.textContent.trim();
   
@@ -1338,27 +1339,34 @@ async function columnEditing() {
 
     // Function to toggle column visibility based on checkbox selection
     function toggleColumns() {
-      const checkboxes = document.querySelectorAll('#columnSelector input[type="checkbox"]');
-      checkboxes.forEach(checkbox => {
-        const columnIndex = checkbox.getAttribute('data-column');
-        const isChecked = checkbox.checked;
-
-        // Toggle visibility of both <th> and <td> elements in the corresponding column
-        const th = table.querySelector(`thead th:nth-child(${columnIndex})`);
-        const tds = table.querySelectorAll(`tbody td:nth-child(${columnIndex})`);
-
-        if (isChecked) {
-          th.classList.remove('hide'); // Show the <th>
-          tds.forEach(td => td.classList.remove('hide')); // Show all <td>s in the column
-        } else {
-          th.classList.add('hide'); // Hide the <th>
-          tds.forEach(td => td.classList.add('hide')); // Hide all <td>s in the column
-        }
-      });
-    }
-
-    // Function to synchronize checkboxes with current column visibility
-    function syncCheckboxesWithTable() {
+        const checkboxes = document.querySelectorAll('#columnSelector input[type="checkbox"]');
+        const preferences = {};
+        checkboxes.forEach(checkbox => {
+          const columnIndex = checkbox.getAttribute('data-column');
+          const isChecked = checkbox.checked;
+  
+          // Toggle visibility of both <th> and <td> elements in the corresponding column
+          const th = table.querySelector(`thead th:nth-child(${columnIndex})`);
+          const tds = table.querySelectorAll(`tbody td:nth-child(${columnIndex})`);
+  
+          if (isChecked) {
+            th.classList.remove('hide'); // Show the <th>
+            tds.forEach(td => td.classList.remove('hide')); // Show all <td>s in the column
+          } else {
+            th.classList.add('hide'); // Hide the <th>
+            tds.forEach(td => td.classList.add('hide')); // Hide all <td>s in the column
+          }
+  
+          // Save the preference
+          preferences[columnIndex] = isChecked;
+        });
+  
+        // Save preferences to localStorage
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(preferences));
+      }
+  
+      // Function to synchronize checkboxes with current column visibility
+      function syncCheckboxesWithTable() {
         const checkboxes = document.querySelectorAll('#columnSelector input[type="checkbox"]');
         checkboxes.forEach(checkbox => {
           const columnIndex = checkbox.getAttribute('data-column');
@@ -1369,16 +1377,37 @@ async function columnEditing() {
         });
       }
   
-      // Hide default columns on page load
-      function hideDefaultColumns() {
-        theadThs.forEach((th, index) => {
-          const columnName = th.textContent.trim();
-          if (defaultHiddenColumns.includes(columnName)) {
-            th.classList.add('hide'); // Hide the <th>
-            const tds = table.querySelectorAll(`tbody td:nth-child(${index + 1})`);
-            tds.forEach(td => td.classList.add('hide')); // Hide all <td>s in the column
-          }
-        });
+      // Load saved preferences from localStorage
+      function loadPreferences() {
+        const preferences = JSON.parse(localStorage.getItem(STORAGE_KEY)) || null;
+  
+        // If preferences exist, apply them
+        if (preferences) {
+          theadThs.forEach((th, index) => {
+            const columnIndex = index + 1;
+            const isVisible = preferences[columnIndex];
+  
+            if (isVisible === false) {
+              th.classList.add('hide'); // Hide the <th>
+              const tds = table.querySelectorAll(`tbody td:nth-child(${columnIndex})`);
+              tds.forEach(td => td.classList.add('hide')); // Hide all <td>s in the column
+            } else {
+              th.classList.remove('hide'); // Show the <th>
+              const tds = table.querySelectorAll(`tbody td:nth-child(${columnIndex})`);
+              tds.forEach(td => td.classList.remove('hide')); // Show all <td>s in the column
+            }
+          });
+        } else {
+          // If no preferences exist, apply the defaultHiddenColumns
+          theadThs.forEach((th, index) => {
+            const columnName = th.textContent.trim();
+            if (defaultHiddenColumns.includes(columnName)) {
+              th.classList.add('hide'); // Hide the <th>
+              const tds = table.querySelectorAll(`tbody td:nth-child(${index + 1})`);
+              tds.forEach(td => td.classList.add('hide')); // Hide all <td>s in the column
+            }
+          });
+        }
       }
   
       // Open the modal and sync the checkboxes when the "Select Columns" button is clicked
@@ -1405,7 +1434,7 @@ async function columnEditing() {
         modal.style.display = "none"; // Close the modal
       };
   
-      // Initialize the table visibility, generate checkboxes, and hide default columns
+      // Initialize the table visibility, generate checkboxes, and load user preferences
       generateCheckboxes();
-      hideDefaultColumns(); // Ensure default columns are hidden
+      loadPreferences(); // Load preferences from localStorage or apply defaults
         }
