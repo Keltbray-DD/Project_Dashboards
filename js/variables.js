@@ -46,3 +46,12 @@ let statusChart
 let selectedTab
 
 const pattern = /^[A-Z]\d{2}(\.\d{2})?$/;
+const defaultHiddenColumns = [
+    "Last Modified Date",
+    "Last Modified User",
+    "Title Line 2",
+    "Title Line 3",
+    "Title Line 4",
+    "Activity Code",
+    "Last Modified User"
+]; // Columns to hide by default

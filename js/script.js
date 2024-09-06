@@ -247,9 +247,13 @@ async function generateFileTable(data) {
                 <td>${mainItem.folder_path}</td>
                 <td class="editable">${highlightCell(mainItem['file_description'])}</td>
                 <td class="editable">${highlightCell(mainItem['title_line_1'])}</td>
+                <td class="editable">${highlightCell(mainItem['title_line_2'])}</td>
+                <td class="editable">${highlightCell(mainItem['title_line_3'])}</td>
+                <td class="editable">${highlightCell(mainItem['title_line_4'])}</td>
                 <td>${MissingUser(mainItem.last_modified_user)}</td>
                 <td>${highlightCell(new Date(mainItem.last_modified_date).toLocaleString())}</td>
                 <td class="editable">${highlightCell(mainItem['status'])}</td>
+                <td class="editable">${highlightCell(mainItem['activity_code'])}</td>
         `;
     
         tableBody.appendChild(mainRow);
@@ -297,9 +301,13 @@ async function generateFileTable(data) {
                 <td>${item.folder_path}</td>
                 <td class="editable">${highlightCell(item['file_description'])}</td>
                 <td class="editable">${highlightCell(item['title_line_1'])}</td>
+                <td class="editable">${highlightCell(item['title_line_2'])}</td>
+                <td class="editable">${highlightCell(item['title_line_3'])}</td>
+                <td class="editable">${highlightCell(item['title_line_4'])}</td>
                 <td>${MissingUser(item.last_modified_user)}</td>
                 <td>${highlightCell(new Date(item.last_modified_date).toLocaleString())}</td>
                 <td class="editable">${highlightCell(item['status'])}</td>
+                <td class="editable">${highlightCell(item['activity_code'])}</td>
             `;
             tableBody.appendChild(itemRow);
             });
@@ -1349,30 +1357,55 @@ async function columnEditing() {
       });
     }
 
-    // Open the modal when the "Select Columns" button is clicked
-    openModalBtn.onclick = function() {
-      modal.style.display = "block";
-    };
-
-    // Close the modal when the "x" button is clicked
-    closeModalBtn.onclick = function() {
-      modal.style.display = "none";
-    };
-
-    // Close the modal when clicking outside of the modal content
-    window.onclick = function(event) {
-      if (event.target == modal) {
-        modal.style.display = "none";
+    // Function to synchronize checkboxes with current column visibility
+    function syncCheckboxesWithTable() {
+        const checkboxes = document.querySelectorAll('#columnSelector input[type="checkbox"]');
+        checkboxes.forEach(checkbox => {
+          const columnIndex = checkbox.getAttribute('data-column');
+          const th = table.querySelector(`thead th:nth-child(${columnIndex})`);
+  
+          // If the column is hidden, uncheck the checkbox; otherwise, check it
+          checkbox.checked = !th.classList.contains('hide');
+        });
       }
-    };
-
-    // Apply selected columns when the "Apply" button is clicked
-    applyColumnsBtn.onclick = function() {
-      toggleColumns();
-      modal.style.display = "none"; // Close the modal
-    };
-
-    // Initialize the table visibility and generate checkboxes
-    generateCheckboxes();
-    toggleColumns();
-}
+  
+      // Hide default columns on page load
+      function hideDefaultColumns() {
+        theadThs.forEach((th, index) => {
+          const columnName = th.textContent.trim();
+          if (defaultHiddenColumns.includes(columnName)) {
+            th.classList.add('hide'); // Hide the <th>
+            const tds = table.querySelectorAll(`tbody td:nth-child(${index + 1})`);
+            tds.forEach(td => td.classList.add('hide')); // Hide all <td>s in the column
+          }
+        });
+      }
+  
+      // Open the modal and sync the checkboxes when the "Select Columns" button is clicked
+      openModalBtn.onclick = function() {
+        modal.style.display = "block";
+        syncCheckboxesWithTable(); // Sync the checkboxes with current table visibility
+      };
+  
+      // Close the modal when the "x" button is clicked
+      closeModalBtn.onclick = function() {
+        modal.style.display = "none";
+      };
+  
+      // Close the modal when clicking outside of the modal content
+      window.onclick = function(event) {
+        if (event.target == modal) {
+          modal.style.display = "none";
+        }
+      };
+  
+      // Apply selected columns when the "Apply" button is clicked
+      applyColumnsBtn.onclick = function() {
+        toggleColumns();
+        modal.style.display = "none"; // Close the modal
+      };
+  
+      // Initialize the table visibility, generate checkboxes, and hide default columns
+      generateCheckboxes();
+      hideDefaultColumns(); // Ensure default columns are hidden
+        }
