@@ -1,12 +1,8 @@
 document.addEventListener('DOMContentLoaded',function(){
     tableBody = document.querySelector('#dataTable tbody');
+    tableHeader = document.getElementById('dataTable');
     searchInput = document.getElementById('searchInput');
     folderFilter = document.getElementById('folderFilter');
-    
-    fileDescriptionColumn = document.getElementById('fileDescriptionColumn');
-    statusColumn = document.getElementById('statusColumn');
-    titleline1Column = document.getElementById('titleline1Column');
-    revisionColumn = document.getElementById('revisionColumn');
 
     document.getElementById("MIDP").style.display = "block";
     document.getElementById("chartsSection").style.display = "block"
@@ -54,6 +50,15 @@ document.addEventListener('DOMContentLoaded',function(){
             }
         }
     });
+
+    window.addEventListener('beforeunload', function(event) {
+        if (editMode) {
+          console.log("User is in edit mode. Showing the beforeunload prompt.");
+          event.preventDefault();
+          event.returnValue = ''; // Display the default browser alert message
+          return ''; // For older browsers
+        }
+      });
         
 })
 
@@ -111,7 +116,10 @@ async function processData(data, fileName, updated,Project_Name) {
         document.getElementById('dateUpdated').innerHTML = `Export: ${formatDate(fileData.updated)}`
         document.getElementById('projectName').innerHTML = `${Project_Name}`
         colourParentMissing()
-        makeCellsEditable()
+        makeCellsEditable().then(() => {
+            // Runs after getData completes
+            columnEditing();
+          });
         console.log("files",files)
     }
 
@@ -162,6 +170,8 @@ async function generateFileTable(data) {
         acc[item.name].sort((a, b) => b.accversion - a.accversion); // Sort by accversion descending
         return acc;
     }, {});
+
+    files = []
     tableBody.innerHTML = ''
     folderFilter.options.length = 1
     folderPaths = []
@@ -846,6 +856,7 @@ function openTab(evt, tabName) {
     switch (tabName) {
         case "MIDP":
             tableBody = document.querySelector('#dataTable tbody');
+            tableHeader = document.getElementById('dataTable');
             searchInput = document.getElementById('searchInput');
             folderFilter = document.getElementById('folderFilter');
             getData()
@@ -853,6 +864,7 @@ function openTab(evt, tabName) {
 
         case "DrawingRegister":
             tableBody = document.querySelector('#dataTableDR tbody');
+            tableHeader = document.getElementById('dataTableDR');
             searchInput = document.getElementById('searchInputDR');
             folderFilter = document.getElementById('folderFilterDR');
             getData()
@@ -920,6 +932,7 @@ async function runChecks(){
 }
 
 async function invalidFileCheck(){
+    invalidObjects = []
     files.forEach(obj => {
         if (hasInvalidFields(obj,'last_modified_user')) {
             invalidObjects.push(obj);
@@ -929,6 +942,8 @@ async function invalidFileCheck(){
 }
 
 function complianceCalc(){
+    totals = 0
+    overall = 0
     overallComplianceScore = document.getElementById('OverallCompliance')
    //overallComplianceScore.innerHTML = `Overall Project Compliance: ${}%`
     totals = files.length
@@ -1059,7 +1074,7 @@ async function makeCellsEditable() {
   
     // Add click event listener to the toggle button
     toggleEditBtn.addEventListener('click', toggleEditMode);
-  
+
     // Attach the 'blur' event listener only once, when the DOM is fully loaded
     editableCells.forEach(cell => {
       cell.addEventListener('blur', function() {
@@ -1283,3 +1298,81 @@ async function getAccessToken(scopeInput){
         }
     
         }
+
+////////////////////////////////////////////////////////// Column Manipulation
+
+async function columnEditing() {
+    const modal = document.getElementById("columnModal");
+    const openModalBtn = document.getElementById("openModal");
+    const closeModalBtn = document.querySelector(".close");
+    const applyColumnsBtn = document.getElementById("applyColumns");
+    const table = tableHeader
+    const columnSelector = document.getElementById('columnSelector');
+    const theadThs = table.querySelectorAll('thead tr th');
+
+    const ignoredColumns = [''];  // You can also use indices like [0, 3]
+    // Function to dynamically generate the checkboxes based on the column headers
+    // Function to dynamically generate the checkboxes based on the column headers
+    function generateCheckboxes() {
+        theadThs.forEach((th, index) => {
+          const columnName = th.textContent.trim();
+  
+          // Skip generation if the column is in the ignoredColumns list
+          if (ignoredColumns.includes(columnName)) {
+            return; // Skip this iteration
+          }
+  
+          const checkboxWrapper = document.createElement('label');
+          checkboxWrapper.innerHTML = `<input type="checkbox" data-column="${index + 1}" checked> ${columnName}`;
+          columnSelector.appendChild(checkboxWrapper);
+        });
+      }
+
+    // Function to toggle column visibility based on checkbox selection
+    function toggleColumns() {
+      const checkboxes = document.querySelectorAll('#columnSelector input[type="checkbox"]');
+      checkboxes.forEach(checkbox => {
+        const columnIndex = checkbox.getAttribute('data-column');
+        const isChecked = checkbox.checked;
+
+        // Toggle visibility of both <th> and <td> elements in the corresponding column
+        const th = table.querySelector(`thead th:nth-child(${columnIndex})`);
+        const tds = table.querySelectorAll(`tbody td:nth-child(${columnIndex})`);
+
+        if (isChecked) {
+          th.classList.remove('hide'); // Show the <th>
+          tds.forEach(td => td.classList.remove('hide')); // Show all <td>s in the column
+        } else {
+          th.classList.add('hide'); // Hide the <th>
+          tds.forEach(td => td.classList.add('hide')); // Hide all <td>s in the column
+        }
+      });
+    }
+
+    // Open the modal when the "Select Columns" button is clicked
+    openModalBtn.onclick = function() {
+      modal.style.display = "block";
+    };
+
+    // Close the modal when the "x" button is clicked
+    closeModalBtn.onclick = function() {
+      modal.style.display = "none";
+    };
+
+    // Close the modal when clicking outside of the modal content
+    window.onclick = function(event) {
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    };
+
+    // Apply selected columns when the "Apply" button is clicked
+    applyColumnsBtn.onclick = function() {
+      toggleColumns();
+      modal.style.display = "none"; // Close the modal
+    };
+
+    // Initialize the table visibility and generate checkboxes
+    generateCheckboxes();
+    toggleColumns();
+}

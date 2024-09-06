@@ -4,6 +4,7 @@ let accesToken
 //const projectID = "b.76c59b97-feaf-413c-9bd0-43cf8aaa3133";
 
 let tableBody;
+let tableHeader;
 let searchInput;
 let folderFilter;
 let rows;
