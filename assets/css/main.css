@@ -119,6 +119,8 @@ th {
 }
 td {
     background-color: #d1dfda;
+    overflow: hidden;
+    text-overflow: ellipsis;
     margin: 10px;
 }
 .main-row {
@@ -140,6 +142,10 @@ td {
 .highlight {
     background-color: #ffcccc; /* Light red background for highlighting */
     color: #000; /* Ensure the text is readable */
+}
+.highlightYellow {
+  background-color: rgba(255, 219, 187, 0.6); 
+  color: #000; /* Ensure the text is readable */
 }
 
 .chart-container {

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Dashboard</title>
+    <title>Project Data Overview</title>
     <link rel="stylesheet" href="./assets/css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="icon" href="./assets/media/Keltbray-logo_single.png" type="image/x-icon">
@@ -15,7 +15,7 @@
             <h2>Keltbray ISL <br>DD Hub</h2>
         </div>
         <div class="header-section">
-            <h1>Project Dashboards</h1>
+            <h1>Project Data Overview</h1>
         </div>
         <div class="header-section">
             <h3 id="dateUpdated"></h3>
@@ -33,13 +33,20 @@
         <button class="modal-btn" id="applyColumns">Apply</button>
         </div>
     </div>
-    <div class="tab">
-        <button class="tablinks" onclick="openChartsSelection('chartsSection')">Show/Hide Charts</button>
-    </div>
-        <!-- Popup message -->
-        <div id="popup" class="popup">
+    <section>
+        <div class="tab">
+            <button class="tablinks" onclick="openTab(event, 'MIDP')">MIDP</button>
+            <button class="tablinks" onclick="openTab(event, 'DrawingRegister')">Drawing Register</button>
 
+            <button class="modal-btn" id="openModal">Select Columns</button>
+            <button id="toggleEditBtn" class="editButton">Enable Edit Mode</button>
+            <button class="tablinks" onclick="openChartsSelection('chartsSection')">Show/Hide Charts</button>
         </div>
+    </section>
+    <!-- Popup message -->
+    <div id="popup" class="popup">
+
+    </div>
     <div id="chartsSection" class="">
         <section id="score">
             <div class="tab gaugeChart">
@@ -68,14 +75,7 @@
         </section>
     </div>
 
-    <section>
-        <div class="tab">
-            <button class="tablinks" onclick="openTab(event, 'MIDP')">MIDP</button>
-            <button class="tablinks" onclick="openTab(event, 'DrawingRegister')">Drawing Register</button>
-            <button class="modal-btn" id="openModal">Select Columns</button>
-            <button id="toggleEditBtn" class="editButton">Enable Edit Mode</button>
-        </div>
-    </section>
+
     <section id="MIDP" class="dashboard tabcontent">
         <div class="table-container">
             <div>
@@ -152,6 +152,79 @@
             </table>
         </div><!-- Containers for data visualizations -->
 
+    </section>
+
+    <section id="TransmittalRegister" class="dashboard tabcontent">
+        <div class="table-container">
+            <div>
+                <h1>Transmittal Register</h1>
+                <label for="folderFilterTR">Filter by Folder Path:</label>
+                <select id="folderFilterTR" class="folderFilter">
+                    <option value="all">All</option>
+                </select>
+                <input type="text" id="searchInputTR" class="searchInput" placeholder="Search for anything...">
+                <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
+            </div>
+            <table id="dataTableTR">
+                <thead>
+                    <tr>
+                        <th width="10px"></th>
+                        <th width="300px">File Name</th>
+                        <th width="50px">Version</th>
+                        <th width="60px">File URL</th>
+                        <th width="60px">Revision</th>
+                        <th>Folder Path</th>
+                        <th>File Description</th>
+                        <th>Title Line 1</th>
+                        <th>Title Line 2</th>
+                        <th>Title Line 3</th>
+                        <th>Title Line 4</th>
+                        <th width="120px">Last Modified User</th>
+                        <th width="120px">Last Modified Date</th>
+                        <th width="60px">Status</th>
+                        <th>Activity Code</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be inserted here -->
+                </tbody>
+            </table>
+        </div><!-- Containers for data visualizations -->
+
+    </section>
+
+    <section id="MDR" class="dashboard tabcontent">
+        <div class="table-container">
+            <div>
+                <h1>Master Document Register</h1>
+                <label for="folderFilterMDR">Filter by Folder Path:</label>
+                <select id="folderFilterMDR" class="folderFilter">
+                    <option value="all">All</option>
+                </select>
+                <input type="text" id="searchInputMDR" class="searchInput" placeholder="Search for anything...">
+                <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
+            </div>
+            <table id="dataTableMDR">
+                <thead>
+                    <tr>
+                        <th width="10px"></th>
+                        <th width="300px">File Name</th>
+                        <th width="50px">Version</th>
+                        <th width="60px">File URL</th>
+                        <th width="60px">Revision</th>
+                        <th>Title</th>
+                        <th>Category</th>
+                        <th>Status</th>
+                        <th>Notes</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be inserted here -->
+                </tbody>
+            </table>
+        </div><!-- Containers for data visualizations -->
+
+    </section>
     </section>
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>

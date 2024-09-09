@@ -115,6 +115,7 @@ async function processData(data, fileName, updated,Project_Name) {
         await generateFileTable(fileData.data)
         document.getElementById('dateUpdated').innerHTML = `Export: ${formatDate(fileData.updated)}`
         document.getElementById('projectName').innerHTML = `${Project_Name}`
+        document.title = `${Project_Name} Project Data Overview`;
         colourParentMissing()
         makeCellsEditable().then(() => {
             // Runs after getData completes
@@ -186,6 +187,7 @@ async function generateFileTable(data) {
     revisionFormatCheckPresentCount = 0;
     descriptionMissingCount = 0;
     descriptionPresentCount = 0;
+    descriptionPlaceHolderCount = 0;
 
     Object.values(groupedData).forEach(group => {
         let mainItem = group[0];
@@ -208,7 +210,9 @@ async function generateFileTable(data) {
         }
         if (isMissing(mainItem['file_description'])) {
             descriptionMissingCount++;
-        } else {
+        } else if(mainItem['file_description'] == "TIDP Placeholder File") {
+            descriptionPlaceHolderCount++;
+        }else {
             descriptionPresentCount++;
         }
         if (isMissing(mainItem['status'])) {
@@ -465,11 +469,11 @@ async function generateFileTable(data) {
         // Create the pie chart to show Title Line 1 data presence
         const ctx_Description = document.getElementById('missingDescriptionDataChart').getContext('2d');
         const chartData_Description = {
-            labels: ['Files with Description', 'Files without Description'],
+            labels: ['Files with Description', 'Files without Description', 'Files with Placeholder Description'],
             datasets: [{
-                data: [descriptionPresentCount, descriptionMissingCount],
-                backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)'],
-                borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)'],
+                data: [descriptionPresentCount, descriptionMissingCount, descriptionPlaceHolderCount],
+                backgroundColor: ['rgba(75, 192, 192, 0.6)', 'rgba(255, 99, 132, 0.6)','rgba(255, 219, 187, 0.6)'],
+                borderColor: ['rgba(75, 192, 192, 1)', 'rgba(255, 99, 132, 1)','rgba(255, 219, 187, 1)'],
                 borderWidth: 1
             }]
         };
@@ -593,7 +597,7 @@ async function generateFileTable(data) {
             const span = document.createElement('span')
             span.classList.add('highlight')
             span.classList.add('tooltip')
-            span.setAttribute('data-tooltip', "Incorrect format. Use formats like P01, C02, or P02.03");
+            //span.setAttribute('data-tooltip', "Incorrect format. Use formats like P01, C02, or P02.03");
             span.innerHTML = `${value}`
             return span //`<span class="highlight tooltip">${value}</span>`
         } else {
@@ -629,7 +633,7 @@ async function generateFileTable(data) {
             if ((label === 'Files with Revision' && hasRevisionLine && pattern.test(item['revision'])) || (label === 'Files without Revision' && !hasRevisionLine) || (label === 'Files with Invalid ISO Revision' && !pattern.test(item['revision']) && hasRevisionLine)) {
                 createTableRow(item)
             }
-            if ((label === 'Files with Description' && hasDescriptionLine || (label === 'Files without Description' && !hasDescriptionLine))) {
+            if (((label === 'Files with Description' && hasDescriptionLine && item['file_description'] !== "TIDP Placeholder File" )|| (label === 'Files without Description' && !hasDescriptionLine) || (label === 'Files with Placeholder Description' && item['file_description'] === "TIDP Placeholder File" && hasDescriptionLine))) {
                 createTableRow(item)
             }
             if ((label === 'Files with Status' && hasStatusLine || (label === 'Files without Status' && !hasStatusLine))) {
@@ -639,7 +643,7 @@ async function generateFileTable(data) {
                 createTableRow(item)
             }
             colourParentMissing()
-            
+            columnEditing()
         });
         runChecks()
 
@@ -660,9 +664,13 @@ async function createTableRow(item) {
             <td>${item.folder_path}</td>
             <td class="editable">${highlightCell(item['file_description'])}</td>
             <td class="editable">${highlightCell(item['title_line_1'])}</td>
+            <td class="editable">${highlightCell(item['title_line_2'])}</td>
+            <td class="editable">${highlightCell(item['title_line_3'])}</td>
+            <td class="editable">${highlightCell(item['title_line_4'])}</td>
             <td>${MissingUser(item.last_modified_user)}</td>
             <td>${highlightCell(new Date(item.last_modified_date).toLocaleString())}</td>
             <td class="editable">${highlightCell(item['status'])}</td>
+            <td class="editable">${highlightCell(item['activity_code'])}</td>
     `;
 
     tableBody.appendChild(mainRow);
@@ -798,11 +806,14 @@ function revisionCheck() {
         const value = cells[6].textContent.trim();
         const folder = cells[5].textContent.trim();
             // Add a data-tooltip attribute for the custom tooltip
-            
-            if(value == "Missing"){
-                cells[6].classList.add('tooltip');
-                cells[6].setAttribute('data-tooltip', "All files require a description please amend on ACC");
-        }        
+    
+        if(value == "Missing"){
+            cells[6].classList.add('tooltip');
+            cells[6].setAttribute('data-tooltip', "All files require a description please amend on ACC");
+        }
+        if(value == "TIDP Placeholder File"){
+            cells[6].classList.add("highlightYellow");
+        }
     }
  }
  function statusCheck() {
@@ -1318,7 +1329,7 @@ async function columnEditing() {
     const columnSelector = document.getElementById('columnSelector');
     const theadThs = table.querySelectorAll('thead tr th');
     const STORAGE_KEY = 'columnPreferences'; // LocalStorage key
-    const ignoredColumns = [''];  // You can also use indices like [0, 3]
+   
     // Function to dynamically generate the checkboxes based on the column headers
     // Function to dynamically generate the checkboxes based on the column headers
     function generateCheckboxes() {

@@ -27,6 +27,7 @@ let revisionFormatCheckInvaildCount = 0;
 let revisionFormatCheckPresentCount = 0;
 let descriptionMissingCount = 0
 let descriptionPresentCount = 0
+let descriptionPlaceHolderCount = 0;
 
 let files = [];
 let fileData =[];
@@ -46,6 +47,7 @@ let statusChart
 let selectedTab
 
 const pattern = /^[A-Z]\d{2}(\.\d{2})?$/;
+const ignoredColumns = ['','File Name','Version'];  // You can also use indices like [0, 3]
 const defaultHiddenColumns = [
     "Last Modified Date",
     "Last Modified User",
