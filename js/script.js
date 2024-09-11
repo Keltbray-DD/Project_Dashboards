@@ -201,7 +201,7 @@ async function generateFileTable(data) {
     descriptionMissingCount = 0;
     descriptionPresentCount = 0;
     descriptionPlaceHolderCount = 0;
-
+    folderCount = []
     Object.values(groupedData).forEach(async (group) => {
         let mainItem = group[0];
 
@@ -1071,8 +1071,8 @@ function complianceCalc(){
     invalidFilesCount = invalidObjects.length
     overall = titleLinePresentCount + statusPresentCount + revisionPresentCount + descriptionPresentCount
     overallTotal = totals*4
-    gaugeDisplay("OverallCompliance","Overall Project Compliance %",calculatePercentage(overall, overallTotal),100)
-    gaugeDisplay("StatusCompliance","Files with Missing Metadata",invalidFilesCount,totals,true)
+    newGaugeChartdata("OverallCompliance","Overall Project Compliance",calculatePercentage(overall, overallTotal),100-calculatePercentage(overall, overallTotal),100,true)
+    newGaugeChartdata("StatusCompliance","Files with Missing Metadata",invalidFilesCount,totals-invalidFilesCount,totals,false,true)
 }
 
 function gaugeDisplay(element,title,percentageValue, total,invert,percentageRequired){
@@ -1134,6 +1134,196 @@ function gaugeDisplay(element,title,percentageValue, total,invert,percentageRequ
     };
 
     Plotly.newPlot(element, data, layout);
+}
+
+function newGaugeChartdata(element,title,score,max,total,percentage,colourInvert){
+    const ctx_render = document.getElementById(element).getContext('2d');
+    // setup
+if(colourInvert){
+    if(score/(score+max)<0.2){
+        backC = [
+            'rgba(66,183,74,0.5)',
+            'rgba(0, 0, 0, 0.2)'
+          ]
+        borderC = [
+            'rgba(66,183,74, 1)',
+            'rgba(0, 0, 0, 0.3)'
+          ]
+
+    }else if(score/(score+max)<0.4){
+
+          backC = [
+            'rgba(207,223,40,0.5)',
+            'rgba(0, 0, 0, 0.2)'
+          ]
+        borderC = [
+            'rgba(207,223,40, 1)',
+            'rgba(0, 0, 0, 0.3)'
+          ]
+    }else if(score/(score+max)<0.6){
+        backC = [
+            'rgba(255,187,16,0.5)',
+            'rgba(0, 0, 0, 0.2)'
+          ]
+        borderC = [
+            'rgba(255,187,16, 1)',
+            'rgba(0, 0, 0, 0.3)'
+          ]
+    }else if(score/(score+max)<0.8){
+        backC = [
+            'rgba(247,100,32,0.5)',
+            'rgba(0, 0, 0, 0.2)'
+          ]
+        borderC = [
+            'rgba(247,100,32, 1)',
+            'rgba(0, 0, 0, 0.3)'
+          ]
+    }else if(score/(score+max)<1){
+        backC = [
+            'rgba(207,32,32,0.5)',
+            'rgba(0, 0, 0, 0.2)'
+          ]
+        borderC = [
+            'rgba(207,32,32, 1)',
+            'rgba(0, 0, 0, 0.3)'
+          ]
+    }
+    else{
+        backC = [
+            'rgba(255, 26, 104, 0.2)',
+            'rgba(0, 0, 0, 0.2)'
+          ]
+        borderC = [
+            'rgba(255, 26, 104, 1)',
+            'rgba(0, 0, 0, 1)'
+          ]
+    }
+}else{
+    if(score/(score+max)<0.2){
+        backC = [
+            'rgba(207,32,32,0.5)',
+            'rgba(0, 0, 0, 0.2)'
+          ]
+        borderC = [
+            'rgba(207,32,32, 1)',
+            'rgba(0, 0, 0, 0.3)'
+          ]
+    }else if(score/(score+max)<0.4){
+        backC = [
+            'rgba(247,100,32,0.5)',
+            'rgba(0, 0, 0, 0.2)'
+          ]
+        borderC = [
+            'rgba(247,100,32, 1)',
+            'rgba(0, 0, 0, 0.3)'
+          ]
+    }else if(score/(score+max)<0.6){
+        backC = [
+            'rgba(255,187,16,0.5)',
+            'rgba(0, 0, 0, 0.2)'
+          ]
+        borderC = [
+            'rgba(255,187,16, 1)',
+            'rgba(0, 0, 0, 0.3)'
+          ]
+    }else if(score/(score+max)<0.8){
+        backC = [
+            'rgba(207,223,40,0.5)',
+            'rgba(0, 0, 0, 0.2)'
+          ]
+        borderC = [
+            'rgba(207,223,40, 1)',
+            'rgba(0, 0, 0, 0.3)'
+          ]
+    }else if(score/(score+max)<1){
+        backC = [
+            'rgba(66,183,74,0.5)',
+            'rgba(0, 0, 0, 0.2)'
+          ]
+        borderC = [
+            'rgba(66,183,74, 1)',
+            'rgba(0, 0, 0, 0.3)'
+          ]
+    }
+    else{
+        backC = [
+            'rgba(255, 26, 104, 0.2)',
+            'rgba(0, 0, 0, 0.2)'
+          ]
+        borderC = [
+            'rgba(255, 26, 104, 1)',
+            'rgba(0, 0, 0, 1)'
+          ]
+    }
+}
+    
+    const data = {
+        labels: ['Mon', 'Tue'],
+        datasets: [{
+          data: [score,max],
+          backgroundColor:backC, 
+          borderColor: borderC,
+          borderWidth: 1,
+          cutout:'90%',
+          circumference:180,
+          rotation:270,
+        }]
+      };
+
+      const gaugeChartText = {
+        id: 'gaugeChartText',
+        afterDatasetsDraw(chart, args, pluginOptions) {
+          const { ctx, data, chartArea: { top, bottom, left, right, width, height }, scales: { r } } = chart;
+      
+          ctx.save();
+          const xCoor = chart.getDatasetMeta(0).data[0].x;
+          const yCoor = chart.getDatasetMeta(0).data[0].y;
+
+            function textLabel(fontSize,color,textBaseLine,textAlign,textValue,x,y) {
+                ctx.font = `${fontSize}px sans-serif`;
+                ctx.fillStyle = color;
+                ctx.textBaseLine = textBaseLine;
+                ctx.textAlign = textAlign
+                ctx.fillText(textValue, x, y);
+            }
+            textLabel(18,'#666','bottom','left',0,left,yCoor + 20)
+            textLabel(18,'#666','bottom','right',total,right,yCoor + 20)
+            if(percentage){
+                textLabel(50,'#666','bottom','center',`${score}%`,xCoor,yCoor)
+            }else{
+                textLabel(60,'#666','bottom','center',score,xCoor,yCoor)
+            }
+            textLabel(18,'#666','bottom','center',title,xCoor,yCoor + 20)
+
+
+        }
+      };
+  
+      // config 
+      const config = {
+        type: 'doughnut',
+        data: data,
+        options: {
+            maintainAspectRatio: true, // Maintain default aspect ratio
+            responsive: true,          // Make it responsive
+            aspectRatio: 1.5,            // Set specific aspect ratio if needed
+          plugins:{
+            legend:{
+                display:false
+            },
+            tooltip:{
+                enabled:false
+            }
+          }
+        },
+        plugins:[gaugeChartText]
+      };
+      
+      // render init block
+      const myChart = new Chart(
+        ctx_render,
+        config
+      );
 }
 
 function openChartsSelection(tabName){

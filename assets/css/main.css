@@ -53,60 +53,58 @@ img.logo_H {
 .header h1, h3 {
     margin: 0;
 }
-
-
-#charts {
-    padding: 20px;
-    background-color: #fff;
-    display: flex;
-    justify-content: space-around;
-    max-height: 200px;
-    padding-bottom: 0;
-}
-
-#charts {
+#score{
+  margin: 0;
   padding: 20px;
   background-color: #fff;
   justify-content: space-around;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Same auto-fit structure for bar charts */
+}
+.plot-container{
+ margin: auto;
+}
+
+.js-plotly-plot .plotly, .js-plotly-plot .plotly div {
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+canvas {
+  overflow: visible; /* Ensure overflow isn't hidden */
+
+}
+.gaugeChart{
+  margin: auto;
+  display: block;
+  justify-items:center;
   max-height: 200px;
-  padding-bottom: 0;
-  display: grid;
-  grid-template-columns:
-    "missingTitleDataChart missingRevisionDataChart missingDescriptionDataChart missingStatusDataChart"
-   ;
-  grid-template-columns: repeat( auto-fit, minmax(250px, 1fr) );
-  grid-template-rows: auto auto auto 1fr auto;
-}
-#missingTitleDataChart{
-  grid-area:missingTitleDataChart
-} 
-#missingRevisionDataChart{
-  grid-area:missingRevisionDataChart
-} 
-#missingDescriptionDataChart{
-  grid-area:missingDescriptionDataChart
-} 
-#missingStatusDataChart{
-  grid-area:missingStatusDataChart
+  width: 300px !important;   /* Ensure the canvas takes up available space */
+  height: auto !important;  /* Maintain proportional height */
+  overflow: visible !important;
+
 }
 
-#barCharts{
+#charts {
   padding: 20px;
   background-color: #fff;
   justify-content: space-around;
-  height: 200px;
-  padding-bottom: 0;
   display: grid;
-  grid-template-columns:
-    "StatusDataChart folderDataChart"
-   ;
-  grid-template-columns: repeat( auto-fit, minmax(250px, 1fr) );
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Same auto-fit structure for bar charts */
+  grid-gap: 20px; /* Add gap between bar charts */
+  
+
 }
-#StatusDataChart{
-  grid-area: StatusDataChart;
-}
-#folderDataChart{
-  grid-area: folderDataChart;
+
+#barCharts {
+  padding: 20px;
+  background-color: #fff;
+  justify-content: space-around;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Same auto-fit structure for bar charts */
+  grid-gap: 20px; /* Add gap between bar charts */
+  height: 200px; /* Let the height adjust based on content */
 }
 .chart{
   justify-items:center;
@@ -243,6 +241,10 @@ td {
     margin: 20px;
     margin-left: 5px;
     float: right;
+}
+.resetbtn:hover{
+  color:gray;
+  transition: 0.3s;
 }
 
 /* Define the tooltip alignment custom property */
@@ -393,27 +395,7 @@ td {
     to {opacity: 1;}
   }
 
-  .scoreDisplay{
-    background-color: inherit;
-    border: none;
-    outline: none;
-    cursor: pointer;
-    transition: 0.3s;
-    display: inline-block;
-    width: 49.5%;
-    align-items: center;
-    margin: auto;
-  }
 
-  .js-plotly-plot .plotly, .js-plotly-plot .plotly div {
-    margin: auto !important;
-  }
-
-  .gaugeChart{
-    overflow: hidden;
-    border: 1px solid #ccc;
-    background-color: #fff;
-  }
 
 /* Popup message styles */
 .popup {
