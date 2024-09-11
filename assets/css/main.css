@@ -54,18 +54,71 @@ img.logo_H {
     margin: 0;
 }
 
+
 #charts {
     padding: 20px;
     background-color: #fff;
     display: flex;
     justify-content: space-around;
-    max-height: 250px;
+    max-height: 200px;
     padding-bottom: 0;
+}
 
+#charts {
+  padding: 20px;
+  background-color: #fff;
+  justify-content: space-around;
+  max-height: 200px;
+  padding-bottom: 0;
+  display: grid;
+  grid-template-columns:
+    "missingTitleDataChart missingRevisionDataChart missingDescriptionDataChart missingStatusDataChart"
+   ;
+  grid-template-columns: repeat( auto-fit, minmax(250px, 1fr) );
+  grid-template-rows: auto auto auto 1fr auto;
+}
+#missingTitleDataChart{
+  grid-area:missingTitleDataChart
+} 
+#missingRevisionDataChart{
+  grid-area:missingRevisionDataChart
+} 
+#missingDescriptionDataChart{
+  grid-area:missingDescriptionDataChart
+} 
+#missingStatusDataChart{
+  grid-area:missingStatusDataChart
+}
+
+#barCharts{
+  padding: 20px;
+  background-color: #fff;
+  justify-content: space-around;
+  height: 200px;
+  padding-bottom: 0;
+  display: grid;
+  grid-template-columns:
+    "StatusDataChart folderDataChart"
+   ;
+  grid-template-columns: repeat( auto-fit, minmax(250px, 1fr) );
+}
+#StatusDataChart{
+  grid-area: StatusDataChart;
+}
+#folderDataChart{
+  grid-area: folderDataChart;
 }
 .chart{
+  justify-items:center;
+  max-width: 100%;
+  max-height: 200px;
 
-    max-height: 250px;
+}
+.barChart{
+  justify-items:center;
+  padding: 0 5px;
+  max-width: 100%;
+  max-height: 200px;
 }
 
 .dashboard {
@@ -76,14 +129,14 @@ img.logo_H {
 }
 
 .dashboard h1 {
-    width: 40%;
+    margin: auto 0;
     display:inline-block;
     padding-left: 15px;
 }
 
 .dashboard .table-container {
     flex: 1;
-    margin: 5px;
+    margin: 0px;
     padding: 5px;
     background-color: #fff;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
@@ -116,16 +169,26 @@ th, td {
 
 th {
     background-color: #d1cdcd;
+    cursor: pointer;
+    resize: horizontal;
 }
+.sort-indicator {
+  margin-left: 5px;
+}
+.asc::after {
+  content: " ▲";
+}
+.desc::after {
+  content: " ▼";
+}
+
 td {
     background-color: #d1dfda;
-    overflow: hidden;
+    
     text-overflow: ellipsis;
     margin: 10px;
 }
-.main-row {
 
-}
 .expand-icon {
     cursor: pointer;
     margin-right: 5px;
@@ -148,28 +211,31 @@ td {
   color: #000; /* Ensure the text is readable */
 }
 
-.chart-container {
-    margin-bottom: 20px;
-}
+
 #StatusDataChart {
     height: 400px;
 }
 
 .folderFilter{
-    max-width: 20%;
-    font-size: 16px;
-    display:inline-block;
-    padding: 8px;
-    width: 20%;
+  margin: 10px 5px;
+  max-width: 20%;
+  font-size: 16px;
+  display:inline-block;
+  padding: 8px;
+  width: 20%;
+
 }
 .searchInput {
-    margin: auto;
-    padding: 8px;
-    width: 23%;
-    box-sizing: border-box;
-    font-size: 16px;
-    display:inline-block;
-    
+  margin: 10px 5px;
+  padding: 8px;
+  width: 20%;
+  box-sizing: border-box;
+  font-size: 16px;
+  display:inline-block;
+}
+.folderLabel{
+  margin: auto 0;
+  margin-left: auto;
 }
 
 .resetbtn{
@@ -181,52 +247,50 @@ td {
 
 /* Define the tooltip alignment custom property */
 .tooltip {
-    --tooltip-align: -50%; /* Default: center */
-    position: relative;
+  --tooltip-align: -50%; /* Default: center */
+  position: relative;
+  z-index: 1000;
 }
 
 /* Use the --tooltip-align variable to control tooltip positioning */
-.tooltip:hover::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    background-color: #333;
-    color: #fff;
-    padding: 8px 12px;
-    border-radius: 4px;
-    font-size: 14px;
-    white-space: nowrap;
-    z-index: 1000;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(var(--tooltip-align)); /* Use the variable */
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
-    pointer-events: none;
-}
-
-.tooltip:hover::after {
-    opacity: 1;
-    visibility: visible;
-}
-
+.tooltip:hover::after, 
 .tooltip:hover::before {
-    content: '';
-    position: absolute;
-    bottom: calc(100% - 5px);
-    left: 50%;
-    transform: translateX(var(--tooltip-align)); /* Use the variable */
-    border-width: 5px;
-    border-style: solid;
-    border-color: transparent transparent #333 transparent;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  visibility: visible;
+  opacity: 1;
 }
 
-.tooltip:hover::before {
-    opacity: 1;
-    visibility: visible;
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  background-color: #333;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  white-space: nowrap;
+  z-index: 1000;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(var(--tooltip-align)); /* Use the variable */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  pointer-events: none;
+}
+
+.tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% - 5px);
+  left: 50%;
+  transform: translateX(var(--tooltip-align));
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent #333 transparent;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  z-index: 1001; /* Ensure it appears above other elements */
 }
 
 .tooltip-left {
@@ -452,3 +516,40 @@ td {
     display: block;
     width: 100%; /* Make the button span full width */
   }
+
+  table td:nth-child(6) {
+    overflow:hidden;
+  }
+.tableOptions{
+  display: flex;
+}
+
+.sub-header {
+  background-color: #7aa3c2;
+  font-weight: bold;
+  cursor: pointer;
+}
+.hidden {
+  display: none;
+}
+
+.highlightMDRYellow {
+  background-color: rgba(187, 231, 29, 0.6); 
+  color: #000; /* Ensure the text is readable */
+}
+.highlightMDRGreen {
+  background-color: rgba(29, 231, 89, 0.6); 
+  color: #000; /* Ensure the text is readable */
+}
+.highlightMDROrange {
+  background-color: rgba(231, 150, 29, 0.6); 
+  color: #000; /* Ensure the text is readable */
+}
+.highlightMDRRed {
+  background-color: rgba(231, 59, 29, 0.6); 
+  color: #000; /* Ensure the text is readable */
+}
+.highlightMDRPurple {
+  background-color: rgba(231, 29, 221, 0.6); 
+  color: #000; /* Ensure the text is readable */
+}
