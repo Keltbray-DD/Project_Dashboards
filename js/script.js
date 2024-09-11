@@ -1071,8 +1071,8 @@ function complianceCalc(){
     invalidFilesCount = invalidObjects.length
     overall = titleLinePresentCount + statusPresentCount + revisionPresentCount + descriptionPresentCount
     overallTotal = totals*4
-    newGaugeChartdata("OverallCompliance","Overall Project Compliance",calculatePercentage(overall, overallTotal),100-calculatePercentage(overall, overallTotal),100,true)
-    newGaugeChartdata("StatusCompliance","Files with Missing Metadata",invalidFilesCount,totals-invalidFilesCount,totals,false,true)
+    overallComplianceChart = newGaugeChartdata(overallComplianceChart,"OverallCompliance","Overall Project Compliance",calculatePercentage(overall, overallTotal),100-calculatePercentage(overall, overallTotal),100,true)
+    filesWithMissingDataChart = newGaugeChartdata(filesWithMissingDataChart,"StatusCompliance","Files with Missing Metadata",invalidFilesCount,totals-invalidFilesCount,totals,false,true)
 }
 
 function gaugeDisplay(element,title,percentageValue, total,invert,percentageRequired){
@@ -1136,8 +1136,11 @@ function gaugeDisplay(element,title,percentageValue, total,invert,percentageRequ
     Plotly.newPlot(element, data, layout);
 }
 
-function newGaugeChartdata(element,title,score,max,total,percentage,colourInvert){
+function newGaugeChartdata(elementVar,element,title,score,max,total,percentage,colourInvert){
     const ctx_render = document.getElementById(element).getContext('2d');
+    if(elementVar){
+        elementVar.destroy();
+    }
     // setup
 if(colourInvert){
     if(score/(score+max)<0.2){
@@ -1286,8 +1289,8 @@ if(colourInvert){
                 ctx.textAlign = textAlign
                 ctx.fillText(textValue, x, y);
             }
-            textLabel(18,'#666','bottom','left',0,left,yCoor + 20)
-            textLabel(18,'#666','bottom','right',total,right,yCoor + 20)
+            textLabel(14,'#666','bottom','left',0,left,yCoor + 20)
+            textLabel(14,'#666','bottom','right',total,right,yCoor + 20)
             if(percentage){
                 textLabel(50,'#666','bottom','center',`${score}%`,xCoor,yCoor)
             }else{
@@ -1324,6 +1327,7 @@ if(colourInvert){
         ctx_render,
         config
       );
+      return myChart
 }
 
 function openChartsSelection(tabName){
@@ -1332,6 +1336,12 @@ function openChartsSelection(tabName){
     }else{
         document.getElementById(tabName).style.display = "block"
     }
+    chartButton = document.getElementById('chartButton')
+        // Update button text with Unicode symbols
+    chartButton.textContent = showCharts 
+    ? '📊 Show Charts'  // Pencil symbol for edit mode
+    : '📊 Hide Charts';  // Checkmark symbol for non-edit mode
+        
 
 }
 

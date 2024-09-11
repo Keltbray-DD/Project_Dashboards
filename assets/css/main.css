@@ -60,6 +60,7 @@ img.logo_H {
   justify-content: space-around;
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Same auto-fit structure for bar charts */
+  border-bottom: 2px solid rgba(180, 178, 178, 0.76);
 }
 .plot-container{
  margin: auto;
@@ -93,7 +94,7 @@ canvas {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Same auto-fit structure for bar charts */
   grid-gap: 20px; /* Add gap between bar charts */
-  
+  border-bottom: 2px solid rgba(180, 178, 178, 0.76);
 
 }
 
@@ -105,6 +106,7 @@ canvas {
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Same auto-fit structure for bar charts */
   grid-gap: 20px; /* Add gap between bar charts */
   height: 200px; /* Let the height adjust based on content */
+  border-bottom: 2px solid rgba(180, 178, 178, 0.76);
 }
 .chart{
   justify-items:center;

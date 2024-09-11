@@ -51,6 +51,8 @@ let missingStatusDataChart
 let missingDescriptionDataChart
 let statusChart
 let folders_Chart
+let overallComplianceChart
+let filesWithMissingDataChart
 
 //let mainRow
 
