@@ -597,7 +597,7 @@ async function generateCharts() {
                 if (activeElements.length > 0) {
                     const datasetIndex = activeElements[0].datasetIndex;
                     const index = activeElements[0].index;
-                    const field = "statusBar"
+                    const field = "folderBar"
                     const label = chartData_folders_Count.labels[index];
 
                     filterTable(label,field);
@@ -648,7 +648,7 @@ async function generateCharts() {
         if(folderPath.includes('WIP')){
             folderCount['WIP'] = (folderCount['WIP'] || 0) + 1;
         } else if(folderPath.includes('CLIENT_SHARED')){
-            folderCount['CLIENT SHARED'] = (folderCount['CLIENT SHARED'] || 0) + 1;
+            folderCount['CLIENT_SHARED'] = (folderCount['CLIENT_SHARED'] || 0) + 1;
         } else if(folderPath.includes('SHARED')){
             folderCount['SHARED'] = (folderCount['SHARED'] || 0) + 1;
         } else if(folderPath.includes('PUBLISHED')){
@@ -666,6 +666,7 @@ async function generateCharts() {
             const hasTitleLine = item['title_line_1'] !== undefined && item['title_line_1'] !== null && item['title_line_1'] !== '';
             const hasRevisionLine = item['revision'] !== undefined && item['revision'] !== null && item['revision'] !== '';
             const hasStatusLine = item['status'] !== undefined && item['status'] !== null && item['status'] !== '';
+            const hasFolderPath = item['folder_path'] !== undefined && item['folder_path'] !== null && item['folder_path'] !== '';
             const hasDescriptionLine = item['file_description'] !== undefined && item['file_description'] !== null && item['file_description'] !== '';
             
             if ((label === 'Files with Title Line 1' && hasTitleLine) || (label === 'Files without Title Line 1' && !hasTitleLine)) {
@@ -681,6 +682,9 @@ async function generateCharts() {
                 await createMainTableRow(item,0)
             }
             if ((field === 'statusBar' && hasStatusLine  && item['status'] === label) || (field === 'statusBar' && !hasStatusLine  && item['status'] === undefined)) {
+                await createMainTableRow(item,0)
+            }
+            if ((field === 'folderBar' && hasFolderPath  && item['folder_path'].includes(label)) || (field === 'folderBar' && !hasFolderPath  && item['folder_path'] === undefined)) {
                 await createMainTableRow(item,0)
             }
             colourParentMissing()
@@ -1367,8 +1371,8 @@ async function makeCellsEditable() {
     await getCustomDetailsData()
     // Get the toggle button and all editable cells
     toggleEditBtn = document.getElementById('toggleEditBtn');
-    editableCells = document.querySelectorAll('.editable');
-  
+    editableCellsText = document.querySelectorAll('.editable');
+    editableCellsAll = document.querySelectorAll('.editable, .editable-drop, .editable-date');
     let editMode = false; // Keep track of whether cells are editable or not
   
     // Define an array where each value corresponds to a column 
@@ -1378,7 +1382,7 @@ async function makeCellsEditable() {
       editMode = !editMode; // Toggle edit mode
       
   
-      editableCells.forEach(cell => {
+      editableCellsAll.forEach(cell => {
         cell.contentEditable = editMode; // Enable or disable contenteditable
         cell.classList.toggle('edit-mode', editMode); // Toggle the class for edit mode
         if (editMode) {
@@ -1387,6 +1391,112 @@ async function makeCellsEditable() {
             cell.classList.remove('editMode'); // Remove the 'missing' class
           }
       });
+
+      document.querySelectorAll('.editable-drop').forEach(function (cell) {
+        // Attach click event listener to the cell
+        cell.addEventListener('click', function () {
+            // If a dropdown is already there, avoid re-adding it
+            if (cell.querySelector('select')) return;
+    
+            // Get the current text/content of the cell
+            const currentText = cell.textContent.trim();
+    
+            // Create a select element
+            const select = document.createElement('select');
+    
+            // Create dropdown options
+            const options = ['NOT STARTED', 'IN PROGRESS', 'ON TRACK','DELAY', 'COMPLETE'];
+            options.forEach(option => {
+                const optionElement = document.createElement('option');
+                optionElement.value = option;
+                optionElement.text = option;
+                if (option === currentText) {
+                    optionElement.selected = true;
+                }
+                select.appendChild(optionElement);
+            });
+    
+            // Replace the cell's content with the dropdown
+            cell.textContent = ''; // Clear the cell content
+            cell.appendChild(select);
+    
+            // Focus on the dropdown
+            select.focus();
+    
+            // Handle the change event when the user selects an option
+            select.addEventListener('change', function () {
+                cell.textContent = select.value; // Update cell content with the selected value
+                console.log(cell.textContent)
+                patchDataToACC(editMode,cell)
+                colourParentMDR()
+                colourParentMissing()
+            });
+    
+            // Handle blur event (when the dropdown loses focus)
+            select.addEventListener('blur', function () {
+                cell.textContent = select.value; // Set the cell content to the selected value
+            });
+    
+            // Handle Enter key press to select the option
+            select.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter') {
+                    cell.textContent = select.value; // Update cell content with the selected value
+                    select.blur(); // Trigger blur event
+                }
+            });
+        });
+    });
+    document.querySelectorAll('.editable-date').forEach(cell => {
+        cell.addEventListener('click', function() {
+
+            // Avoid creating another input if already editing
+            if (currentlyEditing === cell) return;
+
+            if (!cell.querySelector('input')) {
+                currentlyEditing = cell; // Set the currently editing cell
+
+                const originalValue = cell.textContent.trim();
+                const input = document.createElement('input');
+                input.type = 'date';
+                input.value = originalValue;
+
+                // Replace the cell's text content with the date picker
+                cell.innerHTML = '';
+                cell.appendChild(input);
+
+                // Focus the input field
+                input.focus();
+
+                // Handle patching only when the user selects a date (or exits the field)
+                input.addEventListener('change', () => {
+                    cell.textContent = input.value;
+                    patchDataToACC(editMode,cell)
+                    colourParentMDR()
+                    colourParentMissing()
+                });
+
+                // When the input is blurred, finalize and exit editing mode
+                input.addEventListener('blur', () => {
+                    cell.textContent = input.value || originalValue;
+                    currentlyEditing = null; // Reset currently editing
+                });
+
+                input.addEventListener('keydown', (event) => {
+                    if (event.key === 'Enter') {
+                        cell.textContent = input.value;
+                        
+                        patchDataToACC(editMode,cell)
+                        currentlyEditing = null; // Reset currently editing
+                        colourParentMDR()
+                        colourParentMissing()
+                    }
+                });
+            }
+        });
+    });
+    function updateCellValue(cell, value) {
+        cell.textContent = value;
+    }
   
       // Update button text
     // Update button text with Unicode symbols
@@ -1406,9 +1516,10 @@ async function makeCellsEditable() {
         columnNames = columnNamesDefault
     }
     // Attach the 'blur' event listener only once, when the DOM is fully loaded
-    editableCells.forEach(async cell => {
+    editableCellsText.forEach(async cell => {
         cell.addEventListener('blur', function() {
             patchDataToACC(editMode,this)
+            colourParentMissing()
       });
     }); 
 }
@@ -1930,115 +2041,22 @@ function createMDRTable(data) {
                 <td class="editable">${highlightCell(row.revision,"revision")}</td>
                 <td class="editable">${highlightCell(row.title_line_1)}</td>
                 <td class="">${currentCategory.description} ${formValue.description}</td>
-                <td class="editable editable-drop">${highlightTrackingStatusCell(row.tracking_status)}</td>
+                <td class="editable-drop">${highlightTrackingStatusCell(row.tracking_status)}</td>
                 <td class="editable">${highlightUndefinedCell(row.notes)}</td>
-                <td class="editable editable-date">${highlightUndefinedCell(row.planned_start_date)}</td>
-                <td class="editable editable-date">${highlightUndefinedCell(row.actual_start_date)}</td>
-                <td class="editable editable-date">${highlightUndefinedCell(row.planned_finish_date)}</td>
-                <td class="editable editable-date">${highlightUndefinedCell(row.actual_finish_date)}</td>
+                <td class="editable-date">${highlightUndefinedCell(row.planned_start_date)}</td>
+                <td class="editable-date">${highlightUndefinedCell(row.actual_start_date)}</td>
+                <td class="editable-date">${highlightUndefinedCell(row.planned_finish_date)}</td>
+                <td class="editable-date">${highlightUndefinedCell(row.actual_finish_date)}</td>
             `;
             tableBody.appendChild(dataRow);
     
         });
         let currentlyEditing = null;
-        document.querySelectorAll('.editable-drop').forEach(function (cell) {
-            // Attach click event listener to the cell
-            cell.addEventListener('click', function () {
-                // If a dropdown is already there, avoid re-adding it
-                if (cell.querySelector('select')) return;
-        
-                // Get the current text/content of the cell
-                const currentText = cell.textContent.trim();
-        
-                // Create a select element
-                const select = document.createElement('select');
-        
-                // Create dropdown options
-                const options = ['Not Started', 'In Progress', 'On Track', 'Completed'];
-                options.forEach(option => {
-                    const optionElement = document.createElement('option');
-                    optionElement.value = option;
-                    optionElement.text = option;
-                    if (option === currentText) {
-                        optionElement.selected = true;
-                    }
-                    select.appendChild(optionElement);
-                });
-        
-                // Replace the cell's content with the dropdown
-                cell.textContent = ''; // Clear the cell content
-                cell.appendChild(select);
-        
-                // Focus on the dropdown
-                select.focus();
-        
-                // Handle the change event when the user selects an option
-                select.addEventListener('change', function () {
-                    cell.textContent = select.value; // Update cell content with the selected value
-                });
-        
-                // Handle blur event (when the dropdown loses focus)
-                select.addEventListener('blur', function () {
-                    cell.textContent = select.value; // Set the cell content to the selected value
-                });
-        
-                // Handle Enter key press to select the option
-                select.addEventListener('keydown', function (event) {
-                    if (event.key === 'Enter') {
-                        cell.textContent = select.value; // Update cell content with the selected value
-                        select.blur(); // Trigger blur event
-                    }
-                });
-            });
-        });
-        document.querySelectorAll('.editable-date').forEach(cell => {
-            cell.addEventListener('click', function() {
-                // Avoid creating another input if already editing
-                if (currentlyEditing === cell) return;
-    
-                if (!cell.querySelector('input')) {
-                    currentlyEditing = cell; // Set the currently editing cell
-    
-                    const originalValue = cell.textContent.trim();
-                    const input = document.createElement('input');
-                    input.type = 'date';
-                    input.value = originalValue;
-    
-                    // Replace the cell's text content with the date picker
-                    cell.innerHTML = '';
-                    cell.appendChild(input);
-    
-                    // Focus the input field
-                    input.focus();
-    
-                    // Handle patching only when the user selects a date (or exits the field)
-                    input.addEventListener('change', () => {
-                        updateCellValue(cell, input.value);
-                        patchItemOnServer(input.value); // Trigger the patch function here
-                    });
-    
-                    // When the input is blurred, finalize and exit editing mode
-                    input.addEventListener('blur', () => {
-                        updateCellValue(cell, input.value || originalValue);
-                        currentlyEditing = null; // Reset currently editing
-                    });
-    
-                    input.addEventListener('keydown', (event) => {
-                        if (event.key === 'Enter') {
-                            updateCellValue(cell, input.value);
-                            patchItemOnServer(input.value); // Trigger the patch function here
-                            currentlyEditing = null; // Reset currently editing
-                        }
-                    });
-                }
-            });
-        });
+
     })
     
 
-    function updateCellValue(cell, value) {
-        cell.textContent = value;
-    }
+
     makeCellsEditable()
     colourParentMDR()
 

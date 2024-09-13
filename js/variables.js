@@ -53,6 +53,7 @@ let statusChart
 let folders_Chart
 let overallComplianceChart
 let filesWithMissingDataChart
+let currentlyEditing;
 
 //let mainRow
 
