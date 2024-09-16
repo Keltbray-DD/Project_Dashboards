@@ -8,9 +8,25 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById("chartsSection").style.display = "block"
     getProjectFromURL()
     getData()
-    if(projectID !== "b.2e6449f9-ce25-4a9c-8835-444cb5ea03bf"){
-        document.getElementById('MDR_Button').style.display = 'none'
+    // Button visability //
+    // MIDP
+    if(projects_MIDPs.some(item => item.id === projectID) == false){
+        document.getElementById('MIDP_Button').style.display = 'none'
+    }
+
+    // Drawing Register
+    if(projects_DR.some(item => item.id === projectID) == false){
+        document.getElementById('DrawingRegister_Button').style.display = 'none'
+    }
+
+    // Transmittal Register
+    if(projects_TR.some(item => item.id === projectID) == false){
         document.getElementById('TransmittalRegister_Button').style.display = 'none'
+    }
+
+    // MDR
+    if(projects_MDR.some(item => item.id === projectID) == false){
+        document.getElementById('MDR_Button').style.display = 'none'
     }
 
 

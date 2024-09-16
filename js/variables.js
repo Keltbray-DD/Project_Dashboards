@@ -70,3 +70,23 @@ const defaultHiddenColumns = [
     "Activity Code",
     "Created by"
 ]; // Columns to hide by default
+
+const projects_MIDPs = [
+    {name:"HI7411",id:"b.76c59b97-feaf-413c-9bd0-43cf8aaa3133"},
+    {name:"DT1117",id:"b.2e6449f9-ce25-4a9c-8835-444cb5ea03bf"},
+    {name:"DT1116",id:"b.7c7ca0c5-bfc3-4ef1-9396-c72c6270f457"}
+]
+
+const projects_DR = [
+    {name:"HI7411",id:"b.76c59b97-feaf-413c-9bd0-43cf8aaa3133"},
+    {name:"DT1117",id:"b.2e6449f9-ce25-4a9c-8835-444cb5ea03bf"},
+    {name:"DT1116",id:"b.7c7ca0c5-bfc3-4ef1-9396-c72c6270f457"}
+]
+
+const projects_TR = [
+    {name:"DT1116",id:"b.7c7ca0c5-bfc3-4ef1-9396-c72c6270f457"}
+]
+
+const projects_MDR = [
+    {name:"DT1117",id:"b.2e6449f9-ce25-4a9c-8835-444cb5ea03bf"},
+]
