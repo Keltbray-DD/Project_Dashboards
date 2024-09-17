@@ -2,6 +2,7 @@ let projectID;
 const hubID = "b.24d2d632-e01b-4ca0-b988-385be827cb04"
 let accesToken;
 let namingstandardID;
+let projectName;
 //const projectID = "b.76c59b97-feaf-413c-9bd0-43cf8aaa3133";
 
 let tableBody;

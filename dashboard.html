@@ -39,8 +39,8 @@
             <button id="DrawingRegister_Button" class="tablinks" onclick="openTab(event, 'DrawingRegister')">Drawing Register</button>
             <button id="TransmittalRegister_Button" class="tablinks" onclick="openTab(event, 'TransmittalRegister')">Transmittal Register</button>
             <button id="MDR_Button" class="tablinks" onclick="openTab(event, 'MDR')">MDR</button>
-            <button id="openModal" class="modal-btn" > ⚙️ Select Columns</button>
             <button id="toggleEditBtn" class="editButton">✏️ Enable Edit Mode</button>
+            <button id="openModal" class="modal-btn" > ⚙️ Select Columns</button>
             <button id="chartButton" class="tablinks" onclick="openChartsSelection('chartsSection')">📊 Show/Hide Charts</button>
         </div>
     </section>
@@ -92,6 +92,7 @@
                     <option value="all">All</option>
                 </select>
                 <input type="text" id="searchInput" class="searchInput" placeholder="Search for anything...">
+                <button onclick="exportTableToExcel('dataTable','MIDP')" class="exportButton"> Export</button>
                 <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
             </div>
             <table id="dataTable" class="sortable">
@@ -133,6 +134,7 @@
                     <option value="all">All</option>
                 </select>
                 <input type="text" id="searchInputDR" class="searchInput" placeholder="Search for anything...">
+                <button onclick="exportTableToExcel('dataTableDR','Drawing Register')" class="exportButton"> Export</button>
                 <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
             </div>
             <table id="dataTableDR" class="sortable">
@@ -173,6 +175,7 @@
                     <option value="all">All</option>
                 </select>
                 <input type="text" id="searchInputTR" class="searchInput" placeholder="Search for anything...">
+                <button onclick="exportTableToExcel('dataTableTR','Transmittal Register')" class="exportButton"> Export</button>
                 <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
             </div>
             <table id="dataTableTR" class="sortable">
@@ -213,12 +216,12 @@
                     <option value="all">All</option>
                 </select>
                 <input type="text" id="searchInputMDR" class="searchInput" placeholder="Search for anything...">
+                <button onclick="exportTableToExcel('dataTableMDR','MDR')" class="exportButton"> Export</button>
                 <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
             </div>
             <table id="dataTableMDR" class="sortable">
                 <thead>
                     <tr>
-                        <th data-order="desc" width="10px"></th>
                         <th data-order="desc" width="300px">File Name</th>
                         <th data-order="desc" width="60px">File URL</th>
                         <th data-order="desc" width="60px">Revision</th>
@@ -239,12 +242,14 @@
         </div><!-- Containers for data visualizations -->
 
     </section>
-    </section>
+
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.2.0/exceljs.min.js"></script>
     <script src="./js/variables.js"></script>
     <script src="./js/script.js"></script>
 

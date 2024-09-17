@@ -132,6 +132,7 @@ async function processData(data, fileName, updated,Project_Name) {
         await generateFileTable(fileData.data)
         document.getElementById('dateUpdated').innerHTML = `Export: ${formatDate(fileData.updated)}`
         document.getElementById('projectName').innerHTML = `${Project_Name}`
+        projectName = Project_Name
         document.title = `${Project_Name} Project Data Overview`;
         colourParentMissing()
         makeCellsEditable().then(() => {
@@ -986,13 +987,16 @@ async function openTab(evt, tabName) {
     // Show the current tab, and add an "active" class to the button that opened the tab
     document.getElementById(tabName).style.display = "block";
     evt.currentTarget.className += " active";
-
+    document.getElementById('openModal').style.display = 'block'
+    document.getElementById('chartButton').style.display = 'block'
     switch (tabName) {
         case "MIDP":
             tableBody = document.querySelector('#dataTable tbody');
             tableHeader = document.getElementById('dataTable');
             searchInput = document.getElementById('searchInput');
             folderFilter = document.getElementById('folderFilter');
+            tableBody.innerHTML = ''
+            searchInput.value =''
             getData()
             break;
 
@@ -1001,6 +1005,8 @@ async function openTab(evt, tabName) {
             tableHeader = document.getElementById('dataTableDR');
             searchInput = document.getElementById('searchInputDR');
             folderFilter = document.getElementById('folderFilterDR');
+            tableBody.innerHTML = ''
+            searchInput.value =''
             getData()
             break;
         case "MDR":
@@ -1008,8 +1014,13 @@ async function openTab(evt, tabName) {
             tableHeader = document.getElementById('dataTableMDR');
             searchInput = document.getElementById('searchInputMDR');
             folderFilter = document.getElementById('folderFilterMDR');
+            tableBody.innerHTML = ''
+            searchInput.value =''
             await getNSArray()
             createMDRTable(files)
+            document.getElementById('openModal').style.display = 'none'
+            document.getElementById('chartButton').style.display = 'none'
+            document.getElementById('chartsSection').style.display = "none";
             break;
         default:
             break;
@@ -1411,108 +1422,116 @@ async function makeCellsEditable() {
       document.querySelectorAll('.editable-drop').forEach(function (cell) {
         // Attach click event listener to the cell
         cell.addEventListener('click', function () {
-            // If a dropdown is already there, avoid re-adding it
-            if (cell.querySelector('select')) return;
-    
-            // Get the current text/content of the cell
-            const currentText = cell.textContent.trim();
-    
-            // Create a select element
-            const select = document.createElement('select');
-    
-            // Create dropdown options
-            const options = ['NOT STARTED', 'IN PROGRESS', 'ON TRACK','DELAY', 'COMPLETE'];
-            options.forEach(option => {
-                const optionElement = document.createElement('option');
-                optionElement.value = option;
-                optionElement.text = option;
-                if (option === currentText) {
-                    optionElement.selected = true;
-                }
-                select.appendChild(optionElement);
-            });
-    
-            // Replace the cell's content with the dropdown
-            cell.textContent = ''; // Clear the cell content
-            cell.appendChild(select);
-    
-            // Focus on the dropdown
-            select.focus();
-    
-            // Handle the change event when the user selects an option
-            select.addEventListener('change', function () {
-                cell.textContent = select.value; // Update cell content with the selected value
-                console.log(cell.textContent)
-                patchDataToACC(editMode,cell)
-                colourParentMDR()
-                colourParentMissing()
-            });
-    
-            // Handle blur event (when the dropdown loses focus)
-            select.addEventListener('blur', function () {
-                cell.textContent = select.value; // Set the cell content to the selected value
-            });
-    
-            // Handle Enter key press to select the option
-            select.addEventListener('keydown', function (event) {
-                if (event.key === 'Enter') {
-                    cell.textContent = select.value; // Update cell content with the selected value
-                    select.blur(); // Trigger blur event
-                }
-            });
+            if(editMode){
+                // If a dropdown is already there, avoid re-adding it
+                if (cell.querySelector('select')) return;
+                    
+                // Get the current text/content of the cell
+                const currentText = cell.textContent.trim();
+
+                // Create a select element
+                const select = document.createElement('select');
+
+                // Create dropdown options
+                const options = ['NOT STARTED', 'IN PROGRESS', 'ON TRACK','DELAY', 'COMPLETE'];
+                options.forEach(option => {
+                    const optionElement = document.createElement('option');
+                    optionElement.value = option;
+                    optionElement.text = option;
+                    if (option === currentText) {
+                        optionElement.selected = true;
+                    }
+                    select.appendChild(optionElement);
+                });
+
+                // Replace the cell's content with the dropdown
+                cell.textContent = ''; // Clear the cell content
+                cell.appendChild(select);
+
+                // Focus on the dropdown
+                select.focus();
+
+                // Handle the change event when the user selects an option
+                select.addEventListener('change', function () {
+                    
+                    cell.textContent = select.value
+                    console.log(cell.textContent)
+                    patchDataToACC(editMode,cell)
+                    cellClass = highlightTrackingStatusCellAfterPatch(cell.textContent)
+                    console.log(cellClass)
+                    cell.classList.add(cellClass)
+
+                });
+
+                // Handle blur event (when the dropdown loses focus)
+                select.addEventListener('blur', function () {
+                    cell.textContent = select.value; // Set the cell content to the selected value
+                    cell.innerHTML = highlightTrackingStatusCell(select.value); // Update cell content with the selected value
+                });
+
+                // Handle Enter key press to select the option
+                select.addEventListener('keydown', function (event) {
+                    if (event.key === 'Enter') {
+                        cell.textContent = select.value; // Update cell content with the selected value
+                        select.blur(); // Trigger blur event
+                    }
+                });
+            }
+            
         });
     });
     document.querySelectorAll('.editable-date').forEach(cell => {
         cell.addEventListener('click', function() {
+            if(editMode){
+                // Avoid creating another input if already editing
+                if (currentlyEditing === cell) return;
 
-            // Avoid creating another input if already editing
-            if (currentlyEditing === cell) return;
+                if (!cell.querySelector('input')) {
+                    currentlyEditing = cell; // Set the currently editing cell
 
-            if (!cell.querySelector('input')) {
-                currentlyEditing = cell; // Set the currently editing cell
+                    const originalValue = cell.textContent.trim();
+                    const input = document.createElement('input');
+                    input.type = 'date';
+                    input.value = originalValue;
 
-                const originalValue = cell.textContent.trim();
-                const input = document.createElement('input');
-                input.type = 'date';
-                input.value = originalValue;
+                    // Replace the cell's text content with the date picker
+                    cell.innerHTML = '';
+                    cell.appendChild(input);
 
-                // Replace the cell's text content with the date picker
-                cell.innerHTML = '';
-                cell.appendChild(input);
+                    // Focus the input field
+                    input.focus();
 
-                // Focus the input field
-                input.focus();
-
-                // Handle patching only when the user selects a date (or exits the field)
-                input.addEventListener('change', () => {
-                    cell.textContent = input.value;
-                    patchDataToACC(editMode,cell)
-                    colourParentMDR()
-                    colourParentMissing()
-                });
-
-                // When the input is blurred, finalize and exit editing mode
-                input.addEventListener('blur', () => {
-                    cell.textContent = input.value || originalValue;
-                    currentlyEditing = null; // Reset currently editing
-                });
-
-                input.addEventListener('keydown', (event) => {
-                    if (event.key === 'Enter') {
+                    // Handle patching only when the user selects a date (or exits the field)
+                    input.addEventListener('change', () => {
                         cell.textContent = input.value;
-                        
                         patchDataToACC(editMode,cell)
-                        currentlyEditing = null; // Reset currently editing
+                        cell.textContent = new Date(input.value).toLocaleDateString('en-GB');
+                        cell.style.backgroundColor = '#d1dfda'
                         colourParentMDR()
                         colourParentMissing()
-                    }
-                });
+                    });
+
+                    // When the input is blurred, finalize and exit editing mode
+                    input.addEventListener('blur', () => {
+                        cell.textContent = new Date(input.value || originalValue).toLocaleDateString('en-GB');
+                        currentlyEditing = null; // Reset currently editing
+                    });
+
+                    input.addEventListener('keydown', (event) => {
+                        if (event.key === 'Enter') {
+                            cell.textContent = input.value;
+                            
+                            patchDataToACC(editMode,cell)
+                            currentlyEditing = null; // Reset currently editing
+                            colourParentMDR()
+                            colourParentMissing()
+                        }
+                    });
+                }
             }
+            
         });
     });
-    function updateCellValue(cell, value) {
-        cell.textContent = value;
-    }
   
       // Update button text
     // Update button text with Unicode symbols
@@ -1555,10 +1574,7 @@ async function patchDataToACC(editMode,cell){
         const columnData = columnNames.find(column => column.columnIndex === columnIndex);
         let found = files.find(item => item.id === dataId);
         // Log the data-id, column index, column name, and updated content
-          console.log(found)
-            console.log(columnData)
-          console.log('Row Data-ID:', dataId);
-          console.log('Cell content updated:', cell.textContent);
+
           if(
                 cell.textContent !== "Missing" &&
                 (found[columnData.columnName] !== cell.textContent )
@@ -2026,7 +2042,7 @@ function createMDRTable(data) {
                 subHeaderRow.setAttribute('data-category', `${currentCategory.value.replaceAll(' ','-')}`);
                 
                 const subHeaderCell = document.createElement('td');
-                subHeaderCell.setAttribute('colspan', '12');
+                subHeaderCell.setAttribute('colspan', '11');
                 subHeaderCell.classList.add('sub-header');
                 subHeaderCell.textContent = currentCategory.description;
     
@@ -2051,7 +2067,7 @@ function createMDRTable(data) {
             dataRow.setAttribute('data-id', row.id);
             dataRow.setAttribute('data-category',`row-${currentCategory.value.replaceAll(' ','-')}`)
             dataRow.innerHTML = `
-                <td></td>
+
                 <td>${row.name}</td>
                 <td><a href="${row.file_url}" target="_blank">View</a></td>
                 <td class="editable">${highlightCell(row.revision,"revision")}</td>
@@ -2059,13 +2075,13 @@ function createMDRTable(data) {
                 <td class="">${currentCategory.description} ${formValue.description}</td>
                 <td class="editable-drop">${highlightTrackingStatusCell(row.tracking_status)}</td>
                 <td class="editable">${highlightUndefinedCell(row.notes)}</td>
-                <td class="editable-date">${highlightUndefinedCell(row.planned_start_date)}</td>
-                <td class="editable-date">${highlightUndefinedCell(row.actual_start_date)}</td>
-                <td class="editable-date">${highlightUndefinedCell(row.planned_finish_date)}</td>
-                <td class="editable-date">${highlightUndefinedCell(row.actual_finish_date)}</td>
+                <td class="editable-date">${highlightUndefinedCell(new Date(row.planned_start_date).toLocaleDateString('en-GB'))}</td>
+                <td class="editable-date">${highlightUndefinedCell(new Date(row.actual_start_date).toLocaleDateString('en-GB'))}</td>
+                <td class="editable-date">${highlightUndefinedCell(new Date(row.planned_finish_date).toLocaleDateString('en-GB'))}</td>
+                <td class="editable-date">${highlightUndefinedCell(new Date(row.actual_finish_date).toLocaleDateString('en-GB'))}</td>
             `;
             tableBody.appendChild(dataRow);
-    
+
         });
         let currentlyEditing = null;
 
@@ -2079,10 +2095,33 @@ function createMDRTable(data) {
 }
 function highlightUndefinedCell(value,column) {
     
-    if (value === undefined || value === null || value === '') {
+    if (value === undefined || value === null || value === '' || value === 'Invalid Date') {
         return `<span class="MDRCell highlight"></span>`;
     }else{
         return `<span>${value}</span>`
+    }
+}
+
+function highlightTrackingStatusCellAfterPatch(value) {
+    
+    if (value === undefined || value === null || value === '') {
+        return `highlight`;
+    }else{
+        switch (value) {
+            case 'NOT STARTED':
+                return `highlightMDRYellow`;
+            case 'ON TRACK':
+                return `highlightMDRGreen`;
+            case 'IN PROGRESS':
+                return `highlightMDROrange`;
+            case 'DELAY':
+                return `highlightMDRRed`;
+            case 'COMPLETE':
+                return `highlightMDRPurple`;
+            default:
+                break;
+        }
+        return
     }
 }
 
@@ -2225,3 +2264,69 @@ async function getFolderDetails(accessTokenDataRead,projectID,folderID){
         .catch(error => console.error('Error fetching data:', error));
     return responseData
     }
+
+    function exportTableToExcel(tableId,exportName) {
+        // Get the table element
+
+        const d = new Date().toLocaleString();
+
+        // Create a new workbook object
+        var workbook = XLSX.utils.book_new();
+
+        // 1. Create Cover Sheet data
+        var coverData = [
+            [""],
+            ["",`${exportName} Export`],
+            [""],
+            ["",`This report contains data related to ${projectName} and should be used appropriately`],
+            [""],
+            ["","Generated on: " + d]
+        ];
+
+        // Convert cover data to worksheet
+        var coverSheet = XLSX.utils.aoa_to_sheet(coverData);
+
+        // Apply formatting to the cover sheet
+        coverSheet['B2'].s = {
+            font: { bold: true, sz: 24, name: 'Arial', color: { rgb: 'FF0000' } }, // Bold, font size 24, red text
+            alignment: { horizontal: "center", vertical: "center" },  // Center the title horizontally and vertically
+        };
+
+        coverSheet['B4'].s = {
+            font: { italic: true, sz: 14, name: 'Arial', color: { rgb: '0000FF' } }, // Italics and blue text
+            alignment: { horizontal: "left", vertical: "center" },  // Align to the left
+        };
+
+        coverSheet['B6'].s = {
+            font: { sz: 12, name: 'Calibri' }, // Small font
+        };
+
+        // Merge cells for the title (D1)
+        coverSheet['!merges'] = [{ s: { r: 0, c: 3 }, e: { r: 0, c: 5 } }]; // Merge D1 to F1
+        
+
+        // Add the cover sheet to the workbook with a sheet name "Cover"
+        XLSX.utils.book_append_sheet(workbook, coverSheet, "Cover");
+
+        // 2. Add the Table Sheet
+        var table = document.getElementById(tableId);
+
+        // Extract the rows and remove the first column (column 0)
+        var tableData = [];
+        for (var i = 0, row; row = table.rows[i]; i++) {
+            var rowData = [];
+            for (var j = 1; j < row.cells.length; j++) {  // Start from index 1 to skip the first column
+                rowData.push(row.cells[j].innerText);
+            }
+            tableData.push(rowData);
+        }
+
+        // Convert the modified table data to a sheet
+        var tableSheet = XLSX.utils.aoa_to_sheet(table);
+
+        // Add the table sheet to the workbook with a sheet name "Data"
+        XLSX.utils.book_append_sheet(workbook, tableSheet, "Data");
+
+        // Use SheetJS to export the worksheet to an Excel file
+        XLSX.writeFile(workbook, `${exportName}_${projectName}_${d}.xlsx`);
+}
