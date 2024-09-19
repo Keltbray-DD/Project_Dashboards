@@ -78,6 +78,30 @@ document.addEventListener('DOMContentLoaded',function(){
           return ''; // For older browsers
         }
       });
+    // Get all toggle buttons
+    const toggleHeaders = document.querySelectorAll('.toggle-header');
+
+    // Add a click event listener to each button
+    toggleHeaders.forEach(button => {
+    button.addEventListener('click', function() {
+        // Get the target section id from the data attribute
+        const targetSectionId = this.getAttribute('data-target');
+        const targetSection = document.getElementById(targetSectionId);
+        const arrow = this.querySelector('.arrow');
+
+        // Toggle the section's visibility
+        targetSection.classList.toggle('hidden');
+
+        // Change the arrow direction based on visibility
+        if (targetSection.classList.contains('hidden')) {
+        arrow.classList.remove('down');
+        arrow.classList.add('left');
+        } else {
+        arrow.classList.remove('left');
+        arrow.classList.add('down');
+        }
+    });
+    });
 
 })
 
@@ -129,11 +153,16 @@ async function processData(data, fileName, updated,Project_Name) {
             "updated":updated,
             "data":tempData
         }
-        await generateFileTable(fileData.data)
+        orginalACCExport = fileData.data
         document.getElementById('dateUpdated').innerHTML = `Export: ${formatDate(fileData.updated)}`
         document.getElementById('projectName').innerHTML = `${Project_Name}`
         projectName = Project_Name
         document.title = `${Project_Name} Project Data Overview`;
+        resetValues()
+        await generateFileTable(orginalACCExport)
+        await runChecks()
+        populateFolderDropdown(folderPaths)
+        generateCharts() 
         colourParentMissing()
         makeCellsEditable().then(() => {
             // Runs after getData completes
@@ -158,7 +187,7 @@ function formatDate(isoDate) {
         hour12: false,
     };
 
-    return date.toLocaleString('en-US', options);
+    return date.toLocaleString('en-GB', options);
 }
 
 async function convertStringToJSON(JSONdata) {
@@ -199,9 +228,19 @@ async function generateFileTable(data) {
         return acc;
     }, {});
     
+    
 
-    //console.log(groupedData)
-
+    Object.values(groupedData).forEach(async (group) => {
+        let mainItem = group[0];
+        chartChecks(mainItem)
+        checkFolder(mainItem.folder_path)
+        await addToFilesArray(mainItem)
+        await createMainTableRow(mainItem,group)
+    });
+    //console.log(files);
+   
+}
+async function resetValues(){
     files = []
     tableBody.innerHTML = ''
     folderFilter.options.length = 1
@@ -219,89 +258,84 @@ async function generateFileTable(data) {
     descriptionPresentCount = 0;
     descriptionPlaceHolderCount = 0;
     folderCount = []
-    Object.values(groupedData).forEach(async (group) => {
-        let mainItem = group[0];
+}
+async function chartChecks(item) {
+    
+    if (selectedTab == "DrawingRegister" && item.form != "DR") {
+      return;
+    }
+    if (isMissing(item["title_line_1"])) {
+      titleLineMissingCount++;
+    } else {
+      titleLinePresentCount++;
+    }
+    if (isMissing(item["revision"])) {
+      revisionMissingCount++;
+    } else if (!pattern.test(item["revision"])) {
+      //console.log(item['revision'])
+      revisionFormatCheckInvaildCount++;
+    } else {
+      revisionPresentCount++;
+    }
+    if (isMissing(item["file_description"])) {
+      descriptionMissingCount++;
+    } else if (item["file_description"] == "TIDP Placeholder File") {
+      descriptionPlaceHolderCount++;
+    } else {
+      descriptionPresentCount++;
+    }
+    if (isMissing(item["status"])) {
+      statusMissingCount++;
+    } else {
+      statusPresentCount++;
+    }
 
-        if(selectedTab == "DrawingRegister" && mainItem.form != "DR"){
-                return
-        }
-        if (isMissing(mainItem['title_line_1'])) {
-            titleLineMissingCount++;
-        }else {
-            titleLinePresentCount++;
-        }
-        if (isMissing(mainItem['revision'])) {
-            revisionMissingCount++;
-        }else if (!pattern.test(mainItem['revision'])) {
-            //console.log(mainItem['revision'])
-            revisionFormatCheckInvaildCount++
-        } else {
-            revisionPresentCount++;
-        }
-        if (isMissing(mainItem['file_description'])) {
-            descriptionMissingCount++;
-        } else if(mainItem['file_description'] == "TIDP Placeholder File") {
-            descriptionPlaceHolderCount++;
-        }else {
-            descriptionPresentCount++;
-        }
-        if (isMissing(mainItem['status'])) {
-            statusMissingCount++;
-        } else {
-            statusPresentCount++;
-        }
-        
-     
-        function isMissing(value) {
-            return value === undefined || value === null || value === '';
-        }
-        // Ensure the status field exists and is properly accessed
-        const status = mainItem['status'];
-        checkFolder(mainItem.folder_path)
-        if (status) {
-            statusCounts[status] = (statusCounts[status] || 0) + 1;
-        } else {
-            // Handle cases where the status might be missing
-            statusCounts['Missing'] = (statusCounts['Missing'] || 0) + 1;
-        }
-        
-        folderPaths.push(mainItem.folder_path)
-        filteredData.push(mainItem);
-        files.push({
-            name:mainItem.name,
-            accversion:mainItem.accversion,
-            file_url:mainItem.file_url,
-            revision:mainItem.revision,
-            folder_path:mainItem.folder_path,
-            folderid:mainItem.folderid,
-            file_description:mainItem.file_description,
-            title_line_1:mainItem.title_line_1,
-            title_line_2:mainItem.title_line_2,
-            title_line_3:mainItem.title_line_3,
-            title_line_4:mainItem.title_line_4,
-            last_modified_user:mainItem.last_modified_user,
-            last_modified_date:mainItem.last_modified_date,
-            created_by: mainItem.created_by_user,
-            status:mainItem.status,
-            activity_code:mainItem.activity_code,
-            id:mainItem.id,
-            discipline:mainItem.discipline,
-            form:mainItem.form,
-            notes:mainItem.notes,
-            tracking_status:mainItem.tracking_status,
-            category:mainItem.category,
-            planned_start_date: mainItem.planned_start_date,
-            actual_start_date: mainItem.actual_start_date,
-            actual_finish_date: mainItem.actual_finish_date,
-            planned_finish_date: mainItem.planned_finish_date,
-        })
-        await createMainTableRow(mainItem,group)
+      // Ensure the status field exists and is properly accessed
+      const status = item["status"];
+      if (status) {
+        statusCounts[status] = (statusCounts[status] || 0) + 1;
+      } else {
+        // Handle cases where the status might be missing
+        statusCounts["Missing"] = (statusCounts["Missing"] || 0) + 1;
+      }
+    
+}
 
-    });
-    console.log(files);
-    await runChecks()
-    populateFolderDropdown(folderPaths)
-    generateCharts()    
+function isMissing(value) {
+    return value === undefined || value === null || value === "";
+  }
+
+async function addToFilesArray(item) {
+    folderPaths.push(item.folder_path)
+    filteredData.push(item);
+    files.push({
+        name:item.name,
+        accversion:item.accversion,
+        file_url:item.file_url,
+        revision:item.revision,
+        folder_path:item.folder_path,
+        folderid:item.folderid,
+        file_description:item.file_description,
+        title_line_1:item.title_line_1,
+        title_line_2:item.title_line_2,
+        title_line_3:item.title_line_3,
+        title_line_4:item.title_line_4,
+        last_modified_user:item.last_modified_user,
+        last_modified_date:item.last_modified_date,
+        created_by: item.created_by_user,
+        status:item.status,
+        activity_code:item.activity_code,
+        id:item.id,
+        discipline:item.discipline,
+        form:item.form,
+        notes:item.notes,
+        tracking_status:item.tracking_status,
+        category:item.category,
+        planned_start_date: item.planned_start_date,
+        actual_start_date: item.actual_start_date,
+        actual_finish_date: item.actual_finish_date,
+        planned_finish_date: item.planned_finish_date,
+    })
 }
 
 async function generateCharts() {
@@ -1009,6 +1043,18 @@ async function openTab(evt, tabName) {
             searchInput.value =''
             getData()
             break;
+
+        case "TransmittalRegister":
+            tableBody = document.querySelector('#dataTableTR tbody');
+            tableHeader = document.getElementById('dataTableTR');
+            searchInput = document.getElementById('searchInputTR');
+            folderFilter = document.getElementById('folderFilterTR');
+            tableBody.innerHTML = ''
+            searchInput.value =''
+            DCDataRetrieval()
+            getData()
+            break;
+
         case "MDR":
             tableBody = document.querySelector('#dataTableMDR tbody');
             tableHeader = document.getElementById('dataTableMDR');
@@ -1022,6 +1068,7 @@ async function openTab(evt, tabName) {
             document.getElementById('chartButton').style.display = 'none'
             document.getElementById('chartsSection').style.display = "none";
             break;
+            
         default:
             break;
     }
@@ -1367,6 +1414,7 @@ function openChartsSelection(tabName){
     }else{
         document.getElementById(tabName).style.display = "block"
     }
+    return
     chartButton = document.getElementById('chartButton')
         // Update button text with Unicode symbols
     chartButton.textContent = showCharts 
@@ -2285,41 +2333,13 @@ async function getFolderDetails(accessTokenDataRead,projectID,folderID){
 
         // Convert cover data to worksheet
         var coverSheet = XLSX.utils.aoa_to_sheet(coverData);
-
-        // Apply formatting to the cover sheet
-        coverSheet['B2'].s = {
-            font: { bold: true, sz: 24, name: 'Arial', color: { rgb: 'FF0000' } }, // Bold, font size 24, red text
-            alignment: { horizontal: "center", vertical: "center" },  // Center the title horizontally and vertically
-        };
-
-        coverSheet['B4'].s = {
-            font: { italic: true, sz: 14, name: 'Arial', color: { rgb: '0000FF' } }, // Italics and blue text
-            alignment: { horizontal: "left", vertical: "center" },  // Align to the left
-        };
-
-        coverSheet['B6'].s = {
-            font: { sz: 12, name: 'Calibri' }, // Small font
-        };
-
-        // Merge cells for the title (D1)
-        coverSheet['!merges'] = [{ s: { r: 0, c: 3 }, e: { r: 0, c: 5 } }]; // Merge D1 to F1
-        
+      
 
         // Add the cover sheet to the workbook with a sheet name "Cover"
         XLSX.utils.book_append_sheet(workbook, coverSheet, "Cover");
 
         // 2. Add the Table Sheet
         var table = document.getElementById(tableId);
-
-        // Extract the rows and remove the first column (column 0)
-        var tableData = [];
-        for (var i = 0, row; row = table.rows[i]; i++) {
-            var rowData = [];
-            for (var j = 1; j < row.cells.length; j++) {  // Start from index 1 to skip the first column
-                rowData.push(row.cells[j].innerText);
-            }
-            tableData.push(rowData);
-        }
 
         // Convert the modified table data to a sheet
         var tableSheet = XLSX.utils.aoa_to_sheet(table);
@@ -2329,4 +2349,163 @@ async function getFolderDetails(accessTokenDataRead,projectID,folderID){
 
         // Use SheetJS to export the worksheet to an Excel file
         XLSX.writeFile(workbook, `${exportName}_${projectName}_${d}.xlsx`);
+}
+
+
+
+////////////////////////////////////// Get CSV Data from ACC Data Connector
+
+async function DCDataRetrieval() {
+    fetchReviewData().then(() => {
+        matchUpDataReviews()
+    })
+    fetchTransmittalData().then(() => {
+        matchUpDataTransmittal()
+    })
+
+}
+
+async function fetchReviewData() {
+  const response = await fetch(
+    "https://prod-31.uksouth.logic.azure.com:443/workflows/541207f0087a4e06840db05622c13314/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2IbQoVS587nd49mhlZPNcveMT_9AWI9l3tnF13BzY6Y",
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/json", // Ensure you're receiving JSON
+      },
+    }
+  );
+
+  if (response.ok) {
+    const fileDataArray = await response.json();
+    console.log(fileDataArray);
+    processCSVResponseArray(fileDataArray, csvDataReviewStore);
+
+    // Example: Access a stored array by file name after the loop
+    console.log("Stored CSV Review arrays:", csvDataReviewStore);
+
+    // You can now use csvDataStore for further filtering or processing
+  } else {
+    console.error("Error fetching files:", response.status);
+  }
+}
+async function fetchTransmittalData() {
+  const response = await fetch(
+    "https://prod-25.uksouth.logic.azure.com:443/workflows/42ed32848c554de6941a862147e7c2f0/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=sBz9k9kvbkkoZcnhhGKWzCbf48pGQmwITSQhH39Jd5o",
+    {
+      method: "GET",
+      headers: {
+        Accept: "application/json", // Ensure you're receiving JSON
+      },
+    }
+  );
+
+  if (response.ok) {
+    const fileDataArray = await response.json();
+    console.log(fileDataArray);
+    processCSVResponseArray(fileDataArray, csvDataTransmittalStore);
+
+    // Example: Access a stored array by file name after the loop
+    console.log("Stored CSV Transmittal arrays:", csvDataTransmittalStore);
+
+    // You can now use csvDataStore for further filtering or processing
+  } else {
+    console.error("Error fetching files:", response.status);
+  }
+}
+
+function processCSVResponseArray(fileDataArray, mainStoreArray) {
+  fileDataArray.forEach((fileData) => {
+    console.log(`Processing file: ${fileData.fileName}`);
+
+    // Check if the file content has a Base64-encoded $content field
+    if (fileData.fileContent && fileData.fileContent.$content) {
+      // Decode the Base64 content
+      const decodedContent = atob(fileData.fileContent.$content);
+      //console.log(decodedContent)
+      // If the file is CSV, convert the decoded content to an array
+      if (fileData.fileType === "csv") {
+        try {
+          const csvArray = csvToArray(decodedContent);
+
+          // Store the array in the csvDataStore object with the file name as the key
+
+          // Filter the array by the bim360_project_id field and projectID
+          rawProjectID = projectID.split(".")[1];
+          const filteredArray = csvArray.filter(
+            (row) => row.bim360_project_id === rawProjectID
+          );
+          mainStoreArray[fileData.fileName] = filteredArray;
+          // Output the filtered array for debugging
+          console.log(`Filtered data for ${fileData.fileName}:`, filteredArray);
+        } catch (error) {
+          console.error("Error processing CSV:", error);
+        }
+      } else {
+        console.log(`Non-CSV file content for ${fileData.fileName}`);
+      }
+    } else {
+      console.error(`Unexpected file content type for ${fileData.fileName}`);
+    }
+  });
+}
+
+// CSV to Array conversion function
+function csvToArray(csvText) {
+  const result = Papa.parse(csvText, {
+    header: true, // Treat the first row as headers
+    skipEmptyLines: true, // Skip empty rows
+    dynamicTyping: true, // Automatically type cast fields
+  });
+
+  if (result.errors.length) {
+    console.error("Errors while parsing CSV:", result.errors);
+  }
+
+  return result.data; // Parsed data as an array of objects
+}
+
+async function matchUpDataReviews() {
+            
+    const reviewListArray = csvDataReviewStore.reviews_reviews;
+    const reviewDocumentsArray = csvDataReviewStore.reviews_review_documents;
+    const reviewRecipientsArray = csvDataReviewStore.transmittals_transmittal_recipients;
+
+    ReviewData = reviewListArray.map(workflowTransmittal => {
+        // Find all matching documents where workflow_transmittal_id matches workflowTransmittal.id
+        const matchingDocuments = reviewDocumentsArray.filter(document => document.review_id === workflowTransmittal['ï»¿id']);
+        //const matchingRecipients = transmittalRecipientsArray.filter(recipient => recipient.review_id === workflowTransmittal['ï»¿id']);
+        // Combine the workflowTransmittal with its matching documents
+        return {
+            ...workflowTransmittal,
+            Documents: matchingDocuments,  // Add the matching documents to the workflow transmittal
+            //Recipients: matchingRecipients
+        };
+    });
+
+    // Log the matched results to the console
+    console.log('ReviewData',ReviewData);
+
+}
+async function matchUpDataTransmittal() {
+    
+    const transmittalListArray = csvDataTransmittalStore.transmittals_workflow_transmittals;
+    const transmittalDocumentsArray = csvDataTransmittalStore.transmittals_transmittal_documents;
+    const transmittalRecipientsArray = csvDataTransmittalStore.transmittals_transmittal_recipients;
+
+    TransmittalData = transmittalListArray.map(workflowTransmittal => {
+        // Find all matching documents where workflow_transmittal_id matches workflowTransmittal.id
+        const matchingDocuments = transmittalDocumentsArray.filter(document => document.workflow_transmittal_id === workflowTransmittal['ï»¿id']);
+        const matchingRecipients = transmittalRecipientsArray.filter(recipient => recipient.workflow_transmittal_id === workflowTransmittal['ï»¿id']);
+        // Combine the workflowTransmittal with its matching documents
+        return {
+            ...workflowTransmittal,
+            Documents: matchingDocuments,  // Add the matching documents to the workflow transmittal
+            Recipients: matchingRecipients
+        };
+    });
+
+    // Log the matched results to the console
+    console.log('TransmittalData',TransmittalData);
+
 }

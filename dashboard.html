@@ -4,14 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Data Overview</title>
-    <link rel="stylesheet" href="./assets/css/main.css">
+    <link rel="stylesheet" href="assets/css/main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="icon" href="./assets/media/Keltbray-logo_single.png" type="image/x-icon">
+    <link rel="icon" href="assets/media/Keltbray-logo_single.png" type="image/x-icon">
 </head>
 <body>
     <header>
         <div class="header-section">
-            <img alt="" id="headerlogo" class="logo_H" src="./assets/media/Keltbray-logo_single.png">
+            <img alt="" id="headerlogo" class="logo_H" src="assets/media/Keltbray-logo_single.png">
             <h2>Keltbray ISL <br>DD Hub</h2>
         </div>
         <div class="header-section">
@@ -49,7 +49,13 @@
 
     </div>
     <div id="chartsSection" class="">
-        <section id="score">
+        <div class="toggle-container">
+            <div class="toggle-header" data-target="score">
+              <span class="arrow down"></span>
+              Score Charts
+            </div>
+          </div>
+        <section id="score" class="score">
             <div class="">
                 <canvas id="OverallCompliance" class="gaugeChart"></canvas>
             </div>
@@ -57,7 +63,14 @@
                 <canvas id="StatusCompliance" class="gaugeChart"></canvas>
             </div>
         </section>
-        <section id="charts">
+        <div class="toggle-container">
+            <div class="toggle-header" data-target="charts">
+              <span class="arrow down"></span>
+              Compliance Charts
+            </div>
+          </div>
+        <section id="charts" class="charts">
+
             <!-- Add buttons, filters, or other controls here -->
             <div class="chart-container">
                 <canvas id="missingTitleDataChart" class="chart"></canvas>
@@ -72,7 +85,13 @@
                 <canvas id="missingStatusDataChart" class="chart"></canvas>
             </div>
         </section>
-        <section id="barCharts">
+        <div class="toggle-container">
+            <div class="toggle-header" data-target="barCharts">
+              <span class="arrow down"></span>
+              Data Charts
+            </div>
+          </div>
+        <section id="barCharts" class="barCharts">
             <div class="chart-container">
                 <canvas id="StatusDataChart" class="barChart"></canvas>
             </div>
@@ -189,14 +208,6 @@
                         <th data-order="desc">Folder Path</th>
                         <th data-order="desc">File Description</th>
                         <th data-order="desc">Title Line 1</th>
-                        <th data-order="desc">Title Line 2</th>
-                        <th data-order="desc">Title Line 3</th>
-                        <th data-order="desc">Title Line 4</th>
-                        <th data-order="desc" width="60px">Status</th>
-                        <th data-order="desc">Activity Code</th>
-                        <th data-order="desc" width="120px">Last Modified User</th>
-                        <th data-order="desc" width="120px">Last Modified Date</th>
-                        <th data-order="desc" width="120px">Created by</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -250,8 +261,9 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.2.0/exceljs.min.js"></script>
-    <script src="./js/variables.js"></script>
-    <script src="./js/script.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <script src="js/variables.js"></script>
+    <script src="js/script.js"></script>
 
 
 

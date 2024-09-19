@@ -31,6 +31,7 @@ let descriptionMissingCount = 0
 let descriptionPresentCount = 0
 let descriptionPlaceHolderCount = 0;
 
+let orginalACCExport = [];
 let files = [];
 let fileData =[];
 let statusCounts = [];
@@ -44,6 +45,10 @@ let columnNames =[];
 let arrayDiscipline =[];
 let arrayForm =[];
 let ignoreFieldsInvaildCheck = ["last_modified_user","created_by","title_line_2","title_line_3","title_line_4","activity_code","actual_finish_date","actual_start_date","folderid","planned_finish_date","planned_start_date","tracking_status","notes","category"];
+let csvDataReviewStore = [];
+let csvDataTransmittalStore = [];
+let TransmittalData = [];
+let ReviewData = [];
 
 let missingTitleDataChart
 let missingRevisionDataChart

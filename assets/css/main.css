@@ -49,6 +49,7 @@ img.logo_H {
 
 }
 
+
 /* Additional styling */
 .header h1, h3 {
     margin: 0;
@@ -87,7 +88,7 @@ canvas {
 
 }
 
-#charts {
+.charts {
   padding: 20px;
   background-color: #fff;
   justify-content: space-around;
@@ -98,7 +99,7 @@ canvas {
 
 }
 
-#barCharts {
+.barCharts {
   padding: 20px;
   background-color: #fff;
   justify-content: space-around;
@@ -555,7 +556,7 @@ td {
   cursor: pointer;
 }
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 .highlightMDRYellow {
@@ -577,4 +578,41 @@ td {
 .highlightMDRPurple {
   background-color: rgba(231, 29, 221, 0.6); 
   color: #000; /* Ensure the text is readable */
+}
+
+.toggle-header {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  border-bottom: 1px solid #ccc;
+  transition: background-color 0.3s ease;
+}
+
+.toggle-header:hover {
+  background-color: #f0f0f0; /* Light hover effect */
+}
+
+.arrow {
+  display: inline-block;
+  margin-left: 5px;
+  margin-right: 10px;
+  width: 5px;
+  height: 5px;
+  border: solid black;
+  border-width: 0 2px 2px 0;
+  padding: 3px;
+  transform: rotate(135deg);
+  transition: transform 0.3s ease;
+}
+
+
+.arrow.down {
+  transform: rotate(45deg);
+}
+
+.arrow.left {
+  transform: rotate(315deg);
 }
