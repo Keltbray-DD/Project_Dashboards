@@ -158,20 +158,23 @@ async function processData(data, fileName, updated,Project_Name) {
         document.getElementById('projectName').innerHTML = `${Project_Name}`
         projectName = Project_Name
         document.title = `${Project_Name} Project Data Overview`;
-        resetValues()
-        await generateFileTable(orginalACCExport)
-        await runChecks()
-        populateFolderDropdown(folderPaths)
-        generateCharts() 
-        colourParentMissing()
-        makeCellsEditable().then(() => {
-            // Runs after getData completes
-            columnEditing();
-            addSortableColumns();
-          });
-        console.log("files",files)
+        intailTableGen()
     }
+}
 
+async function intailTableGen() {
+    resetValues()
+    await generateFileTable(orginalACCExport)
+    await runChecks()
+    populateFolderDropdown(folderPaths)
+    generateCharts() 
+    colourParentMissing()
+    makeCellsEditable().then(() => {
+        // Runs after getData completes
+        columnEditing();
+        addSortableColumns();
+        });
+    console.log("files",files)
 }
 
 function formatDate(isoDate) {

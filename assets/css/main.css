@@ -294,7 +294,6 @@ td {
 .tooltip {
   --tooltip-align: -50%; /* Default: center */
   position: relative;
-  z-index: 1000;
 }
 
 /* Use the --tooltip-align variable to control tooltip positioning */
@@ -583,7 +582,7 @@ td {
 .toggle-header {
   cursor: pointer;
   font-size: 14px;
-  font-weight: bold;
+  font-weight:600;
   display: flex;
   align-items: center;
   padding: 5px;
