@@ -158,11 +158,12 @@ async function processData(data, fileName, updated,Project_Name) {
         document.getElementById('projectName').innerHTML = `${Project_Name}`
         projectName = Project_Name
         document.title = `${Project_Name} Project Data Overview`;
-        intailTableGen()
+        generateMIDPTable()
     }
 }
 
-async function intailTableGen() {
+async function generateMIDPTable() {
+    console.log('MIDP Table')
     resetValues()
     await generateFileTable(orginalACCExport)
     await runChecks()
@@ -175,6 +176,21 @@ async function intailTableGen() {
         addSortableColumns();
         });
     console.log("files",files)
+}
+
+async function generateTransmittalTable() {
+    console.log('Transmittal Table')
+    resetValues()
+    await generateTransmittalFileTable(orginalACCExport)
+    await runChecks()
+    populateFolderDropdown(folderPaths)
+    generateCharts()
+    colourParentMissing()
+    makeCellsEditable().then(() => {
+        // Runs after getData completes
+        columnEditing();
+        addSortableColumns();
+        });
 }
 
 function formatDate(isoDate) {
@@ -215,7 +231,34 @@ async function populateFolderDropdown(folderPaths) {
 
 async function generateFileTable(data) {
 
-    const groupedData = data.reduce((acc, item) => {
+    const groupedData = await groupItemData(data)
+
+    Object.values(groupedData).forEach(async (group) => {
+        let mainItem = group[0];
+        chartChecks(mainItem)
+        checkFolder(mainItem.folder_path)
+        await addToFilesArray(mainItem)
+        await createMainTableRow(mainItem,group)
+    });
+    //console.log(files);
+}
+
+async function generateTransmittalFileTable(data) {
+
+    const groupedData = await groupItemData(data)
+
+    Object.values(groupedData).forEach(async (group) => {
+        let mainItem = group[0];
+        chartChecks(mainItem)
+        checkFolder(mainItem.folder_path)
+        await addToFilesArray(mainItem)
+        await createTransmittalRow(mainItem,group)
+    });
+    //console.log(files);
+}
+
+async function groupItemData(data) {
+    groupedData = data.reduce((acc, item) => {
         // Extract the id without the version part
         const itemIdNoVersion = item.id.split('?')[0];
     
@@ -230,19 +273,10 @@ async function generateFileTable(data) {
     
         return acc;
     }, {});
-    
-    
 
-    Object.values(groupedData).forEach(async (group) => {
-        let mainItem = group[0];
-        chartChecks(mainItem)
-        checkFolder(mainItem.folder_path)
-        await addToFilesArray(mainItem)
-        await createMainTableRow(mainItem,group)
-    });
-    //console.log(files);
-   
+    return groupedData
 }
+
 async function resetValues(){
     files = []
     tableBody.innerHTML = ''
@@ -689,6 +723,15 @@ async function generateCharts() {
             return value;
         }
     }
+        // Function to highlight cells if the data is undefined, null, or empty
+        function highlightCellNotMandatory(value,column) {
+            const pattern = /^[A-Z]\d{2}(\.\d{2})?$/;
+            if (value === undefined || value === null || value === '') {
+                return `<span class="highlightYellow">${value === undefined || value === null || value === '' ? 'Missing' : value}</span>`;
+            }  else {
+                return value;
+            }
+        }
 
     // Function to highlight cells if the data is undefined, null, or empty
     function MissingUser(value) {
@@ -763,11 +806,11 @@ async function createMainTableRow(item,group) {
         <td>${item.folder_path}</td>
         <td class="editable">${highlightCell(item['file_description'])}</td>
         <td class="editable">${highlightCell(item['title_line_1'])}</td>
-        <td class="editable">${highlightCell(item['title_line_2'])}</td>
-        <td class="editable">${highlightCell(item['title_line_3'])}</td>
-        <td class="editable">${highlightCell(item['title_line_4'])}</td>
+        <td class="editable">${highlightCellNotMandatory(item['title_line_2'])}</td>
+        <td class="editable">${highlightCellNotMandatory(item['title_line_3'])}</td>
+        <td class="editable">${highlightCellNotMandatory(item['title_line_4'])}</td>
         <td class="editable">${highlightCell(item['status'])}</td>
-        <td class="editable">${highlightCell(item['activity_code'])}</td>
+        <td class="editable">${highlightCellNotMandatory(item['activity_code'])}</td>
         <td>${MissingUser(item.last_modified_user)}</td>
         <td>${highlightCell(new Date(item.last_modified_date).toLocaleString())}</td>
         <td>${MissingUser(item.created_by_user)}</td>
@@ -799,6 +842,48 @@ async function createMainTableRow(item,group) {
     return //mainRow
 }
 
+async function createTransmittalRow(item,group) {
+    const mainRow = document.createElement('tr');
+    mainRow.classList.add('main-row');
+    mainRow.setAttribute('data-id', item.id);
+    mainRow.innerHTML = `
+        <td>
+            ${group.length > 1 ? '<i class="fas fa-chevron-right expand-icon"></i>' : ''}
+        </td>
+        <td>${item.name}</td>
+        <td>${item.accversion}</td>
+        <td><a href="${item.file_url}" target="_blank">View</a></td>
+        <td class="editable">${highlightCell(item.revision,"revision")}</td>
+        <td>${item.folder_path}</td>
+        <td class="editable">${highlightCell(item['file_description'])}</td>
+        <td class="editable">${highlightCell(item['title_line_1'])}</td>
+`;
+
+    tableBody.appendChild(mainRow);
+    //console.log(mainRow)
+    if (group.length > 1) {
+        mainRow.querySelector('.expand-icon').addEventListener('click', function () {
+            //console.log(2)
+            const isExpanded = this.classList.contains('fa-chevron-down');
+            this.classList.toggle('fa-chevron-down', !isExpanded);
+            this.classList.toggle('fa-chevron-right', isExpanded);
+
+            group.slice(1).forEach(item => {
+                //console.log(3)
+                const itemRow = tableBody.querySelector(`[data-id='${item.id}']`);
+                if (itemRow) {
+                    //console.log(4)
+                    itemRow.classList.toggle('hidden-row', isExpanded);
+                }
+            });
+        });
+        group.slice(1).forEach(async item => {
+            //console.log(1)
+            await createExpandableTransmittalTableRow(item)
+        });
+    }
+    return //mainRow
+}
 async function createExpandableTableRow(item) {
     const itemRow = document.createElement('tr');
     itemRow.classList.add('expandable-row', 'hidden-row');
@@ -814,15 +899,33 @@ async function createExpandableTableRow(item) {
         <td>${item.folder_path}</td>
         <td class="editable">${highlightCell(item['file_description'])}</td>
         <td class="editable">${highlightCell(item['title_line_1'])}</td>
-        <td class="editable">${highlightCell(item['title_line_2'])}</td>
-        <td class="editable">${highlightCell(item['title_line_3'])}</td>
-        <td class="editable">${highlightCell(item['title_line_4'])}</td>
+        <td class="editable">${highlightCellNotMandatory(item['title_line_2'])}</td>
+        <td class="editable">${highlightCellNotMandatory(item['title_line_3'])}</td>
+        <td class="editable">${highlightCellNotMandatory(item['title_line_4'])}</td>
         <td class="editable">${highlightCell(item['status'])}</td>
-        <td class="editable">${highlightCell(item['activity_code'])}</td>
+        <td class="editable">${highlightCellNotMandatory(item['activity_code'])}</td>
         <td>${MissingUser(item.last_modified_user)}</td>
         <td>${highlightCell(new Date(item.last_modified_date).toLocaleString())}</td>
         <td>${MissingUser(item.created_by_user)}</td>
+    `;
+    tableBody.appendChild(itemRow);
+}
 
+async function createExpandableTransmittalTableRow(item) {
+    const itemRow = document.createElement('tr');
+    itemRow.classList.add('expandable-row', 'hidden-row');
+    itemRow.setAttribute('data-id', item.id);
+    itemRow.innerHTML =`         
+        <td>
+            
+        </td>   
+        <td>${item.name}</td>
+        <td>${item.accversion}</td>
+        <td><a href="${item.file_url}" target="_blank">View</a></td>
+        <td class="editable">${highlightCell(item.revision,"revision")}</td>
+        <td>${item.folder_path}</td>
+        <td class="editable">${highlightCell(item['file_description'])}</td>
+        <td class="editable">${highlightCell(item['title_line_1'])}</td>
     `;
     tableBody.appendChild(itemRow);
 }
@@ -847,6 +950,21 @@ async function colourParentMissing() {
             if (parent) {
                 //console.log(parent); // Log the parent element to the console
                 parent.style.backgroundColor = '#ffcccc';
+            }
+        });
+
+        // Select all span elements with the class 'highlight'
+        const highlightedYellowSpans = document.querySelectorAll('span.highlightYellow');
+
+        // Iterate through each highlighted span
+        highlightedYellowSpans.forEach(function (span) {
+            // Get the parent element of the current span
+            const parent = span.parentElement;
+    
+            // Do something with the parent element, for example, apply a style
+            if (parent) {
+                //console.log(parent); // Log the parent element to the console
+                parent.classList.add("highlightYellow")
             }
         });
 }
@@ -974,8 +1092,10 @@ async function revisionCheck() {
     const rows = tableBody.getElementsByTagName('tr');
 
     for (let i = 0; i < rows.length; i++) {
+
         const cells = rows[i].getElementsByTagName('td');
-        const value = cells[10].textContent.trim();
+        //console.log(cells)
+        const value = cells[11].textContent.trim();
         const folder = cells[5].textContent.trim();
             // Add a data-tooltip attribute for the custom tooltip
             
@@ -1034,7 +1154,7 @@ async function openTab(evt, tabName) {
             folderFilter = document.getElementById('folderFilter');
             tableBody.innerHTML = ''
             searchInput.value =''
-            getData()
+            generateMIDPTable()
             break;
 
         case "DrawingRegister":
@@ -1044,7 +1164,7 @@ async function openTab(evt, tabName) {
             folderFilter = document.getElementById('folderFilterDR');
             tableBody.innerHTML = ''
             searchInput.value =''
-            getData()
+            generateMIDPTable()
             break;
 
         case "TransmittalRegister":
@@ -1055,7 +1175,10 @@ async function openTab(evt, tabName) {
             tableBody.innerHTML = ''
             searchInput.value =''
             DCDataRetrieval()
-            getData()
+            generateTransmittalTable()
+            document.getElementById('openModal').style.display = 'none'
+            document.getElementById('chartButton').style.display = 'none'
+            document.getElementById('chartsSection').style.display = "none";
             break;
 
         case "MDR":
@@ -1066,7 +1189,7 @@ async function openTab(evt, tabName) {
             tableBody.innerHTML = ''
             searchInput.value =''
             await getNSArray()
-            createMDRTable(files)
+            generateMDRTable(files)
             document.getElementById('openModal').style.display = 'none'
             document.getElementById('chartButton').style.display = 'none'
             document.getElementById('chartsSection').style.display = "none";
@@ -1127,7 +1250,9 @@ async function runChecks(){
     await revisionCheck()
     await descriptionlineCheck()
     await titlelineCheck()
-    await statusCheck()
+    if(selectedTab != 'TransmittalRegister'){
+        await statusCheck()
+    }
     await invalidFileCheck()
     complianceCalc()
 }
@@ -2058,7 +2183,7 @@ function resetHeaders() {
 
 //////////////////////////////////////////// MDR Generation
 
-function createMDRTable(data) {
+function generateMDRTable(data) {
     const tableBody = document.querySelector('#dataTableMDR tbody');
     let currentCategory = '';
     // Grouping the files by discipline (extracted from the name)

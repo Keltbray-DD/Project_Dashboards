@@ -33,7 +33,7 @@
         <button class="modal-btn" id="applyColumns">Apply</button>
         </div>
     </div>
-    <section>
+    <section id="menu-bar" class="menu-bar">
         <div class="tab">
             <button id="MIDP_Button" class="tablinks" onclick="openTab(event, 'MIDP')">MIDP</button>
             <button id="DrawingRegister_Button" class="tablinks" onclick="openTab(event, 'DrawingRegister')">Drawing Register</button>
@@ -103,17 +103,17 @@
 
 
     <section id="MIDP" class="dashboard tabcontent">
+        <div class="tableOptions">
+            <h1>MIDP</h1>
+            <label for="folderFilter" class="folderLabel">Filter by Folder Path:</label>
+            <select id="folderFilter" class="folderFilter">
+                <option value="all">All</option>
+            </select>
+            <input type="text" id="searchInput" class="searchInput" placeholder="Search for anything...">
+            <button onclick="exportTableToExcel('dataTable','MIDP')" class="exportButton"> Export</button>
+            <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
+        </div>
         <div class="table-container sortable">
-            <div class="tableOptions">
-                <h1>MIDP</h1>
-                <label for="folderFilter" class="folderLabel">Filter by Folder Path:</label>
-                <select id="folderFilter" class="folderFilter">
-                    <option value="all">All</option>
-                </select>
-                <input type="text" id="searchInput" class="searchInput" placeholder="Search for anything...">
-                <button onclick="exportTableToExcel('dataTable','MIDP')" class="exportButton"> Export</button>
-                <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
-            </div>
             <table id="dataTable" class="sortable">
                 <thead>
                     <tr>
@@ -145,17 +145,17 @@
     </section>
 
     <section id="DrawingRegister" class="dashboard tabcontent">
+        <div class="tableOptions">
+            <h1>Drawing Register</h1>
+            <label for="folderFilterDR" class="folderLabel">Filter by Folder Path:</label>
+            <select id="folderFilterDR" class="folderFilter">
+                <option value="all">All</option>
+            </select>
+            <input type="text" id="searchInputDR" class="searchInput" placeholder="Search for anything...">
+            <button onclick="exportTableToExcel('dataTableDR','Drawing Register')" class="exportButton"> Export</button>
+            <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
+        </div>
         <div class="table-container sortable">
-            <div class="tableOptions">
-                <h1>Drawing Register</h1>
-                <label for="folderFilterDR" class="folderLabel">Filter by Folder Path:</label>
-                <select id="folderFilterDR" class="folderFilter">
-                    <option value="all">All</option>
-                </select>
-                <input type="text" id="searchInputDR" class="searchInput" placeholder="Search for anything...">
-                <button onclick="exportTableToExcel('dataTableDR','Drawing Register')" class="exportButton"> Export</button>
-                <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
-            </div>
             <table id="dataTableDR" class="sortable">
                 <thead>
                     <tr>
@@ -186,17 +186,17 @@
     </section>
 
     <section id="TransmittalRegister" class="dashboard tabcontent">
+        <div class="tableOptions">
+            <h1>Transmittal Register</h1>
+            <label for="folderFilterTR" class="folderLabel">Filter by Folder Path:</label>
+            <select id="folderFilterTR" class="folderFilter">
+                <option value="all">All</option>
+            </select>
+            <input type="text" id="searchInputTR" class="searchInput" placeholder="Search for anything...">
+            <button onclick="exportTableToExcel('dataTableTR','Transmittal Register')" class="exportButton"> Export</button>
+            <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
+        </div>
         <div class="table-container sortable">
-            <div class="tableOptions">
-                <h1>Transmittal Register</h1>
-                <label for="folderFilterTR" class="folderLabel">Filter by Folder Path:</label>
-                <select id="folderFilterTR" class="folderFilter">
-                    <option value="all">All</option>
-                </select>
-                <input type="text" id="searchInputTR" class="searchInput" placeholder="Search for anything...">
-                <button onclick="exportTableToExcel('dataTableTR','Transmittal Register')" class="exportButton"> Export</button>
-                <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
-            </div>
             <table id="dataTableTR" class="sortable">
                 <thead>
                     <tr>
@@ -219,17 +219,17 @@
     </section>
 
     <section id="MDR" class="dashboard tabcontent">
+        <div class="tableOptions">
+            <h1>Master Document Register</h1>
+            <label for="folderFilterMDR" class="folderLabel">Filter by Folder Path:</label>
+            <select id="folderFilterMDR" class="folderFilter">
+                <option value="all">All</option>
+            </select>
+            <input type="text" id="searchInputMDR" class="searchInput" placeholder="Search for anything...">
+            <button onclick="exportTableToExcel('dataTableMDR','MDR')" class="exportButton"> Export</button>
+            <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
+        </div>
         <div class="table-container sortable">
-            <div class="tableOptions">
-                <h1>Master Document Register</h1>
-                <label for="folderFilterMDR" class="folderLabel">Filter by Folder Path:</label>
-                <select id="folderFilterMDR" class="folderFilter">
-                    <option value="all">All</option>
-                </select>
-                <input type="text" id="searchInputMDR" class="searchInput" placeholder="Search for anything...">
-                <button onclick="exportTableToExcel('dataTableMDR','MDR')" class="exportButton"> Export</button>
-                <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
-            </div>
             <table id="dataTableMDR" class="sortable">
                 <thead>
                     <tr>
