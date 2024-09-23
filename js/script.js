@@ -7,6 +7,7 @@ document.addEventListener('DOMContentLoaded',function(){
     document.getElementById("MIDP").style.display = "block";
     document.getElementById("chartsSection").style.display = "block"
     getProjectFromURL()
+    updateTableHeaders()
     getData()
     // Button visability //
     // MIDP
@@ -104,6 +105,12 @@ document.addEventListener('DOMContentLoaded',function(){
     });
 
 })
+
+async function updateTableHeaders() {
+    if(projectID == 'b.76c59b97-feaf-413c-9bd0-43cf8aaa3133'){
+        document.querySelectorAll('thead tr')
+    }
+}
 
 async function getJSONDataFromSP(project_id){
 
@@ -1845,16 +1852,37 @@ async function getCustomDetailsData(){
     actualFinishDateID = await findObjectByName("Actual Finish Date",customAttributes)
     plannedFinishDateyID = await findObjectByName("Planned Finish Date",customAttributes)
 
-    columnNamesDefault = [
-        {columnName:"revision",columnIndex:4,columnId:revisionCodeID.id}, 
-        {columnName:"file_description",columnIndex:6,columnId:FileDescriptionID.id}, 
-        {columnName:"title_line_1",columnIndex:7,columnId:titleline1ID.id}, 
-        {columnName:"title_line_2",columnIndex:8,columnId:titleline2ID.id}, 
-        {columnName:"title_line_3",columnIndex:9,columnId:titleline3ID.id}, 
-        {columnName:"title_line_4",columnIndex:10,columnId:titleline4ID.id}, 
-        {columnName:"status",columnIndex:11,columnId:statusCodeID.id},
-        {columnName:"activity_code",columnIndex:12,columnId:activityCodeID.id},
-    ];
+switch (projectID) {
+    case 'b.76c59b97-feaf-413c-9bd0-43cf8aaa3133':
+        seriesID = await findObjectByName("Series",customAttributes)
+
+        columnNamesDefault = [
+            {columnName:"revision",columnIndex:4,columnId:revisionCodeID.id}, 
+            {columnName:"file_description",columnIndex:6,columnId:FileDescriptionID.id}, 
+            {columnName:"title_line_1",columnIndex:7,columnId:titleline1ID.id}, 
+            {columnName:"title_line_2",columnIndex:8,columnId:titleline2ID.id}, 
+            {columnName:"title_line_3",columnIndex:9,columnId:titleline3ID.id}, 
+            {columnName:"title_line_4",columnIndex:10,columnId:titleline4ID.id}, 
+            {columnName:"status",columnIndex:11,columnId:statusCodeID.id},
+            {columnName:"activity_code",columnIndex:12,columnId:activityCodeID.id},
+            {columnName:"series",columnIndex:13,columnId:seriesID.id},
+        ]
+        break;
+
+    default:
+        columnNamesDefault = [
+            {columnName:"revision",columnIndex:4,columnId:revisionCodeID.id}, 
+            {columnName:"file_description",columnIndex:6,columnId:FileDescriptionID.id}, 
+            {columnName:"title_line_1",columnIndex:7,columnId:titleline1ID.id}, 
+            {columnName:"title_line_2",columnIndex:8,columnId:titleline2ID.id}, 
+            {columnName:"title_line_3",columnIndex:9,columnId:titleline3ID.id}, 
+            {columnName:"title_line_4",columnIndex:10,columnId:titleline4ID.id}, 
+            {columnName:"status",columnIndex:11,columnId:statusCodeID.id},
+            {columnName:"activity_code",columnIndex:12,columnId:activityCodeID.id},
+        ]
+        break;
+}
+;
 if(projectID === "b.2e6449f9-ce25-4a9c-8835-444cb5ea03bf"){
     columnNamesMDR = [
         {columnName:"revision",columnIndex:3,columnId:revisionCodeID.id}, 
@@ -2443,12 +2471,12 @@ async function getFolderDetails(accessTokenDataRead,projectID,folderID){
 
     function exportTableToExcel(tableId,exportName) {
         // Get the table element
-
+        console.log(1)
         const d = new Date().toLocaleString();
-
+        console.log(2)
         // Create a new workbook object
         var workbook = XLSX.utils.book_new();
-
+        console.log(3)
         // 1. Create Cover Sheet data
         var coverData = [
             [""],
@@ -2458,25 +2486,26 @@ async function getFolderDetails(accessTokenDataRead,projectID,folderID){
             [""],
             ["","Generated on: " + d]
         ];
-
+        console.log(4)
         // Convert cover data to worksheet
         var coverSheet = XLSX.utils.aoa_to_sheet(coverData);
-      
+        console.log(5)
 
         // Add the cover sheet to the workbook with a sheet name "Cover"
         XLSX.utils.book_append_sheet(workbook, coverSheet, "Cover");
-
+        console.log(6)
         // 2. Add the Table Sheet
         var table = document.getElementById(tableId);
-
+        console.log(7)
         // Convert the modified table data to a sheet
-        var tableSheet = XLSX.utils.aoa_to_sheet(table);
-
+        var tableSheet = XLSX.utils.table_to_sheet(table);
+        console.log(8)
         // Add the table sheet to the workbook with a sheet name "Data"
         XLSX.utils.book_append_sheet(workbook, tableSheet, "Data");
-
+        console.log(9)
         // Use SheetJS to export the worksheet to an Excel file
         XLSX.writeFile(workbook, `${exportName}_${projectName}_${d}.xlsx`);
+        console.log(10)
 }
 
 
