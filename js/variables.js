@@ -76,7 +76,7 @@ const defaultHiddenColumns = [
     "Title Line 4",
     "Activity Code",
     "Created by",
-    "spatial"
+    "Spatial"
 ]; // Columns to hide by default
 
 const projects_MIDPs = [
