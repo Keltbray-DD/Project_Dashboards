@@ -105,17 +105,18 @@
     <section id="MIDP" class="dashboard tabcontent">
         <div class="tableOptions">
             <h1>MIDP</h1>
-            <label for="folderFilter" class="folderLabel">Filter by Folder Path:</label>
-            <select id="folderFilter" class="folderFilter">
-                <option value="all">All</option>
-            </select>
+            <!-- Button to toggle visibility of filters -->
+            <button id="toggleFiltersButton" class="exportButton filterButton">Show Filters</button>
             <input type="text" id="searchInput" class="searchInput" placeholder="Search for anything...">
             <button onclick="exportTableToExcel('dataTable','MIDP')" class="exportButton"> Export</button>
             <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
         </div>
+        <div class="filterOptions hidden">
+
+        </div>
         <div class="table-container sortable">
             <table id="dataTable" class="sortable">
-                <thead>
+                <!-- <thead>
                     <tr>
                         <th width="10px"></th>
                         <th data-order="desc" width="300px">File Name</th>
@@ -135,7 +136,7 @@
                         <th data-order="desc" width="120px">Created by</th>
 
                     </tr>
-                </thead>
+                </thead> -->
                 <tbody>
                     <!-- Data will be inserted here -->
                 </tbody>
@@ -157,7 +158,7 @@
         </div>
         <div class="table-container sortable">
             <table id="dataTableDR" class="sortable">
-                <thead>
+                <!-- <thead>
                     <tr>
                         <th width="10px"></th>
                         <th data-order="desc" width="300px">File Name</th>
@@ -175,8 +176,9 @@
                         <th data-order="desc" width="120px">Last Modified User</th>
                         <th data-order="desc" width="120px">Last Modified Date</th>
                         <th data-order="desc" width="120px">Created by</th>
+                        <th data-order="desc" width="120px">Spatial</th>
                     </tr>
-                </thead>
+                </thead> -->
                 <tbody>
                     <!-- Data will be inserted here -->
                 </tbody>

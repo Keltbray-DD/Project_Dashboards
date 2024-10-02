@@ -5,6 +5,7 @@ let namingstandardID;
 let projectName;
 //const projectID = "b.76c59b97-feaf-413c-9bd0-43cf8aaa3133";
 
+let table
 let tableBody;
 let tableHeader;
 let searchInput;
@@ -44,7 +45,7 @@ let columnNamesMDR = [];
 let columnNames =[];
 let arrayDiscipline =[];
 let arrayForm =[];
-let ignoreFieldsInvaildCheck = ["last_modified_user","created_by","title_line_2","title_line_3","title_line_4","activity_code","actual_finish_date","actual_start_date","folderid","planned_finish_date","planned_start_date","tracking_status","notes","category"];
+let ignoreFieldsInvaildCheck = ["last_modified_user","created_by","title_line_2","title_line_3","title_line_4","activity_code","actual_finish_date","actual_start_date","folderid","planned_finish_date","planned_start_date","tracking_status","notes","category","spatial"];
 let csvDataReviewStore = [];
 let csvDataTransmittalStore = [];
 let TransmittalData = [];
@@ -66,7 +67,7 @@ let currentlyEditing;
 let selectedTab = "MIDP"
 
 const pattern = /^[A-Z]\d{2}(\.\d{2})?$/;
-const ignoredColumns = ['','File Name','Version'];  // You can also use indices like [0, 3]
+const ignoredColumns = ['','File Name','Version','Spatial'];  // You can also use indices like [0, 3]
 const defaultHiddenColumns = [
     "Last Modified Date",
     "Last Modified User",
@@ -74,7 +75,8 @@ const defaultHiddenColumns = [
     "Title Line 3",
     "Title Line 4",
     "Activity Code",
-    "Created by"
+    "Created by",
+    "spatial"
 ]; // Columns to hide by default
 
 const projects_MIDPs = [
@@ -96,3 +98,44 @@ const projects_TR = [
 const projects_MDR = [
     {name:"DT1117",id:"b.2e6449f9-ce25-4a9c-8835-444cb5ea03bf"},
 ]
+
+const defaultHeaders = [
+    { width: '10px', content: '' },
+    { width: '300px', content: 'File Name', order: 'desc' },
+    { width: '50px', content: 'Version', order: 'desc' },
+    { width: '60px', content: 'File URL', order: 'desc' },
+    { width: '60px', content: 'Revision', order: 'desc' },
+    { content: 'Folder Path', order: 'desc' },
+    { content: 'File Description', order: 'desc' },
+    { content: 'Title Line 1', order: 'desc' },
+    { content: 'Title Line 2', order: 'desc' },
+    { content: 'Title Line 3', order: 'desc' },
+    { content: 'Title Line 4', order: 'desc' },
+    { width: '60px', content: 'Status', order: 'desc' },
+    { content: 'Activity Code', order: 'desc' },
+    { width: '120px', content: 'Last Modified User', order: 'desc' },
+    { width: '120px', content: 'Last Modified Date', order: 'desc' },
+    { width: '120px', content: 'Created by', order: 'desc' },
+    { content: 'Spatial', order: 'desc' },
+];
+
+const a66Headers = [
+    { width: '10px', content: '' },
+    { width: '300px', content: 'File Name', order: 'desc' },
+    { width: '50px', content: 'Version', order: 'desc' },
+    { width: '60px', content: 'File URL', order: 'desc' },
+    { width: '60px', content: 'Revision', order: 'desc' },
+    { content: 'Folder Path', order: 'desc' },
+    { content: 'File Description', order: 'desc' },
+    { content: 'Title Line 1', order: 'desc' },
+    { content: 'Title Line 2', order: 'desc' },
+    { content: 'Title Line 3', order: 'desc' },
+    { content: 'Title Line 4', order: 'desc' },
+    { width: '60px', content: 'Status', order: 'desc' },
+    { content: 'Activity Code', order: 'desc' },
+    { content: 'Series', order: 'desc' },
+    { width: '120px', content: 'Last Modified User', order: 'desc' },
+    { width: '120px', content: 'Last Modified Date', order: 'desc' },
+    { width: '120px', content: 'Created by', order: 'desc' },
+    { content: 'Spatial', order: 'desc' },
+];

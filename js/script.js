@@ -1,4 +1,5 @@
-document.addEventListener('DOMContentLoaded',function(){
+document.addEventListener('DOMContentLoaded',async function(){
+    table = document.querySelector('#dataTable');
     tableBody = document.querySelector('#dataTable tbody');
     tableHeader = document.getElementById('dataTable');
     searchInput = document.getElementById('searchInput');
@@ -6,9 +7,13 @@ document.addEventListener('DOMContentLoaded',function(){
 
     document.getElementById("MIDP").style.display = "block";
     document.getElementById("chartsSection").style.display = "block"
+    
     getProjectFromURL()
-    updateTableHeaders()
-    getData()
+    
+    getData().then(() => {
+        //createFilterOptions()
+    })
+
     // Button visability //
     // MIDP
     if(projects_MIDPs.some(item => item.id === projectID) == false){
@@ -56,20 +61,20 @@ document.addEventListener('DOMContentLoaded',function(){
         }
     });
     // Add event listener to filter the table based on selected folder path
-    folderFilter.addEventListener('change', function () {
-        const selectedPath = this.value;
+    // folderFilter.addEventListener('change', function () {
+    //     const selectedPath = this.value;
 
-        for (let i = 0; i < rows.length; i++) { // Skip the header row
-            const row = rows[i];
-            const folderPath = row.getElementsByTagName('td')[5].textContent.trim();
+    //     for (let i = 0; i < rows.length; i++) { // Skip the header row
+    //         const row = rows[i];
+    //         const folderPath = row.getElementsByTagName('td')[5].textContent.trim();
 
-            if (selectedPath === 'all' || folderPath === selectedPath) {
-                row.style.display = ''; // Show the row
-            } else {
-                row.style.display = 'none'; // Hide the row
-            }
-        }
-    });
+    //         if (selectedPath === 'all' || folderPath === selectedPath) {
+    //             row.style.display = ''; // Show the row
+    //         } else {
+    //             row.style.display = 'none'; // Hide the row
+    //         }
+    //     }
+    // });
 
     window.addEventListener('beforeunload', function(event) {
         if (editMode) {
@@ -105,10 +110,15 @@ document.addEventListener('DOMContentLoaded',function(){
     });
 
 })
+async function generateHeadersParent(){
+    switch (projectID) {
+        case "b.76c59b97-feaf-413c-9bd0-43cf8aaa3133":
+            await generateMIDPHeaders(a66Headers)
+            break;
 
-async function updateTableHeaders() {
-    if(projectID == 'b.76c59b97-feaf-413c-9bd0-43cf8aaa3133'){
-        document.querySelectorAll('thead tr')
+        default:
+            await generateMIDPHeaders(defaultHeaders)
+            break;
     }
 }
 
@@ -146,8 +156,8 @@ async function getJSONDataFromSP(project_id){
 
 async function getData() {
     rawData = await getJSONDataFromSP(projectID)
-    rawData.forEach(element => {
-        processData(element.JSON_data, element.Title, element.Modified, element.Project_Name)
+    rawData.forEach(async element => {
+        await processData(element.JSON_data, element.Title, element.Modified, element.Project_Name)
     });
 }
 
@@ -165,6 +175,7 @@ async function processData(data, fileName, updated,Project_Name) {
         document.getElementById('projectName').innerHTML = `${Project_Name}`
         projectName = Project_Name
         document.title = `${Project_Name} Project Data Overview`;
+        await generateHeadersParent()
         generateMIDPTable()
     }
 }
@@ -174,13 +185,14 @@ async function generateMIDPTable() {
     resetValues()
     await generateFileTable(orginalACCExport)
     await runChecks()
-    populateFolderDropdown(folderPaths)
+    //populateFolderDropdown(folderPaths)
     generateCharts() 
     colourParentMissing()
     makeCellsEditable().then(() => {
         // Runs after getData completes
         columnEditing();
         addSortableColumns();
+        createFilterOptions();
         });
     console.log("files",files)
 }
@@ -287,7 +299,7 @@ async function groupItemData(data) {
 async function resetValues(){
     files = []
     tableBody.innerHTML = ''
-    folderFilter.options.length = 1
+    //folderFilter.options.length = 1
     folderPaths = []
     filteredData = []
     titleLineMissingCount = 0;
@@ -372,6 +384,7 @@ async function addToFilesArray(item) {
         id:item.id,
         discipline:item.discipline,
         form:item.form,
+        spatial:item.spatial,
         notes:item.notes,
         tracking_status:item.tracking_status,
         category:item.category,
@@ -818,9 +831,14 @@ async function createMainTableRow(item,group) {
         <td class="editable">${highlightCellNotMandatory(item['title_line_4'])}</td>
         <td class="editable">${highlightCell(item['status'])}</td>
         <td class="editable">${highlightCellNotMandatory(item['activity_code'])}</td>
+        ${projectID === "b.76c59b97-feaf-413c-9bd0-43cf8aaa3133" 
+            ? `<td class="editable">${highlightCell(item.series)}</td>` 
+            : ''
+          }
         <td>${MissingUser(item.last_modified_user)}</td>
         <td>${highlightCell(new Date(item.last_modified_date).toLocaleString())}</td>
         <td>${MissingUser(item.created_by_user)}</td>
+        <td>${item.spatial}</td>
 `;
 
     tableBody.appendChild(mainRow);
@@ -911,9 +929,15 @@ async function createExpandableTableRow(item) {
         <td class="editable">${highlightCellNotMandatory(item['title_line_4'])}</td>
         <td class="editable">${highlightCell(item['status'])}</td>
         <td class="editable">${highlightCellNotMandatory(item['activity_code'])}</td>
+        ${projectID === "b.76c59b97-feaf-413c-9bd0-43cf8aaa3133" 
+            ? `<td class="editable">${highlightCell(item.series)}</td>` 
+            : ''
+          }
         <td>${MissingUser(item.last_modified_user)}</td>
         <td>${highlightCell(new Date(item.last_modified_date).toLocaleString())}</td>
         <td>${MissingUser(item.created_by_user)}</td>
+        <td>${item.spatial}</td>
+
     `;
     tableBody.appendChild(itemRow);
 }
@@ -1161,6 +1185,7 @@ async function openTab(evt, tabName) {
             folderFilter = document.getElementById('folderFilter');
             tableBody.innerHTML = ''
             searchInput.value =''
+            //tableHeader.innerHTML=''
             generateMIDPTable()
             break;
 
@@ -1171,6 +1196,7 @@ async function openTab(evt, tabName) {
             folderFilter = document.getElementById('folderFilterDR');
             tableBody.innerHTML = ''
             searchInput.value =''
+            //tableHeader.innerHTML=''
             generateMIDPTable()
             break;
 
@@ -1229,20 +1255,20 @@ async function openTab(evt, tabName) {
         }
     });
     // Add event listener to filter the table based on selected folder path
-    folderFilter.addEventListener('change', function () {
-        const selectedPath = this.value;
+    // folderFilter.addEventListener('change', function () {
+    //     const selectedPath = this.value;
 
-        for (let i = 0; i < rows.length; i++) { // Skip the header row
-            const row = rows[i];
-            const folderPath = row.getElementsByTagName('td')[5].textContent.trim();
+    //     for (let i = 0; i < rows.length; i++) { // Skip the header row
+    //         const row = rows[i];
+    //         const folderPath = row.getElementsByTagName('td')[5].textContent.trim();
 
-            if (selectedPath === 'all' || folderPath === selectedPath) {
-                row.style.display = ''; // Show the row
-            } else {
-                row.style.display = 'none'; // Hide the row
-            }
-        }
-    });
+    //         if (selectedPath === 'all' || folderPath === selectedPath) {
+    //             row.style.display = ''; // Show the row
+    //         } else {
+    //             row.style.display = 'none'; // Hide the row
+    //         }
+    //     }
+    // });
   }
 
   function calculatePercentage(part, total) {
@@ -2665,4 +2691,164 @@ async function matchUpDataTransmittal() {
     // Log the matched results to the console
     console.log('TransmittalData',TransmittalData);
 
+}
+
+async function generateMIDPHeaders(headers) {
+    console.log(1);
+    
+    // Create table head and row
+    var thead = document.createElement("thead");
+    var headerRow = document.createElement("tr");
+    
+    // Loop through the headers array and create <th> elements
+    headers.forEach(function (header) {
+      var th = document.createElement("th");
+  
+      // Add width if defined
+      if (header.width) {
+        th.style.width = header.width;
+      }
+  
+      // Add 'data-order' attribute if defined
+      if (header.order) {
+        th.setAttribute("data-order", header.order);
+      }
+  
+      // Set the content of the header
+      th.textContent = header.content;
+  
+      // Append <th> to the header row
+      headerRow.appendChild(th);
+    });
+  
+    // Append the row to the thead
+    thead.appendChild(headerRow);
+    console.log(thead); // Log the thead
+  
+    // Select the tables
+    var tableMIDP = document.querySelector('#dataTable');
+    var tableDR = document.querySelector('#dataTableDR');
+  
+    // Check if tableMIDP and tableDR are valid elements
+    console.log(tableMIDP);
+    console.log(tableDR);
+  
+    // If the tables are found in the DOM, append thead
+    if (tableMIDP && tableDR) {
+      let headerArray = [tableMIDP, tableDR];
+      
+      headerArray.forEach(element => {
+        console.log(element); // Log each element to ensure it's a valid HTML element
+        let clonedThead = thead.cloneNode(true); // Clone the thead to append to multiple tables
+        element.appendChild(clonedThead); // Append the cloned thead to each table
+      });
+    } else {
+      console.error("Table elements not found. Check your selectors.");
+    }
+  }
+  
+
+async function createFilterOptions() {
+  const thead = table.querySelector("thead");
+  const tbody = tableBody;
+  const filterContainer = document.querySelector(".filterOptions");
+  const toggleButton = document.getElementById("toggleFiltersButton");
+  // Define columns to exclude from filtering (zero-based index)
+  const excludedColumns = [0, 1, 2, 3, 4]; // Exclude "Created By" (index 3) and "Date Modified" (index 4)
+  filterContainer.innerHTML=''
+  // Get the number of columns
+  const numCols = thead.rows[0].cells.length;
+
+  // Create dropdown filters for each column, except the excluded ones
+  for (let colIndex = 0; colIndex < numCols; colIndex++) {
+    if (excludedColumns.includes(colIndex)) {
+      continue; // Skip creating filter for excluded columns
+    }
+
+    // Create a filter container div (for label + dropdown)
+    const filterDiv = document.createElement("div");
+    filterDiv.classList.add("filter-container");
+
+    // Create the label for the filter
+    const label = document.createElement("label");
+    label.textContent = `${thead.rows[0].cells[colIndex].innerText}:`;
+
+    // Create the dropdown filter
+    const select = document.createElement("select");
+    select.innerHTML = '<option value="">All</option>'; // Default "All" option
+
+    // Get unique values for the current column from the tbody
+    const uniqueValues = new Set();
+    //console.log(tbody.rows)
+    for (let row of tbody.rows) {
+      uniqueValues.add(row.cells[colIndex].innerText);
+    }
+    //console.log(uniqueValues)
+    // Add options to the dropdown based on unique values in the column
+    // Convert Set to array
+    const uniqueValuesArray = Array.from(uniqueValues);
+
+    // Sort the array (case-sensitive sort)
+    uniqueValuesArray.sort();
+    uniqueValues.forEach((value) => {
+      const option = document.createElement("option");
+      option.value = value;
+      option.textContent = value;
+      select.appendChild(option);
+    });
+
+    // Add event listener to filter the table on dropdown change
+    select.addEventListener("change", function () {
+      filterTable();
+    });
+
+    // Append label and select to the filterDiv
+    filterDiv.appendChild(label);
+    filterDiv.appendChild(select);
+
+    // Append the filterDiv to the filterContainer (not inside the table)
+    filterContainer.appendChild(filterDiv);
+  }
+
+  // Function to filter the table based on selected filters
+  function filterTable() {
+    for (let row of tbody.rows) {
+      let isVisible = true;
+
+      // Check each filter and match the cell value
+      for (let colIndex = 0; colIndex < numCols; colIndex++) {
+        if (excludedColumns.includes(colIndex)) continue; // Skip excluded columns
+
+        // Adjust for excluded columns to correctly index filters
+        const filterDiv =
+          filterContainer.children[
+            colIndex - excludedColumns.filter((c) => c < colIndex).length
+          ];
+        const select = filterDiv.querySelector("select");
+        const filterValue = select.value;
+        const cellValue = row.cells[colIndex].innerText;
+
+        if (filterValue && cellValue !== filterValue) {
+          isVisible = false;
+          break;
+        }
+      }
+
+      // Show or hide the row based on filter match
+      row.style.display = isVisible ? "" : "none";
+    }
+  }
+  // Toggle the visibility of the filters
+  toggleButton.addEventListener("click", function () {
+    // Check if filters are currently visible
+    if (filterContainer.classList.contains("hidden")) {
+      // Show filters
+      filterContainer.classList.remove("hidden");
+      toggleButton.textContent = "Hide Filters";
+    } else {
+      // Hide filters
+      filterContainer.classList.add("hidden");
+      toggleButton.textContent = "Show Filters";
+    }
+  });
 }
