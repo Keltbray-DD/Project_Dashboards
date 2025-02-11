@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded',async function(){
         document.getElementById("MIDP").style.display = "block";
         document.getElementById("chartsSection").style.display = "block"
       }
-
+    
     const fullUrl = window.location.href;
     document.getElementById("appInfo").textContent = `${appName} ${appVersion}`;
     // Split the URL at the "?" and take the first part
@@ -193,8 +193,9 @@ async function processData(data, fileName, updated,Project_Name) {
             "data":tempData
         }
         orginalACCExport = fileData.data
-        document.getElementById('dataInfo').textContent = `Data Extract: ${formatDate(fileData.updated)}`
         projectName = Project_Name
+        document.getElementById('dataInfo').textContent = `Data Extract: ${formatDate(fileData.updated)}`
+        document.getElementById("titleBox").innerHTML = `<h1>${projectName}</h1><hr class="divider"><br><h3> ACC Docs Dashboard</h3>`;
         document.title = `${Project_Name} ACC Docs Dashboard`;
         await generateHeadersParent()
         generateMIDPTable()

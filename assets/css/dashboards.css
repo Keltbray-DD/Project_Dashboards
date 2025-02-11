@@ -34,7 +34,7 @@ header {
 }
 .header-section h3 {
     text-align: right; 
-    float: right;
+
     margin: 5px;
     height: 100%;
 }
@@ -64,6 +64,37 @@ img.logo_H {
 .header h1, h3 {
     margin: 0;
 }
+
+#titleBox {
+  margin: 0;
+  padding: 0;
+}
+
+#titleBox h1 {
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  color: var(--text-color);
+  margin-top: 20px;
+}
+
+#titleBox h3 {
+  margin: 0;
+  padding: 0;
+  text-align: center;
+  margin-bottom: 0px;
+  font-size: 20px;
+  font-weight: bold;
+  color: var(--text-color);
+  margin-top: 0; /* Removes any extra spacing above */
+    padding-top: 0; /* Ensures no extra padding */
+    line-height: 1; /* Reduces the height occupied by text */
+    position: relative; /* Allows for fine-tuned positioning */
+    top: -10px; /* Moves it upwards */
+}
+
 #score{
   margin: 0;
   padding: 20px;
