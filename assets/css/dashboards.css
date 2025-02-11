@@ -1,0 +1,669 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    background-position: center;
+    background-size: cover;
+  
+    background: rgb(255,255,255);
+    background: linear-gradient(158deg, rgba(255,255,255,1) 0%, rgba(59,219,135,1) 37%, rgba(111,188,247,1) 65%, rgba(4,113,190,1) 100%);
+  }
+html {
+  height: 100%;
+}
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: rgb(245, 243, 243);
+    padding: 5px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* slight box shadow */
+    height: 110px;
+}
+.header-section {
+    flex: 1;
+}
+.header-section h2 {
+    text-align: left; /* Left text horizontally */
+    float: left;
+    margin: 10px;
+    height: 100%;
+}
+.header-section h3 {
+    text-align: right; 
+    float: right;
+    margin: 5px;
+    height: 100%;
+}
+
+img.logo_H {
+    float: left;
+    height: 80px;
+    margin: auto;
+  }
+
+.header-section:nth-child(2) {
+    text-align: center;
+    flex: 2.5; /* 60% of the width */
+
+}
+
+.header-section:first-child,
+.header-section:last-child {
+    flex: 1.5; /* 20% of the width each */
+    justify-content: center; /* Center content horizontally */
+    align-items: center; /* Center content vertically */
+
+}
+
+
+/* Additional styling */
+.header h1, h3 {
+    margin: 0;
+}
+#score{
+  margin: 0;
+  padding: 20px;
+  background-color: #ffffffb4;
+  justify-content: space-around;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Same auto-fit structure for bar charts */
+
+}
+.plot-container{
+ margin: auto;
+}
+
+.js-plotly-plot .plotly, .js-plotly-plot .plotly div {
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+canvas {
+  overflow: visible; /* Ensure overflow isn't hidden */
+
+}
+
+.menu-bar{
+  position: sticky;
+  top: 0;
+  z-index: 100
+}
+.gaugeChart{
+  margin: auto;
+  display: block;
+  justify-items:center;
+  max-height: 200px;
+  width: 300px !important;   /* Ensure the canvas takes up available space */
+  height: auto !important;  /* Maintain proportional height */
+  overflow: visible !important;
+
+}
+
+.charts {
+  padding: 20px;
+  background-color: #ffffffb4;
+
+  justify-content: space-around;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Same auto-fit structure for bar charts */
+  grid-gap: 20px; /* Add gap between bar charts */
+  
+
+}
+
+.barCharts {
+  padding: 20px;
+  background-color: #ffffffb4;
+  justify-content: space-around;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Same auto-fit structure for bar charts */
+  grid-gap: 20px; /* Add gap between bar charts */
+  height: 200px; /* Let the height adjust based on content */
+
+}
+.chart{
+  justify-items:center;
+  max-width: 100%;
+  max-height: 200px;
+
+}
+.barChart{
+  justify-items:center;
+  padding: 0 5px;
+  max-width: 100%;
+  max-height: 200px;
+}
+
+.dashboard {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    padding: 5px 0;
+    overflow: visible;
+    z-index: 999; /* Ensure it's higher than other elements */
+}
+
+.dashboard h1 {
+    margin: auto 0;
+    display:inline-block;
+    padding-left: 15px;
+}
+
+.dashboard .table-container {
+    flex: 1;
+    margin: 0px;
+    padding: 5px;
+    
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.table-container {
+    flex: 1;
+    overflow-y: auto;
+    height: 50%; /* Allocate half the height to the table */
+    margin-left: 0;
+    margin-right: 0;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: small;
+    border-collapse: collapse
+}
+
+table, th, td {
+    border: 1px solid rgb(143, 143, 143);
+}
+
+th, td {
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #d1cdcd;
+    cursor: pointer;
+    resize: horizontal;
+}
+.sort-indicator {
+  margin-left: 5px;
+}
+.asc::after {
+  content: " ▲";
+}
+.desc::after {
+  content: " ▼";
+}
+
+td {
+    background-color: #d1dfda;
+    word-wrap: break-word;
+  white-space: normal;
+    text-overflow:clip;
+    margin: 10px;
+}
+
+.expand-icon {
+    cursor: pointer;
+    margin-right: 5px;
+}
+
+.hidden-row {
+    display: none;
+}
+
+.expandable-row td {
+    background-color: #f9f9f9;
+}
+
+.highlight {
+    background-color: #ffcccc; /* Light red background for highlighting */
+    color: #000; /* Ensure the text is readable */
+}
+.highlightYellow {
+  background-color: rgba(255, 219, 187,1); 
+  color: #000; /* Ensure the text is readable */
+}
+
+
+#StatusDataChart {
+    height: 400px;
+}
+
+.folderFilter{
+  margin: 10px 5px;
+  max-width: 20%;
+  font-size: 16px;
+  display:inline-block;
+  padding: 8px;
+  width: 20%;
+
+}
+.searchInput {
+  margin: 10px 5px;
+  padding: 8px;
+  width: 20%;
+  box-sizing: border-box;
+  font-size: 16px;
+  display:inline-block;
+}
+
+.exportButton:focus:not(:focus-visible):not(.focus-visible) {
+  box-shadow: none;
+  outline: none;
+}
+
+.exportButton:hover {
+  background-color: #2c974b;
+}
+
+.exportButton:focus {
+  box-shadow: rgba(46, 164, 79, .4) 0 0 0 3px;
+  outline: none;
+}
+
+.exportButton:disabled {
+  background-color: #94d3a2;
+  border-color: rgba(27, 31, 35, .1);
+  color: rgba(255, 255, 255, .8);
+  cursor: default;
+}
+
+.exportButton:active {
+  background-color: #298e46;
+  box-shadow: rgba(20, 70, 32, .2) 0 1px 0 inset;
+}
+.exportButton {
+  margin: 10px 5px;
+  padding: 8px 16px;
+  box-sizing: border-box;
+  font-size: 16px;
+  display:inline-block;
+  color: white;
+  background-color: #2ea44f;
+  border: 1px solid rgba(27, 31, 35, .15);
+  border-radius: 6px;
+  box-shadow: rgba(27, 31, 35, .1) 0 1px 0;
+  box-sizing: border-box;
+  cursor: pointer;
+}
+.folderLabel{
+  margin: auto 0;
+  margin-left: auto;
+}
+
+.filterButton{
+  margin-left: auto;
+}
+
+.resetbtn{
+    cursor: pointer;
+    margin: 20px;
+    margin-left: 5px;
+    float: right;
+}
+.resetbtn:hover{
+  color:gray;
+  transition: 0.3s;
+}
+
+/* Define the tooltip alignment custom property */
+.tooltip {
+  --tooltip-align: -50%; /* Default: center */
+  position: relative;
+}
+
+/* Use the --tooltip-align variable to control tooltip positioning */
+.tooltip:hover::after, 
+.tooltip:hover::before {
+  visibility: visible;
+  opacity: 1;
+}
+
+.tooltip::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  background-color: #333;
+  color: #fff;
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  white-space: nowrap;
+  z-index: 1000;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(var(--tooltip-align)); /* Use the variable */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  pointer-events: none;
+}
+
+.tooltip::before {
+  content: '';
+  position: absolute;
+  bottom: calc(100% - 5px);
+  left: 50%;
+  transform: translateX(var(--tooltip-align));
+  border-width: 5px;
+  border-style: solid;
+  border-color: transparent transparent #333 transparent;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+  z-index: 1001; /* Ensure it appears above other elements */
+}
+
+.tooltip-left {
+    --tooltip-align: left; /* Default alignment is left */
+    position: relative;
+}
+
+/* Use the --tooltip-align variable to control tooltip positioning */
+.tooltip-left::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    background-color: #333;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    white-space: nowrap;
+    z-index: 1000;
+    top: 50%;
+    left: 50%;
+    transform: translateY(-50%) translateX(-100%); /* Center vertically and move left */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+    pointer-events: none;
+}
+
+.tooltip-left:hover::after {
+    opacity: 1;
+    visibility: visible;
+}
+
+.tooltip-left:hover::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    right: calc(100% - 5px); /* Arrow positioning to the left */
+    transform: translateY(-50%);
+    border-width: 5px;
+    border-style: solid;
+    border-color: transparent #333 transparent transparent; /* Arrow color pointing left */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease-in-out, visibility 0.3s ease-in-out;
+}
+
+.tooltip-left:hover::before {
+    opacity: 1;
+    visibility: visible;
+}
+
+.tab {
+    overflow: hidden;
+    border: 1px solid #ccc;
+    background-color: #f1f1f1;
+    display: flex;
+  }
+  
+  /* Style the buttons that are used to open the tab content */
+  .tab button {
+    background-color: inherit;
+    float: left;
+    border: none;
+    outline: none;
+    cursor: pointer;
+    padding: 14px 16px;
+    transition: 0.3s;
+    min-width: 100px;
+
+  }
+
+  .editButton{
+    margin-left: auto;
+  }
+  .editButton.active{
+    background-color: orange;
+  }
+  
+  /* Change background color of buttons on hover */
+  .tab button:hover {
+    background-color: #ddd;
+  }
+  
+  /* Create an active/current tablink class */
+  .tab button.active {
+    background-color: #ccc;
+  }
+  
+  /* Style the tab content */
+  .tabcontent {
+    display: none;
+  }
+
+  .tabcontent {
+    animation: fadeEffect 1s; /* Fading effect takes 1 second */
+  }
+  
+  /* Go from zero to full opacity */
+  @keyframes fadeEffect {
+    from {opacity: 0;}
+    to {opacity: 1;}
+  }
+
+
+
+/* Popup message styles */
+.popup {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: rgba(38, 168, 67, 0.8);
+    opacity: 0.5;
+    color: white;
+    padding: 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    opacity: 0; /* Initially hidden (transparent) */
+    visibility: hidden; /* Hidden from the layout initially */
+    transition: opacity 0.5s ease-in-out, visibility 0s linear 0.5s; /* Fade effect */
+    z-index: 1000;
+    max-width: 20%;
+}
+
+/* Show popup with fade-in */
+.popup.show {
+    opacity: 1; /* Fully visible */
+    visibility: visible; /* Make it visible */
+    transition: opacity 0.5s ease-in-out, visibility 0s; /* Transition for fade-in */
+}
+
+.popup h4{
+    margin: 0;
+}
+
+.edit-mode td {
+    cursor: text; /* Show text cursor when hovering over editable cells */
+    border: 2px dashed blue; /* Dashed border for editable cells */
+    background-color: #f9f9f9; /* Lighter background for better visibility */
+  }
+
+  .editMode{
+    border: 2px solid orange;
+  }
+
+  .hide {
+    display: none;
+  }
+
+  /* Modal Styles */
+  .modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    z-index: 1;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Black background with opacity */
+    z-index: 1000
+  }
+
+  .modal-content {
+    background-color: #fff;
+    margin: 10% auto;
+    padding: 20px;
+    border-radius: 10px; /* Rounded corners */
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2); /* Drop shadow */
+    width: 400px;
+    animation: fadeIn 0.3s ease; /* Fade-in animation */
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+
+  .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+  }
+
+  .close:hover,
+  .close:focus {
+    color: #f44336; /* Red color on hover */
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  h3 {
+    margin-top: 0;
+    text-align: center;
+    font-size: 20px;
+  }
+
+  form label {
+    display: block;
+    margin: 10px 0;
+    font-size: 16px;
+  }
+
+  #applyColumns {
+    margin-top: 20px;
+    display: block;
+    width: 100%; /* Make the button span full width */
+  }
+
+  table td:nth-child(6) {
+    overflow:hidden;
+  }
+.tableOptions{
+  display: flex;
+  position: sticky;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  background-color: #f1f1f1; 
+}
+.filterOptions{
+  display: flex;
+  flex-wrap: wrap;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  background-color: #f1f1f1; 
+  padding: 0 10px;
+}
+.sub-header {
+  background-color: #7aa3c2;
+  font-weight: bold;
+  cursor: pointer;
+}
+.hidden {
+  display: none !important;
+}
+
+.highlightMDRYellow {
+  background-color: rgba(187, 231, 29, 0.6); 
+  color: #000; /* Ensure the text is readable */
+}
+.highlightMDRGreen {
+  background-color: rgba(29, 231, 89, 0.6); 
+  color: #000; /* Ensure the text is readable */
+}
+.highlightMDROrange {
+  background-color: rgba(231, 150, 29, 0.6); 
+  color: #000; /* Ensure the text is readable */
+}
+.highlightMDRRed {
+  background-color: rgba(231, 59, 29, 0.6); 
+  color: #000; /* Ensure the text is readable */
+}
+.highlightMDRPurple {
+  background-color: rgba(231, 29, 221, 0.6); 
+  color: #000; /* Ensure the text is readable */
+}
+
+.toggle-header {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight:600;
+  background-color: #f4f4f4;
+  display: flex;
+  align-items: center;
+  padding: 5px;
+  border-top: 1px solid #ccc;
+  border-bottom: 1px solid #ccc;
+  transition: background-color 0.3s ease;
+}
+
+.toggle-header:hover {
+  background-color: #f0f0f0; /* Light hover effect */
+}
+
+.arrow {
+  display: inline-block;
+  margin-left: 5px;
+  margin-right: 10px;
+  width: 5px;
+  height: 5px;
+  border: solid black;
+  border-width: 0 2px 2px 0;
+  padding: 3px;
+  transform: rotate(135deg);
+  transition: transform 0.3s ease;
+}
+
+
+.arrow.down {
+  transform: rotate(45deg);
+}
+
+.arrow.left {
+  transform: rotate(315deg);
+}
+.filter-container {
+  display: flex;
+  flex-direction: column; /* Stack label on top of select */
+  margin-bottom: 10px;
+  width: 20%;
+  margin: 10px 0;
+}
+.filter-container label {
+  margin-right: 10px;
+}
+.filter-container select {
+  max-width: 80%;
+  padding: 5px;
+}

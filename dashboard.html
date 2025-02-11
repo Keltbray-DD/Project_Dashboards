@@ -3,25 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Data Overview</title>
-    <link rel="stylesheet" href="assets/css/main.css">
+    <title>ACC Docs Dashboard</title>
+    <!-- <link rel="stylesheet" href="assets/css/main.css"> -->
+    <link rel="stylesheet" href="assets/css/dashboards.css">
+    <link rel="stylesheet" href="assets/css/userBox.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="icon" href="assets/media/Keltbray-logo_single.png" type="image/x-icon">
+    <link rel="icon" href="https://www.aureos.com/wp-content/uploads/2025/02/AUREOS-FAVicon_512px-x-512px-150x150.png" sizes="32x32">
 </head>
 <body>
     <header>
         <div class="header-section">
-            <img alt="" id="headerlogo" class="logo_H" src="assets/media/Keltbray-logo_single.png">
-            <h2>Keltbray ISL <br>DD Hub</h2>
+            <img alt="" id="headerlogo" class="logo_H" src="https://www.aureos.com/wp-content/uploads/2025/02/AUREOS-FAVicon_512px-x-512px-150x150.png">
+            <h2>Aureos<br>DD Hub</h2>
         </div>
         <div class="header-section">
-            <h1>Project Data Overview</h1>
+            <h1>ACC Docs Dashboard</h1>
         </div>
         <div class="header-section">
             <h3 id="dateUpdated"></h3>
             <h3 id="projectName"></h3>
         </div>
     </header>
+    <!-- Login Box -->
+    <div class="login-box">
+        <div class="profile-container">
+            <div class="profile-info">
+                <div><strong id="userName" class="name"> </strong></div>
+                <div id="userEmail"></div>
+                <button id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
+            </div>
+            <img id="userPicture" alt="User Profile Image" src="https://images.profile.autodesk.com/default/user_X58.png">
+            </div>
+        </div>
     <!-- The Modal -->
     <div id="columnModal" class="modal">
         <div class="modal-content">
@@ -239,6 +252,7 @@
                         <th data-order="desc" width="60px">File URL</th>
                         <th data-order="desc" width="60px">Revision</th>
                         <th data-order="desc">Title</th>
+                        <th data-order="desc">Folder</th>
                         <th data-order="desc">Category</th>
                         <th data-order="desc">Status</th>
                         <th data-order="desc">Notes</th>
@@ -255,6 +269,8 @@
         </div><!-- Containers for data visualizations -->
 
     </section>
+    <div id="appInfo"></div>
+    <div id="dataInfo"></div>
 
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -265,6 +281,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.2.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="js/variables.js"></script>
+    <script src="js/login.js"></script>
     <script src="js/script.js"></script>
 
 

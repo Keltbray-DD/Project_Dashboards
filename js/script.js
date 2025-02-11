@@ -4,12 +4,29 @@ document.addEventListener('DOMContentLoaded',async function(){
     tableHeader = document.getElementById('dataTable');
     searchInput = document.getElementById('searchInput');
     folderFilter = document.getElementById('folderFilter');
+    if(window.location.href.includes("/dashboard")){
+        if(!window.location.href.includes("?id=")){
+            window.location.href = `/index.html`
+        }
+        document.getElementById("MIDP").style.display = "block";
+        document.getElementById("chartsSection").style.display = "block"
+      }
 
-    document.getElementById("MIDP").style.display = "block";
-    document.getElementById("chartsSection").style.display = "block"
-    
+    const fullUrl = window.location.href;
+    document.getElementById("appInfo").textContent = `${appName} ${appVersion}`;
+    // Split the URL at the "?" and take the first part
+    toolURL = fullUrl.split('?')[0];
+    await checkLogin()
+    loadingScreen = document.getElementById('loadingScreen');
+    statusUpdateLoading = document.getElementById('statusUpdateLoading');
+    const logoutButton = document.getElementById('logoutBtn');
+
+    // Add an event listener for the button click event
+    logoutButton.addEventListener('click', function() {
+        signOut()
+    })
     getProjectFromURL()
-    
+            
     getData().then(() => {
         //createFilterOptions()
     })
@@ -110,6 +127,11 @@ document.addEventListener('DOMContentLoaded',async function(){
     });
 
 })
+function signOut(){
+    localStorage.setItem('user_refresh_token','blank');
+    clearUrlParameters();
+    signin()
+}
 async function generateHeadersParent(){
     switch (projectID) {
         case "b.76c59b97-feaf-413c-9bd0-43cf8aaa3133":
@@ -171,10 +193,9 @@ async function processData(data, fileName, updated,Project_Name) {
             "data":tempData
         }
         orginalACCExport = fileData.data
-        document.getElementById('dateUpdated').innerHTML = `Export: ${formatDate(fileData.updated)}`
-        document.getElementById('projectName').innerHTML = `${Project_Name}`
+        document.getElementById('dataInfo').textContent = `Data Extract: ${formatDate(fileData.updated)}`
         projectName = Project_Name
-        document.title = `${Project_Name} Project Data Overview`;
+        document.title = `${Project_Name} ACC Docs Dashboard`;
         await generateHeadersParent()
         generateMIDPTable()
     }
@@ -384,6 +405,7 @@ async function addToFilesArray(item) {
         id:item.id,
         discipline:item.discipline,
         form:item.form,
+        project_pin:item.project_pin,
         spatial:item.spatial,
         notes:item.notes,
         tracking_status:item.tracking_status,
@@ -1913,13 +1935,14 @@ if(projectID === "b.2e6449f9-ce25-4a9c-8835-444cb5ea03bf"){
     columnNamesMDR = [
         {columnName:"revision",columnIndex:3,columnId:revisionCodeID.id}, 
         {columnName:"title",columnIndex:4,columnId:titleline1ID.id}, 
-        {columnName:"category",columnIndex:5,columnId:categoryID.id},
-        {columnName:"status",columnIndex:6,columnId:trackingStatusID.id},
-        {columnName:"notes",columnIndex:7,columnId:notesID.id},
-        {columnName:"planned_start_date",columnIndex:8,columnId:plannedStartDateyID.id},
-        {columnName:"actual_start_date",columnIndex:9,columnId:actualStartDateID.id},
-        {columnName:"planned_finish_date",columnIndex:10,columnId:plannedFinishDateyID.id},
-        {columnName:"actual_finish_date",columnIndex:11,columnId:actualFinishDateID.id},
+        {columnName:"folder_path",columnIndex:5,columnId:folder_path.id}, 
+        {columnName:"category",columnIndex:6,columnId:categoryID.id},
+        {columnName:"status",columnIndex:7,columnId:trackingStatusID.id},
+        {columnName:"notes",columnIndex:8,columnId:notesID.id},
+        {columnName:"planned_start_date",columnIndex:9,columnId:plannedStartDateyID.id},
+        {columnName:"actual_start_date",columnIndex:10,columnId:actualStartDateID.id},
+        {columnName:"planned_finish_date",columnIndex:11,columnId:plannedFinishDateyID.id},
+        {columnName:"actual_finish_date",columnIndex:12,columnId:actualFinishDateID.id},
         
     ];
 }
@@ -2237,13 +2260,16 @@ function resetHeaders() {
 
 //////////////////////////////////////////// MDR Generation
 
-function generateMDRTable(data) {
+function generateMDRTable(inputData) {
     const tableBody = document.querySelector('#dataTableMDR tbody');
+    const data = inputData.filter(item => 
+        item.folder_path &&(item.folder_path.includes('SHARED') || item.folder_path.includes('PUBLISHED'))
+      );
     let currentCategory = '';
     // Grouping the files by discipline (extracted from the name)
     const groupedByDiscipline = data.reduce((acc, file) => {
         // Extract the discipline code (e.g., 'EYA' or 'EYC') from the name
-        const discipline = file.discipline
+        const discipline = file.project_pin
         
         // Initialize an array for this discipline if it doesn't exist
         if (!acc[discipline]) {
@@ -2258,23 +2284,29 @@ function generateMDRTable(data) {
 
     console.log(groupedByDiscipline);
     Object.values(groupedByDiscipline).forEach(async (group) => {
+        currentCategory = arrayProjectPin[0].value
+        console.log(currentCategory)
         group.forEach((row, index) => {
+            console.log(row)
             // Check if the category has changed
-            if (row.discipline !== currentCategory.value) {
+            // if(currentCategory.value == null){
+            //     return
+            // }
+            if (row.project_pin !== currentCategory.value) {
 
-                currentCategory = arrayDiscipline.find(obj => obj.value === row.discipline);
+                currentCategory = arrayProjectPin.find(obj => obj.value === row.project_pin);
                 
                 categoryRow = currentCategory.value
-                console.log(currentCategory.description)
+                console.log(currentCategory.project_pin)
                 // Insert a sub-header row for the new category
                 const subHeaderRow = document.createElement('tr');
                 subHeaderRow.classList.add('sub-header');
                 subHeaderRow.setAttribute('data-category', `${currentCategory.value.replaceAll(' ','-')}`);
                 
                 const subHeaderCell = document.createElement('td');
-                subHeaderCell.setAttribute('colspan', '11');
+                subHeaderCell.setAttribute('colspan', '12');
                 subHeaderCell.classList.add('sub-header');
-                subHeaderCell.textContent = currentCategory.description;
+                subHeaderCell.textContent = currentCategory.value +" - "+ currentCategory.description;
     
                 subHeaderRow.appendChild(subHeaderCell);
                 tableBody.appendChild(subHeaderRow);
@@ -2282,7 +2314,7 @@ function generateMDRTable(data) {
                 // Add click event listener to the sub-header to toggle visibility
                 subHeaderRow.addEventListener('click', function() {
                     var category = this.getAttribute('data-category')
-                    const categoryRows = document.querySelectorAll(`[data-category=row-${category.replaceAll(' ','-')}]`);
+                    const categoryRows = document.querySelectorAll(`[data-category=row-${category}]`);
                     //console.log(categoryRows, category)
                     categoryRows.forEach(rowElement => {
                         rowElement.classList.toggle('hidden');
@@ -2295,14 +2327,15 @@ function generateMDRTable(data) {
             formValue = arrayForm.find(obj => obj.value === row.form);
             //dataRow.classList.add(`category-${index}`); // Class to associate rows with their respective sub-header
             dataRow.setAttribute('data-id', row.id);
-            dataRow.setAttribute('data-category',`row-${currentCategory.value.replaceAll(' ','-')}`)
+            dataRow.setAttribute('data-category',`row-${currentCategory.value}`)
             dataRow.innerHTML = `
 
                 <td>${row.name}</td>
                 <td><a href="${row.file_url}" target="_blank">View</a></td>
                 <td class="editable">${highlightCell(row.revision,"revision")}</td>
                 <td class="editable">${highlightCell(row.title_line_1)}</td>
-                <td class="">${currentCategory.description} ${formValue.description}</td>
+                <td class="">${row.folder_path}</td>
+                <td class="">${formValue.description}</td>
                 <td class="editable-drop">${highlightTrackingStatusCell(row.tracking_status)}</td>
                 <td class="editable">${highlightUndefinedCell(row.notes)}</td>
                 <td class="editable-date">${highlightUndefinedCell(new Date(row.planned_start_date).toLocaleDateString('en-GB'))}</td>
@@ -2420,10 +2453,13 @@ async function getNSArray() {
     console.log(namingstandard)
     arrayDiscipline = namingstandard.find(item => item.name === "Discipline")
     arrayDiscipline = arrayDiscipline ? arrayDiscipline.options : [];
+    arrayProjectPin = namingstandard.find(item => item.name === "Project Pin")
+    arrayProjectPin = arrayProjectPin ? arrayProjectPin.options : [];
     arrayForm = namingstandard.find(item => item.name === "Form")
     arrayForm = arrayForm ? arrayForm.options : [];
     console.log(arrayDiscipline)
     console.log(arrayForm)
+    console.log(arrayProjectPin)
 }
 
 
