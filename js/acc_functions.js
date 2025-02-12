@@ -83,7 +83,7 @@ function displayProjects(projectList) {
             console.log('Selected Project ID:', sessionStorage.getItem('projectID'));
 
             // Construct the URL with the project ID as a query parameter
-            const nextPageUrl = `dashboard.html?id=b.${projectID}`;
+            const nextPageUrl = `dashboard.html?id=${projectID}`;
             
             // Navigate to the next page
             window.location.href = nextPageUrl;

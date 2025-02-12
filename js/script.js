@@ -179,19 +179,20 @@ async function getJSONDataFromSP(project_id){
 async function getData() {
     rawData = await getJSONDataFromSP(projectID)
     rawData.forEach(async element => {
-        await processData(element.JSON_data, element.Title, element.Modified, element.Project_Name)
+        await processData(element.all_versions_file_list, element.Title, element.Modified, element.ProjectName)
     });
 }
 
 async function processData(data, fileName, updated,Project_Name) {
-    tempData = await convertStringToJSON(data)
+    tempData = await convertStringToJSON(data);
+    tempData = tempData.flat()
     console.log(fileName,tempData)
-    if(fileName.includes("ACC_Export") ){
+
         fileData = {
-            "fileName": fileName,
             "updated":updated,
             "data":tempData
         }
+        console.log(fileData)
         orginalACCExport = fileData.data
         projectName = Project_Name
         document.getElementById('dataInfo').textContent = `Data Extract: ${formatDate(fileData.updated)}`
@@ -199,7 +200,7 @@ async function processData(data, fileName, updated,Project_Name) {
         document.title = `${Project_Name} ACC Docs Dashboard`;
         await generateHeadersParent()
         generateMIDPTable()
-    }
+    
 }
 
 async function generateMIDPTable() {
