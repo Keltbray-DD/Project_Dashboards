@@ -134,7 +134,7 @@ function signOut(){
 }
 async function generateHeadersParent(){
     switch (projectID) {
-        case "b.76c59b97-feaf-413c-9bd0-43cf8aaa3133":
+        case "76c59b97-feaf-413c-9bd0-43cf8aaa3133":
             await generateMIDPHeaders(a66Headers)
             break;
 
@@ -855,7 +855,7 @@ async function createMainTableRow(item,group) {
         <td class="editable">${highlightCellNotMandatory(item['title_line_4'])}</td>
         <td class="editable">${highlightCell(item['status'])}</td>
         <td class="editable">${highlightCellNotMandatory(item['activity_code'])}</td>
-        ${projectID === "b.76c59b97-feaf-413c-9bd0-43cf8aaa3133" 
+        ${projectID === "76c59b97-feaf-413c-9bd0-43cf8aaa3133" 
             ? `<td class="editable">${highlightCell(item.series)}</td>` 
             : ''
           }
@@ -953,7 +953,7 @@ async function createExpandableTableRow(item) {
         <td class="editable">${highlightCellNotMandatory(item['title_line_4'])}</td>
         <td class="editable">${highlightCell(item['status'])}</td>
         <td class="editable">${highlightCellNotMandatory(item['activity_code'])}</td>
-        ${projectID === "b.76c59b97-feaf-413c-9bd0-43cf8aaa3133" 
+        ${projectID === "76c59b97-feaf-413c-9bd0-43cf8aaa3133" 
             ? `<td class="editable">${highlightCell(item.series)}</td>` 
             : ''
           }
@@ -1903,7 +1903,7 @@ async function getCustomDetailsData(){
     plannedFinishDateyID = await findObjectByName("Planned Finish Date",customAttributes)
 
 switch (projectID) {
-    case 'b.76c59b97-feaf-413c-9bd0-43cf8aaa3133':
+    case '76c59b97-feaf-413c-9bd0-43cf8aaa3133':
         seriesID = await findObjectByName("Series",customAttributes)
 
         columnNamesDefault = [
@@ -1933,7 +1933,7 @@ switch (projectID) {
         break;
 }
 ;
-if(projectID === "b.2e6449f9-ce25-4a9c-8835-444cb5ea03bf"){
+if(projectID === "2e6449f9-ce25-4a9c-8835-444cb5ea03bf"){
     columnNamesMDR = [
         {columnName:"revision",columnIndex:3,columnId:revisionCodeID.id}, 
         {columnName:"title",columnIndex:4,columnId:titleline1ID.id}, 
