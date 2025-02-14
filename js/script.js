@@ -182,19 +182,23 @@ async function getData() {
       element.all_versions_file_list,
       element.Title,
       element.Modified,
-      element.ProjectName
+      element.ProjectName,
+      element.folder_array_deliverables
     );
   });
 }
 
-async function processData(data, fileName, updated, Project_Name) {
+async function processData(data, fileName, updated, Project_Name, folders) {
   tempData = await convertStringToJSON(data);
-  tempData = tempData.flat();
+
+  folderArray = await convertStringToJSON(folders)
+
   console.log(fileName, tempData);
 
   fileData = {
     updated: updated,
     data: tempData,
+    folderData: folderArray
   };
   console.log(fileData);
   orginalACCExport = fileData.data;
@@ -260,6 +264,7 @@ function formatDate(isoDate) {
 
 async function convertStringToJSON(JSONdata) {
   convertedData = JSON.parse(JSONdata);
+  convertedData = convertedData.flat()
   //console.log(convertedData)
   return convertedData;
 }
@@ -2560,23 +2565,23 @@ function generateMDRTable(inputData) {
   );
   let currentCategory = "";
   // Grouping the files by discipline (extracted from the name)
-  const groupedByDiscipline = data.reduce((acc, file) => {
+  const groupedByProject = data.reduce((acc, file) => {
     // Extract the discipline code (e.g., 'EYA' or 'EYC') from the name
-    const discipline = file.project_pin;
+    const project = file.project_pin;
 
     // Initialize an array for this discipline if it doesn't exist
-    if (!acc[discipline]) {
-      acc[discipline] = [];
+    if (!acc[project]) {
+      acc[project] = [];
     }
 
     // Push the file object into the appropriate discipline array
-    acc[discipline].push(file);
+    acc[project].push(file);
 
     return acc;
   }, {});
 
-  console.log(groupedByDiscipline);
-  Object.values(groupedByDiscipline).forEach(async (group) => {
+  console.log(groupedByProject);
+  Object.values(groupedByProject).forEach(async (group) => {
     currentCategory = arrayProjectPin[0].value;
     console.log(currentCategory);
     group.forEach((row, index) => {
@@ -2807,11 +2812,11 @@ async function getNamingStandardforproject(access_token, ns_id, project_id) {
 }
 
 async function getNamingStandardID(folderArray) {
-  wipFolderID = folderArray.filter((item) => {
-    return item.folder_path.includes("0C.WIP");
+  wipFolderID = fileData.folderData.filter((item) => {
+    return item.folderPath.includes("0C.WIP");
   });
   console.log("Keltrbay WIP Folder for NS", wipFolderID[0]);
-  defaultFolder = wipFolderID[0].folderid;
+  defaultFolder = wipFolderID[0].folderID;
   returnData = await getFolderDetails(accesToken, rawProjectID, defaultFolder);
 
   console.log(returnData);
