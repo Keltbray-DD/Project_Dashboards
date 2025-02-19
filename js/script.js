@@ -26,7 +26,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     signOut();
   });
   getProjectFromURL();
-
+  projectName = sessionStorage.getItem('projectName')
   await getData()
 //await createFilterOptions()
   
@@ -145,7 +145,7 @@ async function generateHeadersParent() {
 
 async function getJSONDataFromSP(project_id) {
   const bodyData = {
-    project_ID: project_id,
+    'project_Name': projectName,
   };
 
   const headers = {
@@ -176,7 +176,7 @@ async function getJSONDataFromSP(project_id) {
 }
 
 async function getData() {
-  rawData = await getJSONDataFromSP(projectID);
+  rawData = await getJSONDataFromSP(projectName);
   rawData.forEach(async (element) => {
     await processData(
       element.all_versions_file_list,
@@ -209,7 +209,7 @@ async function processData(data, fileName, updated, Project_Name, folders) {
   document.getElementById(
     "titleBox"
   ).innerHTML = `<h1>${projectName}</h1><hr class="divider"><br><h3> ACC Docs Dashboard</h3>`;
-  document.title = `${Project_Name} ACC Docs Dashboard`;
+  document.title = `${projectName} ACC Docs Dashboard`;
   await generateHeadersParent();
   generateMIDPTable();
 }
