@@ -265,8 +265,13 @@ function formatDate(isoDate) {
 async function convertStringToJSON(JSONdata) {
   convertedData = JSON.parse(JSONdata);
   convertedData = convertedData.flat()
+// Check if each element is a string before parsing
+const fullJsonArray = convertedData.map(item => {
+  return typeof item === "string" ? JSON.parse(item) : item;
+}).flat();
+  
   //console.log(convertedData)
-  return convertedData;
+  return fullJsonArray;
 }
 
 async function populateFolderDropdown(folderPaths) {
