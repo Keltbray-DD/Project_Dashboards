@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", async function () {
   folderFilter = document.getElementById("folderFilter");
   if (window.location.href.includes("/dashboard")) {
     if (!window.location.href.includes("?id=")) {
-      window.location.href = `/index.html`;
+      window.location.href = `/Project_Dashboards/index.html`;
     }
     document.getElementById("MIDP").style.display = "block";
     document.getElementById("chartsSection").style.display = "block";
