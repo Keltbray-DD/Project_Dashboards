@@ -177,7 +177,7 @@ async function getJSONDataFromSP(project_id) {
 
 async function getData() {
   rawData = await getJSONDataFromSP(projectName);
-  rawData.forEach(async (element) => {
+  rawData.data.forEach(async (element) => {
     await processData(
       element.all_versions_file_list,
       element.Title,
