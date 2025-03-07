@@ -122,7 +122,7 @@
             <button id="toggleFiltersButton" class="exportButton filterButton">Show Filters</button>
             <input type="text" id="searchInput" class="searchInput" placeholder="Search for anything...">
             <button onclick="exportTableToExcel('dataTable','MIDP')" class="exportButton"> Export</button>
-            <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i>
+            <!-- <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i> -->
         </div>
         <div class="filterOptions hidden">
 
@@ -272,7 +272,6 @@
     <div id="appInfo"></div>
     <div id="dataInfo"></div>
 
-
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
     <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
@@ -282,9 +281,12 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
     <script src="js/variables.js"></script>
     <script src="js/login.js"></script>
-    <script src="js/script.js"></script>
-
-
-
+    <script src="js/table_generation.js"></script>
+    <script src="js/chart_generation.js"></script>
+    <script src="js/data_processing.js"></script>
+    <script src="js/get_data.js"></script>
+    <script src="js/post_data.js"></script>
+    <script src="js/output_data.js"></script>
+    <script src="js/main.js"></script>
 </body>
 </html>
