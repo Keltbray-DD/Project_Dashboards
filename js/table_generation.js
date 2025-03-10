@@ -1,8 +1,9 @@
 async function generateMIDPTable() {
   console.log("MIDP Table");
+  mainFileArray = files
   resetValues();
-  await generateFileTable(orginalACCExport);
-  await runChecks();
+  await generateFileTable(files);
+  await runChecks('MIDP');
   //populateFolderDropdown(folderPaths)
   generateCharts();
   colourParentMissing();
@@ -12,14 +13,55 @@ async function generateMIDPTable() {
     addSortableColumns();
     createFilterOptions();
   });
-  console.log("files", files);
+  console.log("MIDP files list", files);
 }
 
 async function generateTransmittalTable() {
   console.log("Transmittal Table");
+  mainFileArray = files
   resetValues();
-  await generateTransmittalFileTable(orginalACCExport);
-  await runChecks();
+  await generateTransmittalFileTable(files);
+  await runChecks('TR');
+  populateFolderDropdown(folderPaths);
+  generateCharts();
+  colourParentMissing();
+  makeCellsEditable().then(() => {
+    // Runs after getData completes
+    columnEditing();
+    addSortableColumns();
+  });
+}
+
+async function generateDrawingRegisterTable() {
+  console.log("Drawing Register Table");
+  resetValues();
+  console.log(files)
+  const filteredData = files.filter(item => item.revision && item.revision.includes('C') && item.form.includes('DR'));
+  console.log(filteredData)
+  mainFileArray = filteredData
+  await generateDrawingRegisterFileTable(filteredData);
+  await generateDrawingRegisterHeaders(drawingRegisterHeaders);
+  await runChecks('DR');
+  populateFolderDropdown(folderPaths);
+  generateCharts();
+  colourParentMissing();
+  makeCellsEditable().then(() => {
+    // Runs after getData completes
+    columnEditing();
+    addSortableColumns();
+  });
+}
+
+async function generateSHEAFDrawingRegisterTable() {
+  console.log("SHEAF Drawing Register Table");
+  resetValues();
+  console.log(files)
+  const filteredData = files.filter(item => item.form.includes('DR'));
+  console.log(filteredData)
+  mainFileArray = filteredData
+  await generateDrawingRegisterFileTable(filteredData);
+  await generateDrawingRegisterHeaders(drawingRegisterHeaders);
+  await runChecks('DR');
   populateFolderDropdown(folderPaths);
   generateCharts();
   colourParentMissing();
@@ -58,12 +100,12 @@ function resetHeaders() {
 
 async function generateFileTable(data) {
   const groupedData = await groupItemData(data);
-
+  console.log(groupedData)
   Object.values(groupedData).forEach(async (group) => {
     let mainItem = group[0];
     chartChecks(mainItem);
     checkFolder(mainItem.folder_path);
-    await addToFilesArray(mainItem);
+    // await addToFilesArray(mainItem);
     await createMainTableRow(mainItem, group);
   });
   //console.log(files);
@@ -76,11 +118,27 @@ async function generateTransmittalFileTable(data) {
     let mainItem = group[0];
     chartChecks(mainItem);
     checkFolder(mainItem.folder_path);
-    await addToFilesArray(mainItem);
+    // await addToFilesArray(mainItem);
     await createTransmittalRow(mainItem, group);
   });
   //console.log(files);
 }
+
+async function generateDrawingRegisterFileTable(data) {
+  const groupedData = await groupItemData(data);
+
+  Object.values(groupedData).forEach(async (group) => {
+    let mainItem = group[0];
+    chartChecks(mainItem);
+    checkFolder(mainItem.folder_path);
+    // await addToFilesArray(mainItem);
+    await createDrawingRegisterRow(mainItem, group);
+  });
+  //console.log(files);
+}
+
+
+
 // Function to check for undefined, null, or blank fields in an object
 async function hasInvalidFields(obj, ignoredFields) {
   return Object.keys(obj).some((key) => {
@@ -140,7 +198,7 @@ function filterTable(label, field) {
   console.log(label);
   fileCount = 0;
   // Filter the data based on the selected label
-  filteredData.forEach(async (item) => {
+  originalFileData.forEach(async (item) => {
     let InvalidRevision;
     const hasTitleLine =
       item["title_line_1"] !== undefined &&
@@ -292,6 +350,59 @@ async function createMainTableRow(item, group) {
   return; //mainRow
 }
 
+async function createDrawingRegisterRow(item, group) {
+  const mainRow = document.createElement("tr");
+  mainRow.classList.add("main-row");
+  mainRow.setAttribute("data-id", item.id);
+  mainRow.innerHTML = `
+          <td>
+              ${
+                group.length > 1
+                  ? '<i class="fas fa-chevron-right expand-icon"></i>'
+                  : ""
+              }
+          </td>
+          <td>${item.name}</td>
+          <td>${item.accversion}</td>
+          <td><a href="${item.file_url}" target="_blank">View</a></td>
+          <td class="editable">${highlightCell(item.revision, "revision")}</td>
+          <td>${item.folder_path}</td>
+          <td class="editable">${highlightCell(item["file_description"])}</td>
+          <td class="editable">${highlightCell(item["title_line_1"])}</td>
+          <td class="editable">${highlightCell(item["status"])}</td>
+          <td>${highlightCell(
+            new Date(item.last_modified_date).toLocaleString()
+          )}</td>
+  `;
+
+  tableBody.appendChild(mainRow);
+  //console.log(mainRow)
+  if (group.length > 1) {
+    mainRow
+      .querySelector(".expand-icon")
+      .addEventListener("click", function () {
+        //console.log(2)
+        const isExpanded = this.classList.contains("fa-chevron-down");
+        this.classList.toggle("fa-chevron-down", !isExpanded);
+        this.classList.toggle("fa-chevron-right", isExpanded);
+
+        group.slice(1).forEach((item) => {
+          //console.log(3)
+          const itemRow = tableBody.querySelector(`[data-id='${item.id}']`);
+          if (itemRow) {
+            //console.log(4)
+            itemRow.classList.toggle("hidden-row", isExpanded);
+          }
+        });
+      });
+    group.slice(1).forEach(async (item) => {
+      //console.log(1)
+      await createExpandableDrawingRegisterTableRow(item);
+    });
+  }
+  return; //mainRow
+}
+
 async function createTransmittalRow(item, group) {
   const mainRow = document.createElement("tr");
   mainRow.classList.add("main-row");
@@ -404,10 +515,49 @@ async function createExpandableTransmittalTableRow(item) {
   tableBody.appendChild(itemRow);
 }
 
-function countRowsInTable() {
+async function createExpandableDrawingRegisterTableRow(item) {
+  const itemRow = document.createElement("tr");
+  itemRow.classList.add("expandable-row", "hidden-row");
+  itemRow.setAttribute("data-id", item.id);
+  itemRow.innerHTML = `         
+          <td>
+              
+          </td>   
+          <td>${item.name}</td>
+          <td>${item.accversion}</td>
+          <td><a href="${item.file_url}" target="_blank">View</a></td>
+          <td class="editable">${highlightCell(item.revision, "revision")}</td>
+          <td>${item.folder_path}</td>
+          <td class="editable">${highlightCell(item["file_description"])}</td>
+          <td class="editable">${highlightCell(item["title_line_1"])}</td>
+          <td class="editable">${highlightCell(item["status"])}</td>
+          <td class="editable">${highlightCell(item["last_modified_date"])}</td>
+      `;
+  tableBody.appendChild(itemRow);
+}
+
+function countRowsInTable(table) {
+
   // Count only the rows within the tbody
   const rowCount = tableBody.rows.length;
   console.log("Number of body rows:", rowCount);
+  switch (table) {
+    case "MIDP":
+      document.getElementById('MIDPCount').innerHTML = `(${rowCount} files)`
+      break;
+    case "DR":
+      document.getElementById('DRCount').innerHTML = `(${rowCount} files)`
+      document.getElementById('DRCountSHEAF').innerHTML = `(${rowCount} files)`
+      break;
+    case "TR":
+      document.getElementById('TRCount').innerHTML = `(${rowCount} files)`
+      break;
+    case "MDR":
+      document.getElementById('MDRCount').innerHTML = `(${rowCount} files)`
+      break;
+    default:
+      break;
+  }
 }
 
 async function colourParentMissing() {
@@ -782,15 +932,66 @@ async function generateMIDPHeaders(headers) {
 
   // Select the tables
   var tableMIDP = document.querySelector("#dataTable");
-  var tableDR = document.querySelector("#dataTableDR");
 
   // Check if tableMIDP and tableDR are valid elements
   console.log(tableMIDP);
+
+  // If the tables are found in the DOM, append thead
+  if (tableMIDP) {
+    let headerArray = [tableMIDP];
+
+    headerArray.forEach((element) => {
+      console.log(element); // Log each element to ensure it's a valid HTML element
+      let clonedThead = thead.cloneNode(true); // Clone the thead to append to multiple tables
+      element.appendChild(clonedThead); // Append the cloned thead to each table
+    });
+  } else {
+    console.error("Table elements not found. Check your selectors.");
+  }
+}
+
+async function generateDrawingRegisterHeaders(headers) {
+  console.log(1);
+
+  // Create table head and row
+  var thead = document.createElement("thead");
+  var headerRow = document.createElement("tr");
+
+  // Loop through the headers array and create <th> elements
+  headers.forEach(function (header) {
+    var th = document.createElement("th");
+
+    // Add width if defined
+    if (header.width) {
+      th.style.width = header.width;
+    }
+
+    // Add 'data-order' attribute if defined
+    if (header.order) {
+      th.setAttribute("data-order", header.order);
+    }
+
+    // Set the content of the header
+    th.textContent = header.content;
+
+    // Append <th> to the header row
+    headerRow.appendChild(th);
+  });
+
+  // Append the row to the thead
+  thead.appendChild(headerRow);
+  console.log(thead); // Log the thead
+
+  // Select the tables
+  var tableMIDP = document.querySelector("#dataTable");
+  var tableDR = document.querySelector("#dataTableDR");
+
+  // Check if tableMIDP and tableDR are valid elements
   console.log(tableDR);
 
   // If the tables are found in the DOM, append thead
-  if (tableMIDP && tableDR) {
-    let headerArray = [tableMIDP, tableDR];
+  if (tableDR) {
+    let headerArray = [tableDR];
 
     headerArray.forEach((element) => {
       console.log(element); // Log each element to ensure it's a valid HTML element
@@ -840,7 +1041,7 @@ function generateMDRTable(inputData) {
   );
   let currentCategory = "";
   // Grouping the files by discipline (extracted from the name)
-  const groupedByProject = data.reduce((acc, file) => {
+  let groupedByProject = data.reduce((acc, file) => {
     // Extract the discipline code (e.g., 'EYA' or 'EYC') from the name
     const project = file.project_pin;
 
@@ -856,22 +1057,33 @@ function generateMDRTable(inputData) {
   }, {});
 
   console.log(groupedByProject);
+  groupedByProject = Object.fromEntries(
+    Object.entries(groupedByProject).sort((a, b) => a[0].localeCompare(b[0]))
+);
   Object.values(groupedByProject).forEach(async (group) => {
     currentCategory = arrayProjectPin[0].value;
     console.log(currentCategory);
-    group.forEach((row, index) => {
-      console.log(row);
+    const groupedFiles = await groupItemData(group)
+    console.log(groupedFiles)
+    Object.values(groupedFiles).forEach((row, index) => {
+      //group.forEach((row, index) => {
+      // console.log(row);
       // Check if the category has changed
       // if(currentCategory.value == null){
       //     return
       // }
-      if (row.project_pin !== currentCategory.value) {
+
+      const mainItem = row[0]
+      console.log(mainItem)
+      if (typeof mainItem.project_pin === 'undefined' ) {
+        return
+      }
+      if (mainItem.project_pin !== currentCategory.value ) {
         currentCategory = arrayProjectPin.find(
-          (obj) => obj.value === row.project_pin
+          (obj) => obj.value === mainItem.project_pin
         );
 
         categoryRow = currentCategory.value;
-        console.log(currentCategory.project_pin);
         // Insert a sub-header row for the new category
         const subHeaderRow = document.createElement("tr");
         subHeaderRow.classList.add("sub-header");
@@ -881,7 +1093,7 @@ function generateMDRTable(inputData) {
         );
 
         const subHeaderCell = document.createElement("td");
-        subHeaderCell.setAttribute("colspan", "12");
+        subHeaderCell.setAttribute("colspan", "11");
         subHeaderCell.classList.add("sub-header");
         subHeaderCell.textContent =
           currentCategory.value + " - " + currentCategory.description;
@@ -904,41 +1116,36 @@ function generateMDRTable(inputData) {
 
       // Insert the data row and add a specific class for each category group
       const dataRow = document.createElement("tr");
-      formValue = arrayForm.find((obj) => obj.value === row.form);
+      const functionValue = arrayFunction.find((obj) => obj.value === mainItem.function);
       //dataRow.classList.add(`category-${index}`); // Class to associate rows with their respective sub-header
-      dataRow.setAttribute("data-id", row.id);
+      dataRow.setAttribute("data-id", mainItem.id);
       dataRow.setAttribute("data-category", `row-${currentCategory.value}`);
       dataRow.innerHTML = `
-  
-                  <td>${row.name}</td>
-                  <td><a href="${row.file_url}" target="_blank">View</a></td>
-                  <td class="editable">${highlightCell(
-                    row.revision,
-                    "revision"
-                  )}</td>
-                  <td class="editable">${highlightCell(row.title_line_1)}</td>
-                  <td class="">${row.folder_path}</td>
-                  <td class="">${formValue.description}</td>
-                  <td class="editable-drop">${highlightTrackingStatusCell(
-                    row.tracking_status
-                  )}</td>
-                  <td class="editable">${highlightUndefinedCell(row.notes)}</td>
-                  <td class="editable-date">${highlightUndefinedCell(
-                    new Date(row.planned_start_date).toLocaleDateString("en-GB")
-                  )}</td>
-                  <td class="editable-date">${highlightUndefinedCell(
-                    new Date(row.actual_start_date).toLocaleDateString("en-GB")
-                  )}</td>
-                  <td class="editable-date">${highlightUndefinedCell(
-                    new Date(row.planned_finish_date).toLocaleDateString(
-                      "en-GB"
-                    )
-                  )}</td>
-                  <td class="editable-date">${highlightUndefinedCell(
-                    new Date(row.actual_finish_date).toLocaleDateString("en-GB")
-                  )}</td>
-              `;
+        <td>${mainItem.name.split('.')[0]}</td>
+        <td><a href="${mainItem.file_url}" target="_blank">View</a></td>
+        <td class="editable">${highlightCell(mainItem.revision, "revision")}</td>
+        <td class="editable">${highlightCell(mainItem.title_line_1)}</td>
+        <td class="editable">${highlightCell(mainItem.description)}</td>
+        <td class="">${mainItem.folder_path}</td>
+        <td class="">${functionValue.description || ''}</td>
+        <td class="editable">${highlightTrackingStatusCell(mainItem.status)}</td>
+      `;
+      
+      if (mainItem.folder_path.includes('PUBLISHED')) {
+          dataRow.innerHTML += `<td>${highlightCell(
+            new Date(mainItem.last_modified_date).toLocaleString()
+          )}</td>`;
+      } else {
+          dataRow.innerHTML += `<td class=""></td>`;
+      }
+      
+      dataRow.innerHTML += `
+          <td class="editable">${highlightUndefinedCell(mainItem.originator)}</td>
+          <td class="editable">${highlightUndefinedCell(mainItem.name.split('.')[1])}</td>
+      `;
+      
       tableBody.appendChild(dataRow);
+  
     });
     let currentlyEditing = null;
   });

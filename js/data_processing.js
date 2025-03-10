@@ -19,15 +19,17 @@ async function processData(data, fileName, updated, Project_Name, folders) {
     "titleBox"
   ).innerHTML = `<h1>${projectName}</h1><hr class="divider"><br><h3> ACC Docs Dashboard</h3>`;
   document.title = `${projectName} ACC Docs Dashboard`;
-  
+
+  orginalACCExport = fileData.data;
+
+  await generateArrays()
   await loadTables()
 }
 async function loadTables() {
     // fileData = sessionStorage.getItem('projectData')
-    console.log('fileData',fileData)
-    orginalACCExport = fileData.data;
+    console.log('fileData',files)
     await generateHeadersParent();
-    generateMIDPTable();
+    await generateMIDPTable();
 }
 
 function formatDate(isoDate) {
@@ -62,6 +64,7 @@ async function convertStringToJSON(JSONdata) {
 
 async function groupItemData(data) {
   groupedData = data.reduce((acc, item) => {
+    // console.log(item)
     // Extract the id without the version part
     const itemIdNoVersion = item.id.split("?")[0];
 
@@ -82,7 +85,7 @@ async function groupItemData(data) {
 
 async function addToFilesArray(item) {
     folderPaths.push(item.folder_path);
-    filteredData.push(item);
+    originalFileData.push(item);
     files.push({
       name: item.name,
       accversion: item.accversion,
@@ -90,6 +93,7 @@ async function addToFilesArray(item) {
       revision: item.revision,
       folder_path: item.folder_path,
       folderid: item.folderid,
+      function: item.function,
       file_description: item.file_description,
       title_line_1: item.title_line_1,
       title_line_2: item.title_line_2,
@@ -105,6 +109,7 @@ async function addToFilesArray(item) {
       form: item.form,
       project_pin: item.project_pin,
       spatial: item.spatial,
+      originator: item.originator,
       notes: item.notes,
       tracking_status: item.tracking_status,
       category: item.category,
@@ -122,15 +127,15 @@ async function addToFilesArray(item) {
     const percentage = (part / total) * 100;
     return parseFloat(percentage.toFixed(2)); // Round to 2 decimal places
   }
-  async function runChecks() {
-    countRowsInTable();
+  async function runChecks(tableType) {
+    countRowsInTable(tableType);
     await revisionCheck();
     await descriptionlineCheck();
     await titlelineCheck();
-    if (selectedTab != "TransmittalRegister") {
+    if (selectedTab == "MIDP") {
       await statusCheck();
     }
-    await invalidFileCheck();
+    await invalidFileCheck(mainFileArray);
     complianceCalc();
   }
 
@@ -139,7 +144,7 @@ async function addToFilesArray(item) {
     overall = 0;
     overallComplianceScore = document.getElementById("OverallCompliance");
     //overallComplianceScore.innerHTML = `Overall Project Compliance: ${}%`
-    totals = files.length;
+    totals = mainFileArray.length;
     invalidFilesCount = invalidObjects.length;
     overall =
       titleLinePresentCount +
@@ -230,7 +235,9 @@ async function addToFilesArray(item) {
     console.log(namingstandard);
     arrayDiscipline = namingstandard.find((item) => item.name === "Discipline");
     arrayDiscipline = arrayDiscipline ? arrayDiscipline.options : [];
-    arrayProjectPin = namingstandard.find((item) => item.name === "Project Pin");
+    arrayFunction = namingstandard.find((item) => item.name === "Function");
+    arrayFunction = arrayFunction ? arrayFunction.options : [];
+    arrayProjectPin = namingstandard.find((item) => item.name === "Project Pin" || item.name === "Project PIN");
     arrayProjectPin = arrayProjectPin ? arrayProjectPin.options : [];
     arrayForm = namingstandard.find((item) => item.name === "Form");
     arrayForm = arrayForm ? arrayForm.options : [];
@@ -241,8 +248,8 @@ async function addToFilesArray(item) {
 
   async function getNamingStandardID(folderArray) {
     wipFolderID = fileData.folderData.filter((item) => {
-      return item.folderPath.includes("0C.WIP");
-    });
+      return item.folderPath.includes("0C.WIP") || item.folderPath.includes("0C.KELTBRAY/WIP");
+  });
     console.log("Keltrbay WIP Folder for NS", wipFolderID[0]);
     defaultFolder = wipFolderID[0].folderID;
     returnData = await getFolderDetails(accesToken, rawProjectID, defaultFolder);
@@ -306,4 +313,11 @@ async function addToFilesArray(item) {
   
     // Log the matched results to the console
     console.log("TransmittalData", TransmittalData);
+  }
+
+  async function generateArrays() {
+    orginalACCExport.forEach(async item => {
+      // console.log(item)
+      await addToFilesArray(item);
+    });
   }

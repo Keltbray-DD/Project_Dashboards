@@ -1,7 +1,7 @@
 async function chartChecks(item) {
-    if (selectedTab == "DrawingRegister" && item.form != "DR") {
-      return;
-    }
+    // if (selectedTab == "DrawingRegister" && item.form != "DR") {
+    //   return;
+    // }
     if (isMissing(item["title_line_1"])) {
       titleLineMissingCount++;
     } else {

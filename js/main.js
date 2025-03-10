@@ -27,31 +27,30 @@ document.addEventListener("DOMContentLoaded", async function () {
   });
   getProjectFromURL();
   projectName = sessionStorage.getItem('projectName')
+  await showLoadingSpinner(tableHeader)
   await getData()
+  await hideLoadingSpinner(tableHeader)
+
 //await createFilterOptions()
   
 
   // Button visability //
-  // MIDP
-  if (projects_MIDPs.some((item) => item.id === projectID) == false) {
-    document.getElementById("MIDP_Button").style.display = "none";
+
+  // Drawing Register
+  if (projects_DR.some((item) => item.id === projectID)) {
+    document.getElementById("DrawingRegister_Button").style.display = "block";
   }
 
   // Drawing Register
-  if (projects_DR.some((item) => item.id === projectID) == false) {
-    document.getElementById("DrawingRegister_Button").style.display = "none";
+  if (projects_SHEAF_DR.some((item) => item.id === projectID)) {
+    document.getElementById("DrawingRegisterSHEAF_Button").style.display = "block";
   }
 
   // Transmittal Register
-  if (projects_TR.some((item) => item.id === projectID) == false) {
-    document.getElementById("TransmittalRegister_Button").style.display =
-      "none";
-  }
-
-  // MDR
-  if (projects_MDR.some((item) => item.id === projectID) == false) {
-    document.getElementById("MDR_Button").style.display = "none";
-  }
+  // if (projects_TR.some((item) => item.id === projectID)) {
+  //   document.getElementById("TransmittalRegister_Button").style.display =
+  //     "block";
+  // }
 
   rows = tableBody.getElementsByTagName("tr");
 
@@ -148,7 +147,7 @@ async function populateFolderDropdown(folderPaths) {
 }
 
 async function resetValues() {
-  files = [];
+  // files = [];
   tableBody.innerHTML = "";
   //folderFilter.options.length = 1
   folderPaths = [];
@@ -262,13 +261,15 @@ async function openTab(evt, tabName) {
   switch (tabName) {
     case "MIDP":
       tableBody = document.querySelector("#dataTable tbody");
-      tableHeader = document.getElementById("#dataTable thead");
+      tableHeader = document.getElementById("dataTable");
       searchInput = document.getElementById("searchInput");
+      await showLoadingSpinner(tableHeader)
       //folderFilter = document.getElementById("folderFilter");
       tableBody.innerHTML = "";
       searchInput.value = "";
-      tableHeader.innerHTML = '';
+      // tableHeader.innerHTML = '';
       generateMIDPTable();
+      await hideLoadingSpinner(tableHeader)
       break;
 
     case "DrawingRegister":
@@ -276,10 +277,31 @@ async function openTab(evt, tabName) {
       tableHeader = document.getElementById("dataTableDR");
       searchInput = document.getElementById("searchInputDR");
       folderFilter = document.getElementById("folderFilterDR");
+      await showLoadingSpinner(tableHeader)
       tableBody.innerHTML = "";
       searchInput.value = "";
       //tableHeader.innerHTML=''
-      generateMIDPTable();
+      generateDrawingRegisterTable();
+      document.getElementById("openModal").style.display = "none";
+      document.getElementById("chartButton").style.display = "none";
+      document.getElementById("chartsSection").style.display = "none";
+      await hideLoadingSpinner(tableHeader)
+      break;
+
+    case "DrawingRegisterSHEAF":
+      tableBody = document.querySelector("#dataTableDRSHEAF tbody");
+      tableHeader = document.getElementById("dataTableDRSHEAF");
+      searchInput = document.getElementById("searchInputDRSHEAF");
+      folderFilter = document.getElementById("folderFilterDRSHEAF");
+      await showLoadingSpinner(tableHeader)
+      tableBody.innerHTML = "";
+      searchInput.value = "";
+      //tableHeader.innerHTML=''
+      generateSHEAFDrawingRegisterTable();
+      document.getElementById("openModal").style.display = "none";
+      document.getElementById("chartButton").style.display = "none";
+      document.getElementById("chartsSection").style.display = "none";
+      await hideLoadingSpinner(tableHeader)
       break;
 
     case "TransmittalRegister":
@@ -287,6 +309,7 @@ async function openTab(evt, tabName) {
       tableHeader = document.getElementById("dataTableTR");
       searchInput = document.getElementById("searchInputTR");
       folderFilter = document.getElementById("folderFilterTR");
+      await showLoadingSpinner(tableHeader)
       tableBody.innerHTML = "";
       searchInput.value = "";
       DCDataRetrieval();
@@ -294,6 +317,7 @@ async function openTab(evt, tabName) {
       document.getElementById("openModal").style.display = "none";
       document.getElementById("chartButton").style.display = "none";
       document.getElementById("chartsSection").style.display = "none";
+      await hideLoadingSpinner(tableHeader)
       break;
 
     case "MDR":
@@ -301,6 +325,7 @@ async function openTab(evt, tabName) {
       tableHeader = document.getElementById("dataTableMDR");
       searchInput = document.getElementById("searchInputMDR");
       folderFilter = document.getElementById("folderFilterMDR");
+      await showLoadingSpinner(tableHeader)
       tableBody.innerHTML = "";
       searchInput.value = "";
       await getNSArray();
@@ -308,6 +333,7 @@ async function openTab(evt, tabName) {
       document.getElementById("openModal").style.display = "none";
       document.getElementById("chartButton").style.display = "none";
       document.getElementById("chartsSection").style.display = "none";
+      await hideLoadingSpinner(tableHeader)
       break;
 
     default:
@@ -355,9 +381,9 @@ async function openTab(evt, tabName) {
 
 
 
-async function invalidFileCheck() {
+async function invalidFileCheck(fileArray) {
   invalidObjects = [];
-  files.forEach(async (obj) => {
+  fileArray.forEach(async (obj) => {
     if (await hasInvalidFields(obj, ignoreFieldsInvaildCheck)) {
       //console.log(obj)
       invalidObjects.push(obj);
@@ -712,4 +738,20 @@ async function createFilterOptions() {
       toggleButton.textContent = "Show Filters";
     }
   });
+}
+
+async function showLoadingSpinner(table) {
+  const loadingSpinner = document.getElementById('loading');
+
+  // Show the loading spinner
+  table.style.display = 'none';
+  loadingSpinner.style.display = 'block';
+}
+
+async function hideLoadingSpinner(table) {
+  const loadingSpinner = document.getElementById('loading');
+
+  // Show the loading spinner
+  loadingSpinner.style.display = 'none';
+  table.style.display = 'block';
 }

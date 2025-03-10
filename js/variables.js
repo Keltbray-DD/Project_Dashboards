@@ -1,5 +1,5 @@
 const appName = "ACC Docs Dashboard";
-const appVersion = "v1.1.9";
+const appVersion = "v1.1.10";
 
 let projectID;
 const hubID = "b.24d2d632-e01b-4ca0-b988-385be827cb04"
@@ -36,8 +36,10 @@ let descriptionPresentCount = 0
 let descriptionPlaceHolderCount = 0;
 
 let orginalACCExport = [];
+let mainFileArray = [];
 let files = [];
 let fileData =[];
+let originalFileData = [];
 let rawFileData = [];
 let statusCounts = [];
 let folderCount = [];
@@ -48,6 +50,7 @@ let columnNamesDefault = [];
 let columnNamesMDR = [];
 let columnNames =[];
 let arrayDiscipline =[];
+let arrayFunction = [];
 let arrayForm =[];
 let ignoreFieldsInvaildCheck = ["last_modified_user","created_by","title_line_2","title_line_3","title_line_4","activity_code","actual_finish_date","actual_start_date","folderid","planned_finish_date","planned_start_date","tracking_status","notes","category","spatial"];
 let csvDataReviewStore = [];
@@ -91,7 +94,10 @@ const projects_MIDPs = [
 
 const projects_DR = [
     {name:"HI7411",id:"76c59b97-feaf-413c-9bd0-43cf8aaa3133"},
-    {name:"DT1117",id:"2e6449f9-ce25-4a9c-8835-444cb5ea03bf"},
+    {name:"DT1117",id:"2e6449f9-ce25-4a9c-8835-444cb5ea03bf"}
+]
+
+const projects_SHEAF_DR = [
     {name:"DT1116",id:"7c7ca0c5-bfc3-4ef1-9396-c72c6270f457"}
 ]
 
@@ -142,4 +148,17 @@ const a66Headers = [
     { width: '120px', content: 'Last Modified Date', order: 'desc' },
     { width: '120px', content: 'Created by', order: 'desc' },
     { content: 'Spatial', order: 'desc' },
+];
+
+const drawingRegisterHeaders = [
+    { width: '10px', content: '' },
+    { width: '300px', content: 'File Name', order: 'desc' },
+    { width: '50px', content: 'Version', order: 'desc' },
+    { width: '60px', content: 'File URL', order: 'desc' },
+    { width: '60px', content: 'Revision', order: 'desc' },
+    { content: 'Folder Path', order: 'desc' },
+    { content: 'File Description', order: 'desc' },
+    { content: 'Title Line 1', order: 'desc' },
+    { width: '60px', content: 'Status', order: 'desc' },
+    { width: '120px', content: 'Issued', order: 'desc' },
 ];
