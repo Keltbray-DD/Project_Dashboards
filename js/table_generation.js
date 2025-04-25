@@ -22,6 +22,7 @@ async function generateTransmittalTable() {
   resetValues();
   await generateTransmittalFileTable(files);
   await runChecks('TR');
+  const folderPaths = filteredData.map(item => item.folder_path);
   populateFolderDropdown(folderPaths);
   generateCharts();
   colourParentMissing();
@@ -36,40 +37,52 @@ async function generateDrawingRegisterTable() {
   console.log("Drawing Register Table");
   resetValues();
   console.log(files)
-  const filteredData = files.filter(item => item.revision && item.revision.includes('C') && item.form.includes('DR'));
+  filteredData = files.filter(item => item.revision && item.revision.includes('C') && item.form.includes('DR'));
   console.log(filteredData)
   mainFileArray = filteredData
   await generateDrawingRegisterFileTable(filteredData);
   await generateDrawingRegisterHeaders(drawingRegisterHeaders);
   await runChecks('DR');
-  populateFolderDropdown(folderPaths);
-  generateCharts();
-  colourParentMissing();
-  makeCellsEditable().then(() => {
-    // Runs after getData completes
-    columnEditing();
-    addSortableColumns();
-  });
+  const folderPaths = filteredData.map(item => item.folder_path);
+  await populateFolderDropdown(folderPaths);
+  if(!isClient){
+    generateCharts();
+    colourParentMissing();
+    makeCellsEditable().then(() => {
+      // Runs after getData completes
+      columnEditing();
+      addSortableColumns();
+    });
+  }
 }
 
 async function generateSHEAFDrawingRegisterTable() {
   console.log("SHEAF Drawing Register Table");
   resetValues();
   console.log(files)
-  const filteredData = files.filter(item => item.form.includes('DR'));
+  let filteredData
+  if(isClient){
+    filteredData = files.filter(item => item.form.includes('DR') && (item.folder_path.includes('PUBLISHED') || item.folder_path.includes('0F.SHARED_TO_CLIENT')));
+  }else{
+    filteredData = files.filter(item => item.form.includes('DR'));
+  }
+  
   console.log(filteredData)
   mainFileArray = filteredData
   await generateDrawingRegisterFileTable(filteredData);
   await generateDrawingRegisterHeaders(drawingRegisterHeaders);
   await runChecks('DR');
-  populateFolderDropdown(folderPaths);
-  generateCharts();
-  colourParentMissing();
-  makeCellsEditable().then(() => {
-    // Runs after getData completes
-    columnEditing();
-    addSortableColumns();
-  });
+  const folderPaths = filteredData.map(item => item.folder_path);
+  await populateFolderDropdown(folderPaths);
+  if(!isClient){
+    generateCharts();
+    colourParentMissing();
+    makeCellsEditable().then(() => {
+      // Runs after getData completes
+      columnEditing();
+      addSortableColumns();
+    });
+  }
 }
 
 async function generateHeadersParent() {
@@ -539,7 +552,8 @@ async function createExpandableDrawingRegisterTableRow(item) {
 function countRowsInTable(table) {
 
   // Count only the rows within the tbody
-  const rowCount = tableBody.rows.length;
+  const rowsWithClass = tableBody.querySelectorAll('tr.main-row');
+  const rowCount = rowsWithClass.length;
   console.log("Number of body rows:", rowCount);
   switch (table) {
     case "MIDP":
@@ -880,7 +894,7 @@ async function makeCellsEditable() {
       : "✏️ Enable Edit Mode"; // Checkmark symbol for non-edit mode
     toggleEditBtn.style.backgroundColor = editMode ? "orange" : "";
   }
-
+if(!isClient){
   // Add click event listener to the toggle button
   toggleEditBtn.addEventListener("click", toggleEditMode);
 
@@ -898,8 +912,10 @@ async function makeCellsEditable() {
   });
 }
 
+}
+
 async function generateMIDPHeaders(headers) {
-  console.log(1);
+  // console.log(1);
 
   // Create table head and row
   var thead = document.createElement("thead");
@@ -951,7 +967,7 @@ async function generateMIDPHeaders(headers) {
 }
 
 async function generateDrawingRegisterHeaders(headers) {
-  console.log(1);
+  // console.log(1);
 
   // Create table head and row
   var thead = document.createElement("thead");

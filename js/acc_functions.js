@@ -76,14 +76,20 @@ function displayProjects(projectList) {
 
         // Add click event listener to the project card
         projectCard.addEventListener('click', () => {
+            let nextPageUrl
             // Get the project ID from the data attribute
             projectID = project.id; // Set global project ID
             sessionStorage.setItem('projectID',projectID);
             sessionStorage.setItem('projectName', project.name)
             console.log('Selected Project ID:', sessionStorage.getItem('projectID'));
-
+            if(isClient){
             // Construct the URL with the project ID as a query parameter
-            const nextPageUrl = `dashboard.html?id=${projectID}`;
+            nextPageUrl = `dashboard_client.html?id=${projectID}`;
+            }else{
+            // Construct the URL with the project ID as a query parameter
+            nextPageUrl = `dashboard.html?id=${projectID}`;
+            }
+
             
             // Navigate to the next page
             window.location.href = nextPageUrl;

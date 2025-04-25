@@ -10,6 +10,14 @@ body {
   
     background: rgb(255,255,255);
     background: linear-gradient(158deg, rgba(255,255,255,1) 0%, rgba(59,219,135,1) 37%, rgba(111,188,247,1) 65%, rgba(4,113,190,1) 100%);
+    /* Don’t repeat the gradient image */
+    background-repeat: no-repeat;
+    
+    /* Keep the background fixed in place as the user scrolls */
+    background-attachment: fixed;
+    
+    /* Make sure the gradient covers the entire screen */
+    background-size: cover;
   }
 html {
   height: 100%;
@@ -610,9 +618,17 @@ table {
 .tableOptions{
   display: flex;
   position: sticky;
+  top: 0;
+  z-index: 101;
   border-top: 1px solid #ccc;
   border-bottom: 1px solid #ccc;
   background-color: #f1f1f1; 
+}
+
+.tableHeader {
+  position: sticky;
+  top: 0;
+  z-index: 102;
 }
 .filterOptions{
   display: flex;

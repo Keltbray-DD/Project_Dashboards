@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", async function () {
     document.getElementById("appInfo").textContent = `${appName} ${appVersion}`;
     toolURL = fullUrl.split("?")[0];
     await checkLogin();
+
     loadingScreen = document.getElementById("loadingScreen");
     statusUpdateLoading = document.getElementById("statusUpdateLoading");
     const logoutButton = document.getElementById("logoutBtn");

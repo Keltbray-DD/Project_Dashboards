@@ -11,18 +11,22 @@
 <body>
 
     <!-- Login Box -->
-    <div class="login-box">
-        <div class="profile-container">
-            <div class="profile-info">
-              <div><strong id="userName" class="name"> </strong></div>
-              <div id="userEmail"></div>
-              <button id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Logout</button>
-            </div>
-            <img id="userPicture" alt="User Profile Image" src="https://images.profile.autodesk.com/default/user_X58.png">
+    <div class="top-bar">
+        <img src="https://www.aureos.com/wp-content/themes/keltbray/assets/img/logo/AUREOS_logo_wh.svg" 
+        class="logo logo--white" 
+        alt="Aureos Logo">
+        <div class="title"><h2>ACC Docs Dashboard</h2></div>
+        <div class="profile-container" id="profileMenu">
+          <img id="userPic" src="https://images.profile.autodesk.com/default/user_X58.png" alt="Profile" class="profile-pic" />
+          <div class="dropdown-menu" id="dropdown">
+            <div ><strong>User:</strong> <p id="userName"></p></div>
+            <div ><strong>Email:</strong> <p id="userEmail"></p></div>
+            <div class="logout" onclick="logout()">Logout</div>
           </div>
-    </div>
+        </div>
+      </div>
 
-    <div class="container">
+    <div class="container projectList">
         <h1>Select a Project</h1>
                 <!-- Search Bar -->
                 <input
@@ -50,11 +54,6 @@
         </div>
     </div>
     <div id="appInfo"></div>
-    <a href="https://www.aureos.com/" target="_blank" rel="noopener noreferrer">
-        <img src="https://www.aureos.com/wp-content/themes/keltbray/assets/img/logo/AUREOS_logo_wh.svg" 
-             class="logo logo--white" 
-             alt="Aureos Logo">
-    </a>
 
     <script src="js/variables.js"></script>
     <script src="js/login.js"></script>

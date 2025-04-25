@@ -1,5 +1,5 @@
 const appName = "ACC Docs Dashboard";
-const appVersion = "v1.1.10";
+const appVersion = "v1.2.1";
 
 let projectID;
 const hubID = "b.24d2d632-e01b-4ca0-b988-385be827cb04"
@@ -17,6 +17,9 @@ let rows;
 let overallComplianceScore;
 let editableCells
 let toggleEditBtn
+
+let isClient = true
+let userEmail
 
 let fileDescriptionColumn
 let statusColumn

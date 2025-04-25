@@ -16,20 +16,21 @@ async function processData(data, fileName, updated, Project_Name, folders) {
     fileData.updated
   )}`;
   document.getElementById(
-    "titleBox"
-  ).innerHTML = `<h1>${projectName}</h1><hr class="divider"><br><h3> ACC Docs Dashboard</h3>`;
+    "title"
+  ).innerHTML = `${projectName} - ACC Docs Dashboard`;
   document.title = `${projectName} ACC Docs Dashboard`;
 
   orginalACCExport = fileData.data;
 
   await generateArrays()
+  console.log(folderPaths)
   await loadTables()
 }
 async function loadTables() {
     // fileData = sessionStorage.getItem('projectData')
     console.log('fileData',files)
     await generateHeadersParent();
-    await generateMIDPTable();
+    await openTab('', selectedTab)
 }
 
 function formatDate(isoDate) {
@@ -135,16 +136,38 @@ async function addToFilesArray(item) {
     if (selectedTab == "MIDP") {
       await statusCheck();
     }
-    await invalidFileCheck(mainFileArray);
-    complianceCalc();
+    
+    if(!isClient){
+      const filesData = await getUniqueValues(mainFileArray)
+      await invalidFileCheck(filesData);
+      complianceCalc(filesData);
+    }
   }
 
-  function complianceCalc() {
+async function getUniqueValues(array) {
+  const result = array.reduce((acc, item) => {
+    // Split .id at '?' and use the first part as the key
+    const idKey = item.id.split('?')[0];
+  
+    const existing = acc[idKey];
+    if (!existing || item.accversion > existing.accversion) {
+      acc[idKey] = item;
+    }
+    return acc;
+  }, {});
+  
+  const uniqueByIdWithHighestVersion = Object.values(result);
+  return uniqueByIdWithHighestVersion
+}
+
+  function complianceCalc(data) {
     totals = 0;
     overall = 0;
     overallComplianceScore = document.getElementById("OverallCompliance");
     //overallComplianceScore.innerHTML = `Overall Project Compliance: ${}%`
-    totals = mainFileArray.length;
+    console.log(data)
+    totals = data.length;
+    console.log(totals)
     invalidFilesCount = invalidObjects.length;
     overall =
       titleLinePresentCount +
@@ -320,4 +343,74 @@ async function addToFilesArray(item) {
       // console.log(item)
       await addToFilesArray(item);
     });
+    
   }
+
+  function pivotData(rawData) {
+    // Group rows by fileName
+    const grouped = {};
+    rawData.forEach((row) => {
+      const key = row.name;
+      if (!grouped[key]) {
+        grouped[key] = {
+          fileName: row.name,
+          fileURL: row.file_url || "",
+          fileDescription: row.file_description || "",
+          titleLine: `${row.title_line_1 || ""} ${row.title_line_2 || ""} ${row.title_line_3 || ""} ${row.title_line_4 || ""}` ,
+          status: row.status || "",
+          revisions: []
+        };
+      }
+      grouped[key].revisions.push({
+        revision: row.revision,
+        issuedDate: new Date(row.last_modified_date).toLocaleString()
+      });
+    });
+  console.log(grouped)
+    // Build a pivoted array
+    // Build a pivoted array with only one instance per revision (earliest by issue date)
+  const pivotedData = [];
+  for (const fileKey in grouped) {
+    const fileObj = grouped[fileKey];
+    const pivotRow = {
+      fileName: fileObj.fileName,
+      fileURL: fileObj.fileURL,
+      fileDescription: fileObj.fileDescription,
+      titleLine: fileObj.titleLine,
+      status: fileObj.status
+    };
+
+    // Create an object to keep unique revisions
+    const uniqueRevisions = {};
+
+    // Loop over revisions to keep only the earliest issuedDate per revision
+    fileObj.revisions.forEach((rev) => {
+      // If this revision doesn't exist or current date is earlier, update it
+      if (!uniqueRevisions[rev.revision]) {
+        uniqueRevisions[rev.revision] = rev;
+      } else {
+        const existingDate = new Date(uniqueRevisions[rev.revision].issuedDate);
+        const currentDate = new Date(rev.issuedDate);
+        if (currentDate < existingDate) {
+          uniqueRevisions[rev.revision] = rev;
+        }
+      }
+    });
+
+    // Convert unique revisions object to an array and sort by issuedDate (ascending)
+    const uniqueRevisionArray = Object.values(uniqueRevisions).sort((a, b) => {
+      return new Date(a.issuedDate) - new Date(b.issuedDate);
+    });
+
+    // Add each unique revision to the pivot row with columns Rev1, Rev1 Issued, etc.
+    uniqueRevisionArray.forEach((rev, index) => {
+      const revNum = index + 1;
+      pivotRow[`Rev${revNum}`] = rev.revision;
+      pivotRow[`Rev${revNum} Issued`] = rev.issuedDate;
+    });
+
+    pivotedData.push(pivotRow);
+  }
+  return pivotedData;
+}
+  

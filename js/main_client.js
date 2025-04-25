@@ -1,15 +1,11 @@
 document.addEventListener("DOMContentLoaded", async function () {
-  table = document.querySelector("#dataTable");
-  tableBody = document.querySelector("#dataTable tbody");
-  tableHeader = document.querySelector("#dataTable");
-  searchInput = document.getElementById("searchInput");
+
   // folderFilter = document.getElementById("folderFilter");
   if (window.location.href.includes("/dashboard")) {
     if (!window.location.href.includes("?id=")) {
       window.location.href = `/Project_Dashboards/index.html`;
     }
-    document.getElementById("MIDP").style.display = "block";
-    document.getElementById("chartsSection").style.display = "block";
+    // document.getElementById("chartsSection").style.display = "block";
   }
 
   const fullUrl = window.location.href;
@@ -26,14 +22,16 @@ document.addEventListener("DOMContentLoaded", async function () {
   // logoutButton.addEventListener("click", function () {
   //   signOut();
   // });
-  getProjectFromURL();
+  await getProjectFromURL();
+  if(projectID == "7c7ca0c5-bfc3-4ef1-9396-c72c6270f457"){
+    selectedTab = "DrawingRegisterSHEAF"
+  }else{
+    selectedTab = "DrawingRegister"
+  }
   projectName = sessionStorage.getItem('projectName')
   await showLoadingSpinner(tableHeader)
   await getData()
   await hideLoadingSpinner(tableHeader)
-
-//await createFilterOptions()
-  
 
   // Button visability //
 
@@ -46,12 +44,6 @@ document.addEventListener("DOMContentLoaded", async function () {
   if (projects_SHEAF_DR.some((item) => item.id === projectID)) {
     document.getElementById("DrawingRegisterSHEAF_Button").style.display = "block";
   }
-
-  // Transmittal Register
-  // if (projects_TR.some((item) => item.id === projectID)) {
-  //   document.getElementById("TransmittalRegister_Button").style.display =
-  //     "block";
-  // }
 
   rows = tableBody.getElementsByTagName("tr");
 
@@ -134,7 +126,7 @@ function signOut() {
 }
 
 async function populateFolderDropdown(folderPaths) {
-  folderFilter.innerHTML = `<option value="all">All</option>`
+folderFilter.innerHTML = `<option value="all">All</option>`
   const uniqueArray = folderPaths.filter(
     (obj, index, self) => index === self.findIndex((o) => o === obj)
   );
@@ -192,7 +184,7 @@ async function getProjectFromURL() {
   if (url.indexOf("id=") !== -1) {
     // Extract the value of the 'id' parameter
     var id = url.split("id=")[1];
-
+    projectID = id
     // Display the extracted ID
     console.log("Extracted ID:", id);
 
@@ -255,8 +247,8 @@ async function openTab(evt, tabName) {
   if(evt){
     evt.currentTarget.className += " active";
   }
-  document.getElementById("openModal").style.display = "block";
-  document.getElementById("chartButton").style.display = "block";
+  // document.getElementById("openModal").style.display = "block";
+  // document.getElementById("chartButton").style.display = "block";
   switch (tabName) {
     case "MIDP":
       tableBody = document.querySelector("#dataTable tbody");
@@ -281,9 +273,9 @@ async function openTab(evt, tabName) {
       searchInput.value = "";
       //tableHeader.innerHTML=''
       generateDrawingRegisterTable();
-      document.getElementById("openModal").style.display = "none";
-      document.getElementById("chartButton").style.display = "none";
-      document.getElementById("chartsSection").style.display = "none";
+      // document.getElementById("openModal").style.display = "none";
+      // document.getElementById("chartButton").style.display = "none";
+      // document.getElementById("chartsSection").style.display = "none";
       await hideLoadingSpinner(tableHeader)
       break;
 
@@ -297,9 +289,9 @@ async function openTab(evt, tabName) {
       searchInput.value = "";
       //tableHeader.innerHTML=''
       generateSHEAFDrawingRegisterTable();
-      document.getElementById("openModal").style.display = "none";
-      document.getElementById("chartButton").style.display = "none";
-      document.getElementById("chartsSection").style.display = "none";
+      // document.getElementById("openModal").style.display = "none";
+      // document.getElementById("chartButton").style.display = "none";
+      // document.getElementById("chartsSection").style.display = "none";
       await hideLoadingSpinner(tableHeader)
       break;
 
@@ -313,9 +305,9 @@ async function openTab(evt, tabName) {
       searchInput.value = "";
       DCDataRetrieval();
       generateTransmittalTable();
-      document.getElementById("openModal").style.display = "none";
-      document.getElementById("chartButton").style.display = "none";
-      document.getElementById("chartsSection").style.display = "none";
+      // document.getElementById("openModal").style.display = "none";
+      // document.getElementById("chartButton").style.display = "none";
+      // document.getElementById("chartsSection").style.display = "none";
       await hideLoadingSpinner(tableHeader)
       break;
 
@@ -329,9 +321,9 @@ async function openTab(evt, tabName) {
       searchInput.value = "";
       await getNSArray();
       generateMDRTable(files);
-      document.getElementById("openModal").style.display = "none";
-      document.getElementById("chartButton").style.display = "none";
-      document.getElementById("chartsSection").style.display = "none";
+      // document.getElementById("openModal").style.display = "none";
+      // document.getElementById("chartButton").style.display = "none";
+      // document.getElementById("chartsSection").style.display = "none";
       await hideLoadingSpinner(tableHeader)
       break;
 
@@ -362,20 +354,20 @@ async function openTab(evt, tabName) {
     }
   });
   // Add event listener to filter the table based on selected folder path
-  // folderFilter.addEventListener('change', function () {
-  //     const selectedPath = this.value;
+  folderFilter.addEventListener('change', function () {
+      const selectedPath = this.value;
 
-  //     for (let i = 0; i < rows.length; i++) { // Skip the header row
-  //         const row = rows[i];
-  //         const folderPath = row.getElementsByTagName('td')[5].textContent.trim();
+      for (let i = 0; i < rows.length; i++) { // Skip the header row
+          const row = rows[i];
+          const folderPath = row.getElementsByTagName('td')[5].textContent.trim();
 
-  //         if (selectedPath === 'all' || folderPath === selectedPath) {
-  //             row.style.display = ''; // Show the row
-  //         } else {
-  //             row.style.display = 'none'; // Hide the row
-  //         }
-  //     }
-  // });
+          if (selectedPath === 'all' || folderPath === selectedPath) {
+              row.style.display = ''; // Show the row
+          } else {
+              row.style.display = 'none'; // Hide the row
+          }
+      }
+  });
 }
 
 
@@ -743,7 +735,7 @@ async function showLoadingSpinner(table) {
   const loadingSpinner = document.getElementById('loading');
 
   // Show the loading spinner
-  table.style.display = 'none';
+  //table.style.display = 'none';
   loadingSpinner.style.display = 'block';
 }
 
@@ -752,5 +744,5 @@ async function hideLoadingSpinner(table) {
 
   // Show the loading spinner
   loadingSpinner.style.display = 'none';
-  table.style.display = 'block';
+  //table.style.display = 'block';
 }

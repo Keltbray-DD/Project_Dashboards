@@ -41,21 +41,20 @@
     </div>
     <section id="menu-bar" class="menu-bar">
         <div class="tab">
-            <button id="MIDP_Button" class="tablinks" onclick="openTab(event, 'MIDP')">MIDP</button>
-            <button id="DrawingRegister_Button" class="tablinks" onclick="openTab(event, 'DrawingRegister')" style="display: none;">Drawing Register</button>
+            <!-- <button id="MIDP_Button" class="tablinks" onclick="openTab(event, 'MIDP')">MIDP</button> -->
+            <!-- <button id="DrawingRegister_Button" class="tablinks" onclick="openTab(event, 'DrawingRegister')" style="display: none;">Drawing Register</button> -->
             <button id="DrawingRegisterSHEAF_Button" class="tablinks" onclick="openTab(event, 'DrawingRegisterSHEAF')" style="display: none;">Drawing Register</button>
-            <button id="TransmittalRegister_Button" class="tablinks" onclick="openTab(event, 'TransmittalRegister')" style="display: none;">Transmittal Register</button>
-            <button id="MDR_Button" class="tablinks" onclick="openTab(event, 'MDR')" >MDR</button>
-            <button id="toggleEditBtn" class="editButton">✏️ Enable Edit Mode</button>
-            <button id="openModal" class="modal-btn" > ⚙️ Select Columns</button>
-            <button id="chartButton" class="tablinks" onclick="openChartsSelection('chartsSection')">📊 Show/Hide Charts</button>
+            <!-- <button id="TransmittalRegister_Button" class="tablinks" onclick="openTab(event, 'TransmittalRegister')" style="display: none;">Transmittal Register</button> -->
+            <!-- <button id="MDR_Button" class="tablinks" onclick="openTab(event, 'MDR')" >MDR</button> -->
+            <!-- <button id="openModal" class="modal-btn" > ⚙️ Select Columns</button>
+            <button id="chartButton" class="tablinks" onclick="openChartsSelection('chartsSection')">📊 Show/Hide Charts</button> -->
         </div>
     </section>
     <!-- Popup message -->
     <div id="popup" class="popup">
 
     </div>
-    <div id="chartsSection" class="">
+    <!-- <div id="chartsSection" class="">
         <div class="toggle-container">
             <div class="toggle-header" data-target="score">
               <span class="arrow down"></span>
@@ -78,7 +77,6 @@
           </div>
         <section id="charts" class="charts">
 
-            <!-- Add buttons, filters, or other controls here -->
             <div class="chart-container">
                 <canvas id="missingTitleDataChart" class="chart"></canvas>
             </div>
@@ -106,17 +104,15 @@
                 <canvas id="folderDataChart" class="barChart"></canvas>
             </div>
         </section>
-    </div>
+    </div> -->
 
 
     <section id="MIDP" class="dashboard tabcontent">
         <div class="tableOptions">
             <h1>MIDP <span id="MIDPCount"></span></h1>
-            <!-- Button to toggle visibility of filters -->
             <button id="toggleFiltersButton" class="exportButton filterButton">Show Filters</button>
             <input type="text" id="searchInput" class="searchInput" placeholder="Search for anything...">
             <button onclick="exportTableToExcel('dataTable','MIDP')" class="exportButton"> Export</button>
-            <!-- <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i> -->
         </div>
         <div class="filterOptions hidden">
 
@@ -126,10 +122,10 @@
             <table id="dataTable" class="sortable">
 
                 <tbody>
-                    <!-- Data will be inserted here -->
+                    
                 </tbody>
             </table>
-        </div><!-- Containers for data visualizations -->
+        </div>
 
     </section>
 
@@ -300,6 +296,6 @@
     <script src="js/get_data.js"></script>
     <script src="js/post_data.js"></script>
     <script src="js/output_data.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/main_client.js"></script>
 </body>
 </html>

@@ -2,34 +2,35 @@ async function chartChecks(item) {
     // if (selectedTab == "DrawingRegister" && item.form != "DR") {
     //   return;
     // }
-    if (isMissing(item["title_line_1"])) {
+    // console.log(item)
+    if (isMissing(item.title_line_1)) {
       titleLineMissingCount++;
     } else {
       titleLinePresentCount++;
     }
-    if (isMissing(item["revision"])) {
+    if (isMissing(item.revision)) {
       revisionMissingCount++;
-    } else if (!pattern.test(item["revision"])) {
+    } else if (!pattern.test(item.revision)) {
       //console.log(item['revision'])
       revisionFormatCheckInvaildCount++;
     } else {
       revisionPresentCount++;
     }
-    if (isMissing(item["file_description"])) {
+    if (isMissing(item.file_description)) {
       descriptionMissingCount++;
-    } else if (item["file_description"] == "TIDP Placeholder File") {
+    } else if (item.file_description == "TIDP Placeholder File") {
       descriptionPlaceHolderCount++;
     } else {
       descriptionPresentCount++;
     }
-    if (isMissing(item["status"])) {
+    if (isMissing(item.status)) {
       statusMissingCount++;
     } else {
       statusPresentCount++;
     }
   
     // Ensure the status field exists and is properly accessed
-    const status = item["status"];
+    const status = item.status;
     if (status) {
       statusCounts[status] = (statusCounts[status] || 0) + 1;
     } else {

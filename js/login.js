@@ -4,17 +4,36 @@
     await getUserDetails();
     access_token = await getAccessToken("account:read data:read");
     userID = userDetails.sub;
+    userEmail = userDetails.email;
     sessionStorage.setItem('userDetails',userDetails)
     sessionStorage.setItem('userID',userID)
     console.log("userID",sessionStorage.getItem('userID'))
+    await checkIsClient()
     setUserInfo(userDetails);
     if(window.location.href.includes("/Project_Dashboards/?code=") || window.location.href.includes("/index.html")){
       await loadProjects();
     }
+    const profileMenu = document.getElementById('profileMenu');
+    const dropdown = document.getElementById('dropdown');
 
+    profileMenu.addEventListener('click', (e) => {
+        dropdown.classList.toggle('active');
+    });
+
+    document.addEventListener('click', (e) => {
+        if (!profileMenu.contains(e.target)) {
+        dropdown.classList.remove('active');
+        }
+    });
   }
+  function logout() {
+    localStorage.setItem("user_refresh_token", "blank");
+    clearUrlParameters();
+    signin();
+  }
+
   async function setUserInfo(data) {
-    const profilePic = document.getElementById("userPicture");
+    const profilePic = document.getElementById("userPic");
     const profileName = document.getElementById("userName");
     const profileEmail = document.getElementById("userEmail");
     if (data.picture) {
@@ -24,7 +43,9 @@
     }
     profileName.textContent = data.name;
     profileEmail.textContent = data.email;
+    userEmail = data.email;
   }
+
   function showCustomAlert() {
     document.getElementById('custom-alert').style.display = 'flex';
     document.getElementById('AAFLink').href = AAFLink;
@@ -73,9 +94,9 @@
         signin();
       }
     }else{
-      refreshToken()
+      await refreshToken()
     }
-  
+
   }
   // Function to parse URL parameters
   function getParameterByName(name, url) {
@@ -206,9 +227,9 @@
       .catch((error) => console.error("Error fetching data:", error));
     return AccessToken_Local;
   }
-  
-  
-  
-  
-  
-  
+
+  async function checkIsClient() {
+    if(userEmail.includes("aureos") || userEmail.includes("keltbray")){
+      isClient = false
+    }
+  }
