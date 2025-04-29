@@ -43,7 +43,9 @@ async function generateDrawingRegisterTable() {
   await generateDrawingRegisterFileTable(filteredData);
   await generateDrawingRegisterHeaders(drawingRegisterHeaders);
   await runChecks('DR');
+  
   const folderPaths = filteredData.map(item => item.folder_path);
+  folderPaths.sort()
   await populateFolderDropdown(folderPaths);
   if(!isClient){
     generateCharts();
@@ -62,9 +64,10 @@ async function generateSHEAFDrawingRegisterTable() {
   console.log(files)
   let filteredData
   if(isClient){
-    filteredData = files.filter(item => item.form.includes('DR') && (item.folder_path.includes('PUBLISHED') || item.folder_path.includes('0F.SHARED_TO_CLIENT')));
+    filteredData = files.filter(item => (item.folder_path.includes('PUBLISHED') || item.folder_path.includes('0F.SHARED_TO_CLIENT')));
+    filteredData = filteredData.filter(item => item.form.includes('DR') || item.form.includes('SH'));
   }else{
-    filteredData = files.filter(item => item.form.includes('DR'));
+    filteredData = files.filter(item => item.form.includes('DR') || item.form.includes('SH'));
   }
   
   console.log(filteredData)
@@ -73,6 +76,7 @@ async function generateSHEAFDrawingRegisterTable() {
   await generateDrawingRegisterHeaders(drawingRegisterHeaders);
   await runChecks('DR');
   const folderPaths = filteredData.map(item => item.folder_path);
+  folderPaths.sort()
   await populateFolderDropdown(folderPaths);
   if(!isClient){
     generateCharts();
@@ -1047,7 +1051,7 @@ function addSortableColumns() {
 
 //////////////////////////////////////////// MDR Generation
 
-function generateMDRTable(inputData) {
+async function generateMDRTable(inputData) {
   const tableBody = document.querySelector("#dataTableMDR tbody");
   const data = inputData.filter(
     (item) =>

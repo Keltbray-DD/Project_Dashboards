@@ -1,8 +1,8 @@
 document.addEventListener("DOMContentLoaded", async function () {
-  table = document.querySelector("#dataTable");
-  tableBody = document.querySelector("#dataTable tbody");
-  tableHeader = document.querySelector("#dataTable");
-  searchInput = document.getElementById("searchInput");
+  // table = document.querySelector("#dataTable");
+  // tableBody = document.querySelector("#dataTable tbody");
+  // tableHeader = document.querySelector("#dataTable");
+  // searchInput = document.getElementById("searchInput");
   // folderFilter = document.getElementById("folderFilter");
   if (window.location.href.includes("/dashboard")) {
     if (!window.location.href.includes("?id=")) {
@@ -267,7 +267,7 @@ async function openTab(evt, tabName) {
       tableBody.innerHTML = "";
       searchInput.value = "";
       // tableHeader.innerHTML = '';
-      generateMIDPTable();
+      await generateMIDPTable();
       await hideLoadingSpinner(tableHeader)
       break;
 
@@ -280,7 +280,8 @@ async function openTab(evt, tabName) {
       tableBody.innerHTML = "";
       searchInput.value = "";
       //tableHeader.innerHTML=''
-      generateDrawingRegisterTable();
+      await generateDrawingRegisterTable();
+      await addFolderPathListener();
       document.getElementById("openModal").style.display = "none";
       document.getElementById("chartButton").style.display = "none";
       document.getElementById("chartsSection").style.display = "none";
@@ -296,7 +297,8 @@ async function openTab(evt, tabName) {
       tableBody.innerHTML = "";
       searchInput.value = "";
       //tableHeader.innerHTML=''
-      generateSHEAFDrawingRegisterTable();
+      await generateSHEAFDrawingRegisterTable();
+      await addFolderPathListener();
       document.getElementById("openModal").style.display = "none";
       document.getElementById("chartButton").style.display = "none";
       document.getElementById("chartsSection").style.display = "none";
@@ -328,7 +330,8 @@ async function openTab(evt, tabName) {
       tableBody.innerHTML = "";
       searchInput.value = "";
       await getNSArray();
-      generateMDRTable(files);
+      await generateMDRTable(files);
+      await addFolderPathListener();
       document.getElementById("openModal").style.display = "none";
       document.getElementById("chartButton").style.display = "none";
       document.getElementById("chartsSection").style.display = "none";
@@ -361,23 +364,26 @@ async function openTab(evt, tabName) {
       }
     }
   });
-  // Add event listener to filter the table based on selected folder path
-  // folderFilter.addEventListener('change', function () {
-  //     const selectedPath = this.value;
 
-  //     for (let i = 0; i < rows.length; i++) { // Skip the header row
-  //         const row = rows[i];
-  //         const folderPath = row.getElementsByTagName('td')[5].textContent.trim();
-
-  //         if (selectedPath === 'all' || folderPath === selectedPath) {
-  //             row.style.display = ''; // Show the row
-  //         } else {
-  //             row.style.display = 'none'; // Hide the row
-  //         }
-  //     }
-  // });
 }
 
+async function addFolderPathListener() {
+    // Add event listener to filter the table based on selected folder path
+    folderFilter.addEventListener('change', function () {
+      const selectedPath = this.value;
+
+      for (let i = 0; i < rows.length; i++) { // Skip the header row
+          const row = rows[i];
+          const folderPath = row.getElementsByTagName('td')[5].textContent.trim();
+
+          if (selectedPath === 'all' || folderPath === selectedPath) {
+              row.style.display = ''; // Show the row
+          } else {
+              row.style.display = 'none'; // Hide the row
+          }
+      }
+  });
+}
 
 
 async function invalidFileCheck(fileArray) {
@@ -743,7 +749,7 @@ async function showLoadingSpinner(table) {
   const loadingSpinner = document.getElementById('loading');
 
   // Show the loading spinner
-  table.style.display = 'none';
+  // table.style.display = 'none';
   loadingSpinner.style.display = 'block';
 }
 
@@ -752,5 +758,5 @@ async function hideLoadingSpinner(table) {
 
   // Show the loading spinner
   loadingSpinner.style.display = 'none';
-  table.style.display = 'block';
+  // table.style.display = 'block';
 }

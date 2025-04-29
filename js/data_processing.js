@@ -130,14 +130,15 @@ async function addToFilesArray(item) {
   }
   async function runChecks(tableType) {
     countRowsInTable(tableType);
-    await revisionCheck();
-    await descriptionlineCheck();
-    await titlelineCheck();
+
     if (selectedTab == "MIDP") {
       await statusCheck();
     }
     
     if(!isClient){
+      await revisionCheck();
+      await descriptionlineCheck();
+      await titlelineCheck();
       const filesData = await getUniqueValues(mainFileArray)
       await invalidFileCheck(filesData);
       complianceCalc(filesData);
