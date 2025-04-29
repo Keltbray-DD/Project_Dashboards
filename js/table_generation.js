@@ -1,5 +1,6 @@
 async function generateMIDPTable() {
-  console.log("MIDP Table");
+  tableType = "MIDP Table"
+  console.log(tableType);
   mainFileArray = files
   resetValues();
   await generateFileTable(files);
@@ -17,7 +18,8 @@ async function generateMIDPTable() {
 }
 
 async function generateTransmittalTable() {
-  console.log("Transmittal Table");
+  tableType = "Transmittal Table"
+  console.log(tableType);
   mainFileArray = files
   resetValues();
   await generateTransmittalFileTable(files);
@@ -34,7 +36,8 @@ async function generateTransmittalTable() {
 }
 
 async function generateDrawingRegisterTable() {
-  console.log("Drawing Register Table");
+  tableType = "Drawing Register Table"
+  console.log(tableType);
   resetValues();
   console.log(files)
   filteredData = files.filter(item => item.revision && item.revision.includes('C') && item.form.includes('DR'));
@@ -59,7 +62,8 @@ async function generateDrawingRegisterTable() {
 }
 
 async function generateSHEAFDrawingRegisterTable() {
-  console.log("SHEAF Drawing Register Table");
+  tableType = "SHEAF Drawing Register Table"
+  console.log(tableType);
   resetValues();
   console.log(files)
   let filteredData
@@ -77,6 +81,7 @@ async function generateSHEAFDrawingRegisterTable() {
   await runChecks('DR');
   const folderPaths = filteredData.map(item => item.folder_path);
   folderPaths.sort()
+  console.log(folderPaths)
   await populateFolderDropdown(folderPaths);
   if(!isClient){
     generateCharts();

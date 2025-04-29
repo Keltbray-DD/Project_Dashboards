@@ -143,45 +143,86 @@ async function getCustomDetailsData() {
   switch (projectID) {
     case "76c59b97-feaf-413c-9bd0-43cf8aaa3133":
       seriesID = await findObjectByName("Series", customAttributes);
+      if(tableType.includes('Drawing Register')){
+        columnNamesDefault = [
+          { columnName: "revision", columnIndex: 4, columnId: revisionCodeID.id },
+          {
+            columnName: "file_description",
+            columnIndex: 6,
+            columnId: FileDescriptionID.id,
+          },
+          {
+            columnName: "title_line_1",
+            columnIndex: 7,
+            columnId: titleline1ID.id,
+          },
+          { columnName: "status", columnIndex: 8, columnId: statusCodeID.id },
 
-      columnNamesDefault = [
-        { columnName: "revision", columnIndex: 4, columnId: revisionCodeID.id },
-        {
-          columnName: "file_description",
-          columnIndex: 6,
-          columnId: FileDescriptionID.id,
-        },
-        {
-          columnName: "title_line_1",
-          columnIndex: 7,
-          columnId: titleline1ID.id,
-        },
-        {
-          columnName: "title_line_2",
-          columnIndex: 8,
-          columnId: titleline2ID.id,
-        },
-        {
-          columnName: "title_line_3",
-          columnIndex: 9,
-          columnId: titleline3ID.id,
-        },
-        {
-          columnName: "title_line_4",
-          columnIndex: 10,
-          columnId: titleline4ID.id,
-        },
-        { columnName: "status", columnIndex: 11, columnId: statusCodeID.id },
-        {
-          columnName: "activity_code",
-          columnIndex: 12,
-          columnId: activityCodeID.id,
-        },
-        { columnName: "series", columnIndex: 13, columnId: seriesID.id },
-      ];
+          
+          {
+            columnName: "activity_code",
+            columnIndex: 12,
+            columnId: activityCodeID.id,
+          },
+
+        ];
+      }else{
+        columnNamesDefault = [
+          { columnName: "revision", columnIndex: 4, columnId: revisionCodeID.id },
+          {
+            columnName: "file_description",
+            columnIndex: 6,
+            columnId: FileDescriptionID.id,
+          },
+          {
+            columnName: "title_line_1",
+            columnIndex: 7,
+            columnId: titleline1ID.id,
+          },
+          {
+            columnName: "title_line_2",
+            columnIndex: 8,
+            columnId: titleline2ID.id,
+          },
+          {
+            columnName: "title_line_3",
+            columnIndex: 9,
+            columnId: titleline3ID.id,
+          },
+          {
+            columnName: "title_line_4",
+            columnIndex: 10,
+            columnId: titleline4ID.id,
+          },
+          { columnName: "status", columnIndex: 11, columnId: statusCodeID.id },
+          {
+            columnName: "activity_code",
+            columnIndex: 12,
+            columnId: activityCodeID.id,
+          },
+          { columnName: "series", columnIndex: 13, columnId: seriesID.id },
+        ];
+      }
+      
       break;
 
-    default:
+    default:      
+    if(tableType.includes('Drawing Register')){
+      columnNamesDefault = [
+        { columnName: "revision", columnIndex: 4, columnId: revisionCodeID.id },
+        {
+          columnName: "file_description",
+          columnIndex: 6,
+          columnId: FileDescriptionID.id,
+        },
+        {
+          columnName: "title_line_1",
+          columnIndex: 7,
+          columnId: titleline1ID.id,
+        },
+        { columnName: "status", columnIndex: 8, columnId: statusCodeID.id },
+      ];
+    }else{
       columnNamesDefault = [
         { columnName: "revision", columnIndex: 4, columnId: revisionCodeID.id },
         {
@@ -216,6 +257,8 @@ async function getCustomDetailsData() {
           columnId: activityCodeID.id,
         },
       ];
+    }
+
       break;
   }
   if (projectID === "2e6449f9-ce25-4a9c-8835-444cb5ea03bf") {

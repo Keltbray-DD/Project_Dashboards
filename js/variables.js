@@ -1,5 +1,5 @@
 const appName = "ACC Docs Dashboard";
-const appVersion = "v1.2.2";
+const appVersion = "v1.2.3";
 
 let projectID;
 const hubID = "b.24d2d632-e01b-4ca0-b988-385be827cb04"
@@ -20,6 +20,8 @@ let toggleEditBtn
 
 let isClient = true
 let userEmail
+
+let tableType
 
 let fileDescriptionColumn
 let statusColumn
