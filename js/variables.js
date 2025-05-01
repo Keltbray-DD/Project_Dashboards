@@ -1,5 +1,5 @@
 const appName = "ACC Docs Dashboard";
-const appVersion = "v1.2.3";
+const appVersion = "v1.2.4";
 
 let projectID;
 const hubID = "b.24d2d632-e01b-4ca0-b988-385be827cb04"
@@ -57,7 +57,7 @@ let columnNames =[];
 let arrayDiscipline =[];
 let arrayFunction = [];
 let arrayForm =[];
-let ignoreFieldsInvaildCheck = ["last_modified_user","created_by","title_line_2","title_line_3","title_line_4","activity_code","actual_finish_date","actual_start_date","folderid","planned_finish_date","planned_start_date","tracking_status","notes","category","spatial"];
+let ignoreFieldsInvaildCheck = ["last_modified_user","created_by","title_line_2","title_line_3","title_line_4","activity_code","actual_finish_date","actual_start_date","folderid","planned_finish_date","planned_start_date","tracking_status","notes","category","spatial","deliverable"];
 let csvDataReviewStore = [];
 let csvDataTransmittalStore = [];
 let TransmittalData = [];

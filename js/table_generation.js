@@ -40,7 +40,7 @@ async function generateDrawingRegisterTable() {
   console.log(tableType);
   resetValues();
   console.log(files)
-  filteredData = files.filter(item => item.revision && item.revision.includes('C') && item.form.includes('DR'));
+  filteredData = files.filter(item => (item.revision && item.revision.includes('C') && item.form.includes('DR')) || item.deliverable.includes('Yes'));
   console.log(filteredData)
   mainFileArray = filteredData
   await generateDrawingRegisterFileTable(filteredData);
@@ -69,9 +69,9 @@ async function generateSHEAFDrawingRegisterTable() {
   let filteredData
   if(isClient){
     filteredData = files.filter(item => (item.folder_path.includes('PUBLISHED') || item.folder_path.includes('0F.SHARED_TO_CLIENT')));
-    filteredData = filteredData.filter(item => item.form.includes('DR') || item.form.includes('SH'));
+    filteredData = filteredData.filter(item => item.form.includes('DR') || item.form.includes('SH') || item.deliverable.includes('Yes'));
   }else{
-    filteredData = files.filter(item => item.form.includes('DR') || item.form.includes('SH'));
+    filteredData = files.filter(item => item.form.includes('DR') || item.form.includes('SH') || item.deliverable.includes('Yes') );
   }
   
   console.log(filteredData)

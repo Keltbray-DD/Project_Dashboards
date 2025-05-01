@@ -106,6 +106,8 @@ async function addToFilesArray(item) {
       status: item.status,
       activity_code: item.activity_code,
       id: item.id,
+      // id_no_version: item.id.split("?")[0],
+      deliverable: item.deliverable || '',
       discipline: item.discipline,
       form: item.form,
       project_pin: item.project_pin,
