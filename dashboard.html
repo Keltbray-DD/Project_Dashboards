@@ -282,6 +282,40 @@
     <div id="loading" class="loading-spinner">
         Loading...
     </div>
+    <div id="feedback">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+        <link rel="stylesheet" href="./assets/css/feedback.css">
+        <script src="./js/default.js"></script>
+        <a href="#" id="feedbackBtn"><i class="fa-solid fa-bug"></i></a>
+    
+          <!-- The Modal -->
+          <div id="feedbackModal" class="modal">
+            <div class="feedback-content">
+                <span class="close" id="closeModal">&times;</span>
+                <h2>Tool Feedback</h2>
+                <form id="feedbackForm">
+                    <label for="type" class="buglabel">Type:</label>
+                    <select id="type" name="type" required>
+                        <option value="Bug">Bug</option>
+                        <option value="Feature">Feature Request</option>
+                        <option value="Feedback">General Feedback</option>
+                    </select>
+    
+                    <label for="description" class="buglabel">What went wrong?</label>
+                    <textarea id="description" name="description" rows="5" required></textarea>
+    
+                    <label for="email">Please enter email so we can contact you if needed</label>
+                    <input type="email" name="email" id="userFeedbackEmail" placeholder="Your email..." required>
+    
+                    <label for="screenshot">Attach a screenshot (optional):</label>
+                    <input type="file" id="screenshot" name="screenshot" accept="image/*">
+    
+                    <button type="submit" class="feedbackBtn">Submit</button>
+                </form>
+    
+            </div>
+        </div>
+       </div>
     <div id="appInfo"></div>
     <div id="dataInfo"></div>
 
