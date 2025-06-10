@@ -10,7 +10,7 @@
     //console.log("userID",sessionStorage.getItem('userID'))
     await checkIsClient()
     setUserInfo(userDetails);
-    if(window.location.href.includes("/Project_Dashboards/?code=") || window.location.href.includes("/index.html")){
+    if(window.location.pathname.includes("/Project_Dashboards/?code=") || window.location.pathname.includes("/index.html")){
       await loadProjects();
     }
     const profileMenu = document.getElementById('profileMenu');
