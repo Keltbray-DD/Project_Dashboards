@@ -14,7 +14,7 @@ async function getJSONDataFromSP() {
   };
 
   const apiUrl =
-    "https://prod-29.uksouth.logic.azure.com:443/workflows/aa3b3f6ba93f4901acef15184cd5b8de/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=olW_Pb6Al6jJNptqxPXBc-_YBoqN2YOmYiYYBrqd1C8";
+    "https://default917b4d06d2e9475983a3e7369ed74e.8f.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/aa3b3f6ba93f4901acef15184cd5b8de/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=rsVMeC9t3eP3LkX1-vcOI2Xk4M-aopqMjV8W_7Y-LF4";
   //console.log(apiUrl)
   //console.log(requestOptions)
   signedURLData = await fetch(apiUrl, requestOptions)
@@ -378,7 +378,7 @@ async function getAccessToken(scopeInput) {
   };
 
   const apiUrl =
-    "https://prod-18.uksouth.logic.azure.com:443/workflows/d8f90f38261044b19829e27d147f0023/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=-N-bYaES64moEe0gFiP5J6XGoZBwCVZTmYZmUbdJkPk";
+    "https://default917b4d06d2e9475983a3e7369ed74e.8f.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/df0aebc4d2324e98bcfa94699154481f/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=igiodIb-lGf7MTGYIlPATMr-JbyDeztuALW5F6IIaNs";
   //console.log(apiUrl)
   //console.log(requestOptions)
   signedURLData = await fetch(apiUrl, requestOptions)
@@ -457,7 +457,7 @@ async function getNamingStandardforproject(access_token, ns_id, project_id) {
 
 async function fetchReviewData() {
     const response = await fetch(
-      "https://prod-31.uksouth.logic.azure.com:443/workflows/541207f0087a4e06840db05622c13314/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=2IbQoVS587nd49mhlZPNcveMT_9AWI9l3tnF13BzY6Y",
+      "https://default917b4d06d2e9475983a3e7369ed74e.8f.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/541207f0087a4e06840db05622c13314/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=acKJ5VM5qw9BHOTe2YqiYrQMKYI0TFkP96zlNbIurTg",
       {
         method: "GET",
         headers: {
@@ -482,7 +482,7 @@ async function fetchReviewData() {
 
 async function fetchTransmittalData() {
     const response = await fetch(
-      "https://prod-25.uksouth.logic.azure.com:443/workflows/42ed32848c554de6941a862147e7c2f0/triggers/manual/paths/invoke?api-version=2016-06-01&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=sBz9k9kvbkkoZcnhhGKWzCbf48pGQmwITSQhH39Jd5o",
+      "https://default917b4d06d2e9475983a3e7369ed74e.8f.environment.api.powerplatform.com:443/powerautomate/automations/direct/workflows/42ed32848c554de6941a862147e7c2f0/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=4A3a3-j168U3dOTXk8SmYaUBzRR9I6XfmpRyNmpwAGw",
       {
         method: "GET",
         headers: {
