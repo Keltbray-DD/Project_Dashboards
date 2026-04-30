@@ -29,6 +29,10 @@ document.addEventListener("DOMContentLoaded", async function () {
   // tab serves every project on this view.
   selectedTab = "DrawingRegisterSHEAF";
   projectName = sessionStorage.getItem('projectName');
+  // Client view has no charts — give the Tabulator the full height
+  // by setting the same body class admin-view tabs use when they hide
+  // their charts.
+  document.body.classList.add("charts-hidden");
 
   setLoadingStep("files", "active");
   await getData();

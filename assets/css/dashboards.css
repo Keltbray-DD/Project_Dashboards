@@ -948,3 +948,10 @@ table {
 .resetFiltersBtn.active:hover {
   background-color: #c87a00 !important;
 }
+
+/* Tabulator height adapts to whether the charts section is visible.
+   When .charts-hidden is set on <body> (toggled by openChartsSelection
+   and per-tab openTab cases), the table claims the space the charts
+   were taking up. */
+.tabulator { height: calc(100vh - 360px) !important; }
+body.charts-hidden .tabulator { height: calc(100vh - 200px) !important; }

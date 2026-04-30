@@ -267,6 +267,14 @@ async function openTab(evt, tabName) {
   }
   document.getElementById("openModal").style.display = "block";
   document.getElementById("chartButton").style.display = "block";
+  // Reset chart visibility based on tab — MIDP shows them, others hide.
+  // Mirror that into the body class so Tabulator's height CSS picks up
+  // the right calc for each tab.
+  if (tabName === "MIDP") {
+    document.body.classList.remove("charts-hidden");
+  } else {
+    document.body.classList.add("charts-hidden");
+  }
   switch (tabName) {
     case "MIDP":
       tableBody = null; // Tabulator owns #dataTable now
@@ -414,17 +422,20 @@ async function invalidFileCheck(fileArray) {
 }
 
 function openChartsSelection(tabName) {
-  if (document.getElementById(tabName).style.display == "block") {
-    document.getElementById(tabName).style.display = "none";
-  } else {
-    document.getElementById(tabName).style.display = "block";
+  const el = document.getElementById(tabName);
+  if (!el) return;
+  const wasVisible = el.style.display === "block";
+  el.style.display = wasVisible ? "none" : "block";
+  // Mirror chart visibility into a body class so the Tabulator height
+  // CSS rules can give the table the freed-up space.
+  document.body.classList.toggle("charts-hidden", wasVisible);
+  // Tabulator caches its visible-row count from the previous height —
+  // redraw any open instance so it expands into the new space.
+  if (typeof tabulators !== "undefined") {
+    for (const key of Object.keys(tabulators)) {
+      try { tabulators[key].redraw(true); } catch (e) { /* not yet open */ }
+    }
   }
-  return;
-  chartButton = document.getElementById("chartButton");
-  // Update button text with Unicode symbols
-  chartButton.textContent = showCharts
-    ? "📊 Show Charts" // Pencil symbol for edit mode
-    : "📊 Hide Charts"; // Checkmark symbol for non-edit mode
 }
 
 // Function to show popup with fade-in

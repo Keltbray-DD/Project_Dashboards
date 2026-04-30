@@ -1,5 +1,5 @@
 const appName = "Forma Docs Dashboard";
-const appVersion = "v1.5.0";
+const appVersion = "v1.5.1";
 
 let projectID;
 const hubID = "b.24d2d632-e01b-4ca0-b988-385be827cb04"

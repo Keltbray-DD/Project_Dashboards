@@ -523,6 +523,9 @@ async function chartChecks(item) {
       elementVar.destroy();
     }
     // setup
+    // Boundaries are <= so that exactly 100% (score/(score+max) === 1)
+    // lands in the top bucket (green for non-invert, red for invert)
+    // rather than spilling into the catch-all "error" colour below.
     if (colourInvert) {
       if (score / (score + max) < 0.2) {
         backC = ["rgba(66,183,74,0.5)", "rgba(0, 0, 0, 0.2)"];
@@ -536,7 +539,7 @@ async function chartChecks(item) {
       } else if (score / (score + max) < 0.8) {
         backC = ["rgba(247,100,32,0.5)", "rgba(0, 0, 0, 0.2)"];
         borderC = ["rgba(247,100,32, 1)", "rgba(0, 0, 0, 0.3)"];
-      } else if (score / (score + max) < 1) {
+      } else if (score / (score + max) <= 1) {
         backC = ["rgba(207,32,32,0.5)", "rgba(0, 0, 0, 0.2)"];
         borderC = ["rgba(207,32,32, 1)", "rgba(0, 0, 0, 0.3)"];
       } else {
@@ -556,7 +559,7 @@ async function chartChecks(item) {
       } else if (score / (score + max) < 0.8) {
         backC = ["rgba(207,223,40,0.5)", "rgba(0, 0, 0, 0.2)"];
         borderC = ["rgba(207,223,40, 1)", "rgba(0, 0, 0, 0.3)"];
-      } else if (score / (score + max) < 1) {
+      } else if (score / (score + max) <= 1) {
         backC = ["rgba(66,183,74,0.5)", "rgba(0, 0, 0, 0.2)"];
         borderC = ["rgba(66,183,74, 1)", "rgba(0, 0, 0, 0.3)"];
       } else {
