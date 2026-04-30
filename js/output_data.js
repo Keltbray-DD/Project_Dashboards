@@ -1,5 +1,11 @@
 
 function exportTableToExcel(tableId, exportName) {
+ // Tabulator-backed tabs (currently just MIDP) export themselves —
+ // delegate so the export honours filtered/sorted state.
+ if (typeof tabulators !== "undefined" && tabulators[selectedTab]) {
+   tabulators[selectedTab].download("xlsx", `${exportName}.xlsx`, { sheetName: exportName });
+   return;
+ }
  const d = new Date().toLocaleString();
  const workbook = XLSX.utils.book_new();
 

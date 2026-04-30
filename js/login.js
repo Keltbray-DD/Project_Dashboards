@@ -1,5 +1,5 @@
 
-  
+
   async function getUserDetailsFill() {
     await getUserDetails();
     access_token = await getAccessToken("account:read data:read");
@@ -72,31 +72,90 @@
     return response;
   }
 
-  function signin() {
+  // PKCE helpers (RFC 7636). The verifier is a high-entropy random string
+  // kept in sessionStorage across the OAuth redirect; the challenge is its
+  // SHA-256 hash sent to /authorize. At /token the same verifier is
+  // submitted, proving the same browser session is redeeming the code —
+  // no shared client secret needed.
+  function _pkceBase64Url(bytes) {
+    let str = "";
+    for (let i = 0; i < bytes.length; i++) str += String.fromCharCode(bytes[i]);
+    return btoa(str)
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=+$/, "");
+  }
+  function generateCodeVerifier() {
+    const bytes = new Uint8Array(64);
+    crypto.getRandomValues(bytes);
+    return _pkceBase64Url(bytes);
+  }
+  async function generateCodeChallenge(verifier) {
+    const data = new TextEncoder().encode(verifier);
+    const hash = await crypto.subtle.digest("SHA-256", data);
+    return _pkceBase64Url(new Uint8Array(hash));
+  }
+
+  async function signin() {
+    const verifier = generateCodeVerifier();
+    const challenge = await generateCodeChallenge(verifier);
+    // Random per-flow state. Autodesk echoes it back on redirect; we verify
+    // it matches what we sent before redeeming the code, which prevents an
+    // attacker from tricking a logged-in user into redeeming an attacker-
+    // controlled `?code=` (CSRF). Reuses the same base64url encoding as the
+    // PKCE verifier helper.
+    const stateBytes = new Uint8Array(16);
+    crypto.getRandomValues(stateBytes);
+    const state = _pkceBase64Url(stateBytes);
+
+    sessionStorage.setItem("pkce_verifier", verifier);
+    sessionStorage.setItem("oauth_state", state);
+
+    const params = new URLSearchParams({
+      response_type: "code",
+      client_id: apsClientId,
+      redirect_uri: toolURL,
+      scope: "data:read data:write data:create",
+      prompt: "login",
+      state: state,
+      code_challenge: challenge,
+      code_challenge_method: "S256",
+    });
     window.open(
-      "https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id=UMPIoFc8iQoJ2eKS6GsJbCGSmMb4s1PY&redirect_uri=" +
-        toolURL +
-        "&scope=data:read data:write data:create&prompt=login&state=12321321",
+      "https://developer.api.autodesk.com/authentication/v2/authorize?" + params.toString(),
       "_self"
     );
   }
   async function checkLogin() {
-    // Check if 'code' parameter exists in the URL
     var codeParam = getParameterByName("code");
-    var loaclRefreshToken = localStorage.getItem('user_refresh_token')
-    //console.log(loaclRefreshToken)
-    if(loaclRefreshToken == 'blank'){
-      if (codeParam !== null) {
-        //console.log("Code parameter found: " + codeParam);
-        // Call the function to handle authorization
-        await getAuthorisation(codeParam);
-      } else {
-        signin();
-      }
-    }else{
-      await refreshToken()
-    }
+    var stateParam = getParameterByName("state");
+    var localRefreshToken = localStorage.getItem("user_refresh_token");
 
+    if (codeParam !== null) {
+      // Returning from /authorize with a one-time code — always prefer
+      // redeeming this over attempting a refresh. A redirect with a fresh
+      // code typically means the user just (re-)logged in, in which case
+      // any existing refresh_token has been superseded or invalidated.
+      const expectedState = sessionStorage.getItem("oauth_state");
+      if (!expectedState || stateParam !== expectedState) {
+        // State mismatch = CSRF attempt or browser state lost between
+        // authorize and redirect. Refuse to redeem and restart cleanly.
+        console.warn("OAuth state mismatch — refusing to redeem code and restarting login.");
+        sessionStorage.removeItem("oauth_state");
+        sessionStorage.removeItem("pkce_verifier");
+        clearUrlParameters();
+        await signin();
+        return;
+      }
+      sessionStorage.removeItem("oauth_state");
+      await getAuthorisation(codeParam);
+    } else if (localRefreshToken && localRefreshToken !== "blank") {
+      // Have a stored refresh token from a previous session — try silent refresh.
+      await refreshToken();
+    } else {
+      // No session and no code in URL — kick off the OAuth redirect.
+      await signin();
+    }
   }
   // Function to parse URL parameters
   function getParameterByName(name, url) {
@@ -108,7 +167,7 @@
     if (!results[2]) return "";
     return decodeURIComponent(results[2].replace(/\+/g, " "));
   }
-  
+
   // Function to clear URL parameters (after reload or after successful fetch)
   function clearUrlParameters() {
     // Replace the current URL without reloading the page, and remove query parameters
@@ -119,109 +178,116 @@
       window.location.pathname;
     window.history.replaceState({ path: cleanUrl }, "", cleanUrl);
   }
-  
+
   async function getAuthorisation(code) {
-    const bodyData = {
-      code: code,
-      grant_type: "authorization_code",
-      redirect_uri: toolURL,
-    };
-  
-    let formBody = [];
-    for (let property in bodyData) {
-      let encodedKey = encodeURIComponent(property);
-      let encodedValue = encodeURIComponent(bodyData[property]);
-      formBody.push(encodedKey + "=" + encodedValue);
+    const verifier = sessionStorage.getItem("pkce_verifier");
+    if (!verifier) {
+      // Verifier was lost (cleared sessionStorage, opened in new tab, etc.).
+      // The /token call would fail anyway — restart the OAuth flow.
+      console.error("PKCE verifier missing — restarting login.");
+      await signin();
+      return;
     }
-    formBody = formBody.join("&");
-  
+
+    const bodyData = {
+      grant_type: "authorization_code",
+      code: code,
+      redirect_uri: toolURL,
+      client_id: apsClientId,
+      code_verifier: verifier,
+    };
+
+    const formBody = Object.keys(bodyData)
+      .map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(bodyData[k])}`)
+      .join("&");
+
     const headers = {
       "Content-Type": "application/x-www-form-urlencoded",
-      Authorization:
-        "Basic VU1QSW9GYzhpUW9KMmVLUzZHc0piQ0dTbU1iNHMxUFk6M1ZQMUdyekxMdk9Vb0V6dQ==", // Make sure this is securely handled
+      // No Authorization header — PKCE clients authenticate via client_id +
+      // code_verifier in the request body, not a Basic auth secret.
     };
-  
+
     const requestOptions = {
       method: "POST",
       headers: headers,
       body: formBody,
     };
-  
+
     const apiUrl = "https://developer.api.autodesk.com/authentication/v2/token";
-    //console.log(apiUrl, requestOptions)
     AccessToken_Local = await fetch(apiUrl, requestOptions)
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.error === "invalid_grant") {
-          // If there's an error, reload the page
+      .then(async (response) => {
+        if (!response.ok) {
+          // /token rejected the code — bad/replayed/expired code, wrong PKCE
+          // verifier, or wrong client_id. Wipe state and restart fresh login.
+          console.warn("Auth code exchange failed with HTTP " + response.status);
+          sessionStorage.removeItem("pkce_verifier");
+          localStorage.setItem("user_refresh_token", "blank");
           clearUrlParameters();
           location.reload();
-        } else {
-          //console.log(data);
-          
-          userRefreshToken = data.refresh_token;
-          //console.log("userAccessToken",userRefreshToken)
-          localStorage.setItem('user_refresh_token', userRefreshToken);
-          userAccessToken = data.access_token;
-          //console.log("userAccessToken", userAccessToken);
-          // Clear the URL parameters once the token is retrieved successfully
-          getUserDetailsFill();
+          throw new Error("Auth code exchange failed; reloading.");
         }
+        return response.json();
+      })
+      .then(async (data) => {
+        userRefreshToken = data.refresh_token;
+        localStorage.setItem("user_refresh_token", userRefreshToken);
+        userAccessToken = data.access_token;
+        // Verifier is single-use; clear so a leaked code can't be replayed.
+        sessionStorage.removeItem("pkce_verifier");
+        await getUserDetailsFill();
         return data;
       })
       .catch((error) => console.error("Error fetching data:", error));
     return AccessToken_Local;
   }
   async function refreshToken() {
-    var loaclRefreshToken = localStorage.getItem('user_refresh_token')
+    const localRefreshToken = localStorage.getItem("user_refresh_token");
+
     const bodyData = {
-      //code: code,
       grant_type: "refresh_token",
-      //scope:'data:read data:write data:create',
-      refresh_token:loaclRefreshToken,
-      //client_id:'UMPIoFc8iQoJ2eKS6GsJbCGSmMb4s1PY',
-      //client_secret:'3VP1GrzLLvOUoEzu',
+      refresh_token: localRefreshToken,
+      client_id: apsClientId,
       redirect_uri: toolURL,
     };
     const formBody = Object.keys(bodyData)
-    .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(bodyData[key])}`)
-    .join("&");
-    //const formBody = Object.keys(bodyData).map(key => `${key}=${bodyData[key]}`).join("&");
-    //formBody = formBody.join("&");
-  
-    //formBody = `grant_type=refresh_token&scope=data%3Aread%20data%3Awrite%20data%3Acreate&refresh_token=${loaclRefreshToken}&redirect_uri=${toolURL}`
-  
+      .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(bodyData[key])}`)
+      .join("&");
+
     const headers = {
       "Content-Type": "application/x-www-form-urlencoded",
-      Authorization:
-        "Basic VU1QSW9GYzhpUW9KMmVLUzZHc0piQ0dTbU1iNHMxUFk6M1ZQMUdyekxMdk9Vb0V6dQ==", // Make sure this is securely handled
+      // No Authorization header — PKCE clients send client_id in the body
+      // and don't have a shared secret to put here.
     };
-  
+
     const requestOptions = {
       method: "POST",
       headers: headers,
       body: formBody,
     };
-  
+
     const apiUrl = "https://developer.api.autodesk.com/authentication/v2/token";
     //console.log(apiUrl, requestOptions)
     AccessToken_Local = await fetch(apiUrl, requestOptions)
-      .then((response) => response.json())
-      .then((data) => {
-        if (data.error === "invalid_grant") {
-          // If there's an error, reload the page
-          localStorage.setItem('user_refresh_token','blank');
+      .then(async (response) => {
+        if (!response.ok) {
+          // Refresh rejected — common causes: expired/revoked refresh token,
+          // or (most likely after the PKCE migration) a token issued for the
+          // previous confidential client_id. Wipe and force a fresh login.
+          // 401 responses can have empty / non-JSON bodies, so we check
+          // response.ok before trying to parse.
+          console.warn("Token refresh failed with HTTP " + response.status + " — forcing fresh login.");
+          localStorage.setItem("user_refresh_token", "blank");
           clearUrlParameters();
           location.reload();
-        } else {
-          //console.log(data);
-          localStorage.setItem('user_refresh_token',data.refresh_token);
-          userRefreshToken = data.refresh_token;
-          //console.log("userRefreshToken", userRefreshToken);
-          userAccessToken = data.access_token;
-          //console.log("userAccessToken", userAccessToken);
-          getUserDetailsFill();
+          throw new Error("Token refresh failed; reloading.");
         }
+        return response.json();
+      })
+      .then(async (data) => {
+        localStorage.setItem("user_refresh_token", data.refresh_token);
+        userRefreshToken = data.refresh_token;
+        userAccessToken = data.access_token;
+        await getUserDetailsFill();
         return data;
       })
       .catch((error) => console.error("Error fetching data:", error));

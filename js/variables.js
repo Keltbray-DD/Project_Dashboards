@@ -1,8 +1,13 @@
-const appName = "ACC Docs Dashboard";
-const appVersion = "v1.4.1";
+const appName = "Forma Docs Dashboard";
+const appVersion = "v1.5.0";
 
 let projectID;
 const hubID = "b.24d2d632-e01b-4ca0-b988-385be827cb04"
+// PKCE public client ID for the Autodesk APS app. Safe to ship in the
+// browser — the matching APS app must be configured as a Public Client so
+// the /token endpoint accepts client_id + code_verifier instead of a
+// confidential client_secret.
+const apsClientId = "rIZ4T6uq2qbVGsBucgGz8zwSPPrENzupOQGkO9ii01U4nNT0"
 let accesToken;
 let namingstandardID;
 let projectName;
@@ -52,12 +57,11 @@ let filteredData = [];
 let folderPaths = [];
 let invalidObjects = [];
 let columnNamesDefault = [];
-let columnNamesMDR = [];
 let columnNames =[];
 let arrayDiscipline =[];
 let arrayFunction = [];
 let arrayForm =[];
-let ignoreFieldsInvaildCheck = ["last_modified_user","created_by","title_line_2","title_line_3","title_line_4","activity_code","actual_finish_date","actual_start_date","folderid","planned_finish_date","planned_start_date","tracking_status","notes","category","spatial","deliverable"];
+let ignoreFieldsInvaildCheck = ["last_modified_user","created_by_user","title_line_2","title_line_3","title_line_4","activity_code","actual_finish_date","actual_start_date","folderid","planned_finish_date","planned_start_date","tracking_status","notes","category","spatial","deliverable"];
 let csvDataReviewStore = [];
 let csvDataTransmittalStore = [];
 let TransmittalData = [];
@@ -91,6 +95,45 @@ const defaultHiddenColumns = [
     "Spatial"
 ]; // Columns to hide by default
 
+// Maps the ACC custom attribute display name (as stored in the project's
+// naming standard) to the field key our `files[]` rows use. The batch-get
+// response gives us {name, value} per attribute — this is how we translate
+// "Title Line 1" → title_line_1 etc. when patching a file row in place.
+const ATTR_NAME_MAP = {
+    "Title Line 1": "title_line_1",
+    "Title Line 2": "title_line_2",
+    "Title Line 3": "title_line_3",
+    "Title Line 4": "title_line_4",
+    "Revision": "revision",
+    "Revision Description": "revision_description",
+    "Status": "status",
+    "State": "state",
+    "Activity Code": "activity_code",
+    "File Description": "file_description",
+    "Classification": "classification",
+    "Tracking Status": "tracking_status",
+    "Notes": "notes",
+    "Category": "category",
+    "Actual Start Date": "actual_start_date",
+    "Planned Start Date": "planned_start_date",
+    "Actual Finish Date": "actual_finish_date",
+    "Planned Finish Date": "planned_finish_date",
+    "Series": "series",
+    // The following come from ACC's naming-standard validation — they
+    // populate the Drawing Register / SHEAF filters and other downstream
+    // rendering. If your project's attribute is named differently (e.g.
+    // "Project PIN" with a capital PIN), add another key here pointing
+    // at the same field.
+    "Form": "form",
+    "Deliverable": "deliverable",
+    "Discipline": "discipline",
+    "Function": "function",
+    "Originator": "originator",
+    "Project Pin": "project_pin",
+    "Project PIN": "project_pin",
+    "Spatial": "spatial",
+};
+
 const projects_MIDPs = [
     {name:"HI7411",id:"76c59b97-feaf-413c-9bd0-43cf8aaa3133"},
     {name:"DT1117",id:"2e6449f9-ce25-4a9c-8835-444cb5ea03bf"},
@@ -108,10 +151,6 @@ const projects_SHEAF_DR = [
 
 const projects_TR = [
     {name:"DT1116",id:"7c7ca0c5-bfc3-4ef1-9396-c72c6270f457"}
-]
-
-const projects_MDR = [
-    {name:"DT1117",id:"2e6449f9-ce25-4a9c-8835-444cb5ea03bf"},
 ]
 
 const defaultHeaders = [

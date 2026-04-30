@@ -12,63 +12,61 @@ document.addEventListener("DOMContentLoaded", async function () {
   document.getElementById("appInfo").textContent = `${appName} ${appVersion}`;
   // Split the URL at the "?" and take the first part
   toolURL = fullUrl.split("?")[0];
+
+  buildLoadingPanel();
+  setLoadingStep("auth", "active");
   await checkLogin();
-  // await checkIsClient()
+  setLoadingStep("auth", "done");
+
   loadingScreen = document.getElementById("loadingScreen");
   statusUpdateLoading = document.getElementById("statusUpdateLoading");
   const logoutButton = document.getElementById("logoutBtn");
 
-  // Add an event listener for the button click event
-  // logoutButton.addEventListener("click", function () {
-  //   signOut();
-  // });
   await getProjectFromURL();
-  if(projectID == "7c7ca0c5-bfc3-4ef1-9396-c72c6270f457"){
-    selectedTab = "DrawingRegisterSHEAF"
-  }else{
-    selectedTab = "DrawingRegister"
-  }
-  projectName = sessionStorage.getItem('projectName')
-  await showLoadingSpinner(tableHeader)
-  await getData()
-  await hideLoadingSpinner(tableHeader)
+  // Client view only has the SHEAF "Drawing Register" tab. The
+  // initSheafDrawingRegisterTable filter already restricts client
+  // users to PUBLISHED / 0F.SHARED_TO_CLIENT folders, so the same
+  // tab serves every project on this view.
+  selectedTab = "DrawingRegisterSHEAF";
+  projectName = sessionStorage.getItem('projectName');
 
-  // Button visability //
+  setLoadingStep("files", "active");
+  await getData();
+  setLoadingStep("files", "done");
 
-  // Drawing Register
-  if (projects_DR.some((item) => item.id === projectID)) {
-    document.getElementById("DrawingRegister_Button").style.display = "block";
-  }
+  // Always reveal the (renamed-internally-as-SHEAF) Drawing Register
+  // button on the client view — it's the only tab.
+  const sheafBtn = document.getElementById("DrawingRegisterSHEAF_Button");
+  if (sheafBtn) sheafBtn.style.display = "block";
 
-  // Drawing Register
-  if (projects_SHEAF_DR.some((item) => item.id === projectID)) {
-    document.getElementById("DrawingRegisterSHEAF_Button").style.display = "block";
-  }
+  // SHEAF tab is Tabulator-managed — its search input is wired inside
+  // the openTab case. Skip the legacy DOM search wiring here too.
+  if (tableBody) {
+    rows = tableBody.getElementsByTagName("tr");
 
-  rows = tableBody.getElementsByTagName("tr");
+    searchInput.addEventListener("keyup", function () {
+      const filter = searchInput.value.toLowerCase();
 
-  searchInput.addEventListener("keyup", function () {
-    const filter = searchInput.value.toLowerCase();
+      for (let i = 0; i < rows.length; i++) {
+        // Start at 1 to skip the header row
+        const cells = rows[i].getElementsByTagName("td");
+        let match = false;
 
-    for (let i = 0; i < rows.length; i++) {
-      // Start at 1 to skip the header row
-      const cells = rows[i].getElementsByTagName("td");
-      let match = false;
+        for (let j = 0; j < cells.length; j++) {
+          if (cells[j].textContent.toLowerCase().includes(filter)) {
+            match = true;
+            break;
+          }
+        }
 
-      for (let j = 0; j < cells.length; j++) {
-        if (cells[j].textContent.toLowerCase().includes(filter)) {
-          match = true;
-          break;
+        if (match) {
+          rows[i].style.display = ""; // Show the row
+        } else {
+          rows[i].style.display = "none"; // Hide the row
         }
       }
-
-      if (match) {
-        rows[i].style.display = ""; // Show the row
-      } else {
-        rows[i].style.display = "none"; // Hide the row
-      }
-    }
-  });
+    });
+  }
   // Add event listener to filter the table based on selected folder path
   // folderFilter.addEventListener('change', function () {
   //     const selectedPath = this.value;
@@ -280,18 +278,19 @@ async function openTab(evt, tabName) {
       break;
 
     case "DrawingRegisterSHEAF":
-      tableBody = document.querySelector("#dataTableDRSHEAF tbody");
+      tableBody = null;
       tableHeader = document.getElementById("dataTableDRSHEAF");
       searchInput = document.getElementById("searchInputDRSHEAF");
-      folderFilter = document.getElementById("folderFilterDRSHEAF");
+      tableType = "SHEAF Drawing Register Table";
       await showLoadingSpinner(tableHeader)
-      tableBody.innerHTML = "";
       searchInput.value = "";
-      //tableHeader.innerHTML=''
-      generateSHEAFDrawingRegisterTable();
-      // document.getElementById("openModal").style.display = "none";
-      // document.getElementById("chartButton").style.display = "none";
-      // document.getElementById("chartsSection").style.display = "none";
+      await initSheafDrawingRegisterTable();
+      searchInput.oninput = () => {
+        tabulatorSearchAny("DRSHEAF", searchInput.value);
+        tabulatorUpdateResetButton("DRSHEAF");
+      };
+      const sheafResetBtn = document.getElementById("resetFiltersBtnDRSHEAF");
+      if (sheafResetBtn) sheafResetBtn.onclick = () => tabulatorClearFiltersAny("DRSHEAF");
       await hideLoadingSpinner(tableHeader)
       break;
 
@@ -330,6 +329,9 @@ async function openTab(evt, tabName) {
     default:
       break;
   }
+  // The SHEAF tab is Tabulator-managed and sets tableBody = null — bail
+  // before the legacy DOM-based search/folder-filter wiring runs.
+  if (!tableBody) return;
   rows = tableBody.getElementsByTagName("tr");
   searchInput.addEventListener("keyup", function () {
     const filter = searchInput.value.toLowerCase();

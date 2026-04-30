@@ -747,6 +747,89 @@ table {
   animation: spin 1s linear infinite;
 }
 
+/* Multi-step panel mode: shown during the initial dashboard load.
+   The panel has its own DOM-element spinner at the top, so we hide
+   the simple ::after spinner that the basic mode uses. */
+.loading-spinner.loading-panel-mode {
+  text-align: left;
+  padding: 28px 32px;
+  min-width: 320px;
+}
+.loading-spinner.loading-panel-mode::after {
+  display: none;
+}
+
+.loading-spinner-circle {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 18px;
+  border: 4px solid rgba(255, 255, 255, 0.2);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-title {
+  font-size: 18px;
+  text-align: center;
+  margin-bottom: 18px;
+}
+
+.loading-steps {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  font-size: 14px;
+}
+
+.loading-steps .step {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 0.2s;
+}
+
+.loading-steps .step-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  font-size: 11px;
+  font-weight: bold;
+  color: #fff;
+}
+
+.loading-steps .step.pending .step-icon {
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+}
+
+.loading-steps .step.active {
+  color: #fff;
+}
+
+.loading-steps .step.active .step-icon {
+  background: #2196f3;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.25); }
+  50%      { box-shadow: 0 0 0 6px rgba(33, 150, 243, 0.10); }
+}
+
+.loading-steps .step.done {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.loading-steps .step.done .step-icon {
+  background: #4caf50;
+}
+
 @keyframes spin {
   from {
       transform: rotate(0deg);
@@ -754,4 +837,114 @@ table {
   to {
       transform: rotate(360deg);
   }
+}
+
+
+/* ===== Tabulator overrides — Aureos look-and-feel ===== */
+.tabulator-host { font-size: 13px; }
+.tabulator { background: #fff; border: 1px solid #d8d8d8; }
+.tabulator .tabulator-header { background: #f4f4f4; border-bottom: 2px solid #006e3c; font-weight: 600; }
+.tabulator .tabulator-header .tabulator-col { background: transparent; border-right: 1px solid #e0e0e0; }
+.tabulator .tabulator-row.tabulator-row-even { background: #fafafa; }
+.tabulator .tabulator-row:hover { background: #eaf5ef !important; }
+/* Expanded version-history rows: greyed-out, italic, accent border so
+   it's visually obvious these aren't the current version. */
+.tabulator .tabulator-row.tabulator-tree-level-1,
+.tabulator .tabulator-row[class*="tabulator-tree-level-"]:not(.tabulator-tree-level-0) {
+  background: #ececec !important;
+  color: #666;
+  font-style: italic;
+  border-left: 3px solid #006e3c;
+}
+.tabulator .tabulator-row[class*="tabulator-tree-level-"]:not(.tabulator-tree-level-0):hover {
+  background: #e0e8e3 !important;
+}
+.tabulator .tabulator-row[class*="tabulator-tree-level-"]:not(.tabulator-tree-level-0) .file-link {
+  color: #4a8a6a;
+}
+.tabulator .tabulator-row .tabulator-cell { border-right: 1px solid #efefef; padding: 6px 8px; }
+.tabulator .tabulator-row .tabulator-cell.tabulator-editable.editMode { background: #fff7e6; }
+.tabulator .tabulator-cell .highlight { display: inline-block; padding: 2px 6px; border-radius: 3px; background: #fde2e2; color: #b00020; font-weight: 600; }
+.tabulator .tabulator-cell .highlightYellow { display: inline-block; padding: 2px 6px; border-radius: 3px; background: #fff3cd; color: #8a6d3b; font-weight: 600; }
+.tabulator .tabulator-cell .file-link { color: #006e3c; text-decoration: none; font-weight: 600; }
+.tabulator .tabulator-cell .file-link:hover { text-decoration: underline; }
+.tabulator .tabulator-row .tabulator-cell .tabulator-data-tree-control { background: transparent; border: none; }
+.tabulator .tabulator-row .tabulator-cell .tabulator-data-tree-control .tabulator-data-tree-control-collapse,
+.tabulator .tabulator-row .tabulator-cell .tabulator-data-tree-control .tabulator-data-tree-control-expand { color: #006e3c; }
+.tabulator-edit-list .tabulator-edit-list-item.active { background: #006e3c; }
+
+/* Push the MIDP search bar (and the Export button after it) to the
+   right edge of the toolbar — the old filter button had margin-left:auto
+   doing this work and was removed when Tabulator header filters took over. */
+#searchInput { margin-left: auto; }
+
+/* ===== Tabulator tree-expand control: bigger, more obvious +/- buttons ===== */
+/* Tabulator's default modern theme draws the +/- as 7px crosshair lines —
+   easy to miss. Override to a 22px boxed button with proper +/- glyphs. */
+.tabulator .tabulator-row .tabulator-cell .tabulator-data-tree-control {
+  width: 22px !important;
+  height: 22px !important;
+  border: 1px solid #006e3c !important;
+  border-radius: 4px !important;
+  background: #fff !important;
+  margin-right: 8px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  vertical-align: middle !important;
+}
+.tabulator .tabulator-row .tabulator-cell .tabulator-data-tree-control:hover {
+  background: #e6f3ec !important;
+  cursor: pointer;
+}
+/* Wipe Tabulator's default crosshair lines so they don't overlay our glyphs. */
+.tabulator .tabulator-row .tabulator-cell .tabulator-data-tree-control .tabulator-data-tree-control-expand,
+.tabulator .tabulator-row .tabulator-cell .tabulator-data-tree-control .tabulator-data-tree-control-collapse {
+  width: auto !important;
+  height: auto !important;
+  background: transparent !important;
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+}
+.tabulator .tabulator-row .tabulator-cell .tabulator-data-tree-control .tabulator-data-tree-control-expand::after,
+.tabulator .tabulator-row .tabulator-cell .tabulator-data-tree-control .tabulator-data-tree-control-collapse::after {
+  display: none !important;
+}
+/* Render proper +/- glyphs sized for the bigger box. */
+.tabulator .tabulator-row .tabulator-cell .tabulator-data-tree-control .tabulator-data-tree-control-expand::before {
+  content: "+";
+  font-size: 18px;
+  font-weight: 700;
+  color: #006e3c;
+  line-height: 1;
+}
+.tabulator .tabulator-row .tabulator-cell .tabulator-data-tree-control .tabulator-data-tree-control-collapse::before {
+  content: "\2212"; /* unicode minus, more balanced than hyphen */
+  font-size: 18px;
+  font-weight: 700;
+  color: #006e3c;
+  line-height: 1;
+}
+
+/* Parent rows with expandable children get a faint green tint so it's
+   visually obvious which rows have older versions to drill into. */
+.tabulator .tabulator-row.has-children { background: #e8f3ed !important; }
+.tabulator .tabulator-row.has-children.tabulator-row-even { background: #ddedde !important; }
+.tabulator .tabulator-row.has-children:hover { background: #d2e7d9 !important; }
+
+/* Reset Filters button — sits between Search and Export. Greyed out by
+   default; turns orange when any kind of filter (chart click, header
+   filter, search box) is applied so the user can spot it. */
+.resetFiltersBtn {
+  background-color: #888 !important;
+}
+.resetFiltersBtn:hover {
+  background-color: #6e6e6e !important;
+}
+.resetFiltersBtn.active {
+  background-color: #e58f00 !important;
+}
+.resetFiltersBtn.active:hover {
+  background-color: #c87a00 !important;
 }

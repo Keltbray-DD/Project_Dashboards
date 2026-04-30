@@ -41,6 +41,10 @@ async function patchDataToACC(editMode, cell) {
     }
   }
 
+  // Patches one custom-attribute value on one file version. Returns
+  // { ok, status, body } so callers (the Tabulator cellEdited hook in
+  // particular) can show a success/failure toast based on the actual
+  // HTTP outcome rather than firing optimistically.
   async function postCustomItemDetails(
     AccessToken,
     columnID,
@@ -54,37 +58,41 @@ async function patchDataToACC(editMode, cell) {
         value: updatedValue,
       },
     ];
-  
+
     const headers = {
       Authorization: "Bearer " + AccessToken,
       "Content-Type": "application/json",
     };
-  
+
     const requestOptions = {
       method: "POST",
       headers: headers,
       body: JSON.stringify(bodyData),
     };
-  
+
     const apiUrl =
       "https://developer.api.autodesk.com/bim360/docs/v1/projects/" +
       projectID +
       "/versions/" +
       fileURN +
       "/custom-attributes:batch-update";
-    console.log(apiUrl);
-    console.log(requestOptions);
-    signedURLData = await fetch(apiUrl, requestOptions)
-      .then((response) => response.json())
-      .then((data) => {
-        const JSONdata = data;
-        console.log(JSONdata);
-        //console.log(JSONdata.uploadKey)
-        //console.log(JSONdata.urls)
-        return JSONdata;
-      })
-      .catch((error) => console.error("Error fetching data:", error));
-    return signedURLData;
+    try {
+      const response = await fetch(apiUrl, requestOptions);
+      const body = await response.json().catch(() => null);
+      if (!response.ok) {
+        console.error("custom-attributes:batch-update HTTP " + response.status, body);
+      }
+      // ACC's batch endpoint reports per-attribute outcomes in body.results
+      // even on a 200 — flag rows whose status is non-2xx as failed too.
+      const perRowOk =
+        !body ||
+        !Array.isArray(body.results) ||
+        body.results.every((r) => !r.status || (r.status >= 200 && r.status < 300));
+      return { ok: response.ok && perRowOk, status: response.status, body };
+    } catch (error) {
+      console.error("Error patching custom attribute:", error);
+      return { ok: false, status: 0, body: { error: String(error) } };
+    }
   }
 
   

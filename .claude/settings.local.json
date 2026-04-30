@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Bash(git --version)",
+      "Bash(npm install *)",
+      "Bash(npm run *)",
+      "Bash(git rm *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)",
+      "Bash(curl -sS -o /d/Devs/Aureos_Digital_Tools_Hub/public/aureos-logo-white.svg \"https://www.aureos.com/wp-content/themes/keltbray/assets/img/logo/AUREOS_logo_wh.svg\")",
+      "Bash(curl -sS -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:8000/index.html)",
+      "WebFetch(domain:aps.autodesk.com)",
+      "Bash(curl -s -L -A \"Mozilla/5.0\" \"https://aps.autodesk.com/blog/batch-retrieve-document-properties-bim-360-docs\" -o /tmp/blog1.html)",
+      "Bash(curl -s -L -A \"Mozilla/5.0\" \"https://www.google.com/search?q=%22versions%3Abatch-get%22+bim360+%22customAttributes%22\" -o /tmp/g1.html)",
+      "Bash(curl -s -L -A \"Mozilla/5.0\" \"https://duckduckgo.com/html/?q=%22versions%3Abatch-get%22+bim360+customAttributes+JSON\" -o /tmp/ddg1.html)",
+      "WebSearch",
+      "WebFetch(domain:raw.githubusercontent.com)"
+    ]
+  }
+}

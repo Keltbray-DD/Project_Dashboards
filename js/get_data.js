@@ -33,53 +33,117 @@ async function getJSONDataFromSP() {
 async function getData() {
   rawData = await getJSONDataFromSP(projectName);
   if (rawData.type == "framework") {
-    let versionList = [];
+    let filesList = [];
     let folderArrayDeliverables = [];
     for (let index = 0; index < rawData.data.length; index++) {
       const element = rawData.data[index];
       console.log(element);
-      const tempVersionList = await convertStringToJSON(
-        element.all_versions_file_list
-      );
+      const tempFilesList = await convertStringToJSON(element.files_list);
       const tempFolderArrayDeliverables = await convertStringToJSON(
         element.folder_array_deliverables
       );
-      console.log(tempVersionList);
+      console.log(tempFilesList);
       console.log(tempFolderArrayDeliverables);
-      if (!tempVersionList || !tempFolderArrayDeliverables) {
+      if (!tempFilesList || !tempFolderArrayDeliverables) {
       } else {
-        versionList = versionList.concat(tempVersionList);
+        filesList = filesList.concat(tempFilesList);
         folderArrayDeliverables = folderArrayDeliverables.concat(
           tempFolderArrayDeliverables
         );
       }
     }
     console.log(
-      versionList,
       rawData.data[0].Title,
       rawData.data[0].Modified,
       rawData.data[0].ProjectName,
-      folderArrayDeliverables
+      folderArrayDeliverables,
+      filesList
     );
     await processData(
-      versionList,
       rawData.data[0].Title,
       rawData.data[0].Modified,
       rawData.data[0].ProjectName,
-      folderArrayDeliverables
+      folderArrayDeliverables,
+      filesList
     );
   } else {
     rawFileData = rawData.data;
     console.log("rawFileData", rawFileData);
     rawFileData.forEach(async (element) => {
       await processData(
-        await convertStringToJSON(element.all_versions_file_list),
         element.Title,
         element.Modified,
         element.ProjectName,
-        await convertStringToJSON(element.folder_array_deliverables)
+        await convertStringToJSON(element.folder_array_deliverables),
+        await convertStringToJSON(element.files_list)
       );
     });
+  }
+}
+
+// Fetches all versions of a single file lineage. Used by the lazy
+// version-expand on the MIDP table — when the user clicks the chevron we
+// hit this for that one file and then batch-get custom attributes for the
+// returned versions.
+async function getItemVersions(accessToken, rawProjectID, lineageURN) {
+  const headers = {
+    Authorization: "Bearer " + accessToken,
+  };
+  const requestOptions = { method: "GET", headers: headers };
+  const apiUrl =
+    "https://developer.api.autodesk.com/data/v1/projects/b." +
+    rawProjectID +
+    "/items/" +
+    encodeURIComponent(lineageURN) +
+    "/versions";
+  try {
+    const response = await fetch(apiUrl, requestOptions);
+    if (!response.ok) {
+      console.error("getItemVersions failed with HTTP " + response.status);
+      return [];
+    }
+    const data = await response.json();
+    return data.data || [];
+  } catch (error) {
+    console.error("Error fetching item versions:", error);
+    return [];
+  }
+}
+
+// Fetches custom attribute values for a chunk of version URNs via the ACC
+// batch-get endpoint. Returns the `results` array verbatim — caller is
+// responsible for matching results back to its URNs (the API preserves
+// input order; unknown URNs are silently dropped, so length may be < urns
+// if any are stale/deleted/permission-denied).
+async function getCustomDetailsBatch(accessToken, urns) {
+  const rawProjectID = (projectID || "").replace("b.", "");
+  const headers = {
+    Authorization: "Bearer " + accessToken,
+    "Content-Type": "application/json",
+  };
+  const requestOptions = {
+    method: "POST",
+    headers: headers,
+    body: JSON.stringify({ urns: urns }),
+  };
+  const apiUrl =
+    "https://developer.api.autodesk.com/bim360/docs/v1/projects/" +
+    rawProjectID +
+    "/versions:batch-get";
+  try {
+    const response = await fetch(apiUrl, requestOptions);
+    if (!response.ok) {
+      console.error(
+        "versions:batch-get failed with HTTP " + response.status,
+        await response.text().catch(() => "")
+      );
+      return [];
+    }
+    const data = await response.json();
+    return data.results || [];
+  } catch (error) {
+    console.error("Error fetching custom attributes:", error);
+    return [];
   }
 }
 
@@ -143,7 +207,7 @@ async function getCustomDetailsData() {
   switch (projectID) {
     case "76c59b97-feaf-413c-9bd0-43cf8aaa3133":
       seriesID = await findObjectByName("Series", customAttributes);
-      if(tableType.includes('Drawing Register')){
+      if((tableType || '').includes('Drawing Register')){
         columnNamesDefault = [
           { columnName: "revision", columnIndex: 4, columnId: revisionCodeID.id },
           {

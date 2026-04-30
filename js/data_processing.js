@@ -1,13 +1,10 @@
-async function processData(data, fileName, updated, Project_Name, folders) {
-  // tempData = await convertStringToJSON(data);
-  // folderArray = await convertStringToJSON(folders)
-
-  console.log(fileName, data);
+async function processData(fileName, updated, Project_Name, folders, files_list) {
+  console.log(fileName, files_list);
 
   fileData = {
     updated: updated,
-    data: data,
     folderData: folders,
+    files_list: files_list
   };
   sessionStorage.setItem('projectData',fileData)
   console.log(fileData);
@@ -20,11 +17,226 @@ async function processData(data, fileName, updated, Project_Name, folders) {
   ).innerHTML = `${projectName} - ACC Docs Dashboard`;
   document.title = `${projectName} ACC Docs Dashboard`;
 
-  orginalACCExport = fileData.data;
+  orginalACCExport = fileData.files_list;
 
   await generateArrays()
   console.log(folderPaths)
   await loadTables()
+  // Fire-and-forget: lets the basic table render immediately while custom
+  // attributes stream in chunk-by-chunk in the background.
+  enrichFilesWithCustomAttributes();
+}
+
+function applyAttrsToFile(file, attrs) {
+  for (const accName in ATTR_NAME_MAP) {
+    const fieldName = ATTR_NAME_MAP[accName];
+    if (attrs[accName] !== undefined) {
+      file[fieldName] = attrs[accName];
+    }
+  }
+}
+
+// Multi-step loading panel: replaces the existing #loading overlay with
+// a centred spinner + title + checklist. Each step is set to one of
+// "pending", "active", or "done" by setLoadingStep(); when all steps are
+// done, teardownLoadingPanel() restores the overlay to its simple
+// "Loading…" form for tab-switch use.
+const LOADING_STEPS = [
+  { id: "auth", label: "Authenticating with Autodesk" },
+  { id: "files", label: "Loading project files" },
+  { id: "metadata", label: "Loading file metadata" },
+  { id: "render", label: "Rendering dashboard" },
+];
+
+function buildLoadingPanel(title) {
+  const el = document.getElementById("loading");
+  if (!el) return;
+  el.classList.add("loading-panel-mode");
+  el.style.display = "block";
+  const stepsHtml = LOADING_STEPS.map(
+    (s) => `
+      <li class="step pending" data-step="${s.id}">
+        <span class="step-icon"></span>
+        <span class="step-label">${s.label}</span>
+      </li>`
+  ).join("");
+  el.innerHTML = `
+    <div class="loading-spinner-circle"></div>
+    <div class="loading-title">${title || "Loading dashboard…"}</div>
+    <ul class="loading-steps" id="loadingSteps">${stepsHtml}</ul>
+  `;
+}
+
+function teardownLoadingPanel() {
+  const el = document.getElementById("loading");
+  if (!el) return;
+  el.classList.remove("loading-panel-mode");
+  el.style.display = "none";
+  el.textContent = "Loading...";
+}
+
+function setLoadingStep(stepId, state, label) {
+  const ul = document.getElementById("loadingSteps");
+  if (!ul) return;
+  const li = ul.querySelector(`[data-step="${stepId}"]`);
+  if (!li) return;
+  li.classList.remove("pending", "active", "done");
+  li.classList.add(state);
+  const icon = li.querySelector(".step-icon");
+  if (icon) icon.textContent = state === "done" ? "✓" : "";
+  if (label !== undefined) {
+    const labelEl = li.querySelector(".step-label");
+    if (labelEl) labelEl.textContent = label;
+  }
+}
+
+// Calls ACC's versions:batch-get endpoint in chunks, merges custom
+// attribute values into the in-memory `files[]`, and re-renders the active
+// tab when finished so populated cells and compliance gauges update.
+// Results are cached in sessionStorage keyed by version URN, so the same
+// project re-opened in the same tab session avoids re-fetching everything.
+async function enrichFilesWithCustomAttributes() {
+  if (!files || files.length === 0) {
+    teardownLoadingPanel();
+    return;
+  }
+
+  const rawProjectID = (projectID || "").replace("b.", "");
+  if (!accesToken) {
+    accesToken = await getAccessToken("data:read data:write");
+  }
+  if (!accesToken) {
+    console.error("Cannot enrich custom attributes — no access token.");
+    teardownLoadingPanel();
+    return;
+  }
+
+  // Chunk size: 200 matches the reference uploader and works in practice
+  // (the public docs say 50 max but the endpoint is more permissive).
+  // Concurrency: 4 in-flight batches keeps us comfortably below the
+  // ~300 req/min APS rate limit while making large projects (10k+ files)
+  // finish in seconds instead of minutes.
+  const CHUNK_SIZE = 200;
+  const CONCURRENCY = 4;
+  const CACHE_KEY = `customAttrs_${rawProjectID}`;
+  let cache = {};
+  let cachePersistFailed = false;
+  try {
+    cache = JSON.parse(sessionStorage.getItem(CACHE_KEY) || "{}");
+  } catch (e) {
+    cache = {};
+  }
+
+  // Apply anything we already have cached, no network needed.
+  for (const file of files) {
+    if (file.id && cache[file.id]) applyAttrsToFile(file, cache[file.id]);
+  }
+
+  const uncachedUrns = files
+    .map((f) => f.id)
+    .filter((urn) => urn && !cache[urn]);
+  const totalUncached = uncachedUrns.length;
+  const totalChunks = Math.ceil(totalUncached / CHUNK_SIZE);
+
+  console.log(
+    `enrichFilesWithCustomAttributes: ${files.length} files, ${totalUncached} uncached, ${totalChunks} chunks @ size ${CHUNK_SIZE}, concurrency ${CONCURRENCY}`
+  );
+
+  setLoadingStep(
+    "metadata",
+    "active",
+    totalUncached === 0
+      ? "Loading file metadata (cached)"
+      : `Loading file metadata (0 / ${totalUncached.toLocaleString()})`
+  );
+
+  let completed = 0;
+
+  // Fire CONCURRENCY chunks at once, await them all, then move to the
+  // next wave. Per-wave progress updates feel snappier than per-chunk
+  // because the user sees a quick jump every ~500ms-1s.
+  for (let waveStart = 0; waveStart < totalUncached; waveStart += CHUNK_SIZE * CONCURRENCY) {
+    const chunkPromises = [];
+    for (let p = 0; p < CONCURRENCY; p++) {
+      const start = waveStart + p * CHUNK_SIZE;
+      if (start >= totalUncached) break;
+      const chunk = uncachedUrns.slice(start, start + CHUNK_SIZE);
+      chunkPromises.push(
+        getCustomDetailsBatch(accesToken, chunk).then((results) => ({ chunk, results, start }))
+      );
+    }
+    const waveResults = await Promise.all(chunkPromises);
+
+    for (const { chunk, results, start } of waveResults) {
+      if (results && results.length !== chunk.length) {
+        console.warn(
+          `batch-get returned ${results.length}/${chunk.length} for chunk starting at index ${start} — index alignment may be off`
+        );
+      }
+      if (results && results.length > 0) {
+        const limit = Math.min(results.length, chunk.length);
+        for (let j = 0; j < limit; j++) {
+          const urn = chunk[j];
+          const result = results[j];
+          const attrs = {};
+          for (const a of result.customAttributes || []) {
+            attrs[a.name] = a.value;
+          }
+          cache[urn] = attrs;
+          const file = files.find((f) => f.id === urn);
+          if (file) applyAttrsToFile(file, attrs);
+        }
+      }
+      completed += chunk.length;
+    }
+
+    // Persist cache once per wave rather than per chunk — fewer writes
+    // and the failure handling stays scoped to a single try block. If
+    // the cache write fails (sessionStorage quota), warn once and stop
+    // re-attempting for the rest of this run.
+    if (!cachePersistFailed) {
+      try {
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+      } catch (e) {
+        console.warn(
+          `Custom-attr cache exceeded sessionStorage quota — subsequent loads will re-fetch from ACC instead of cache. (${e && e.name})`
+        );
+        cachePersistFailed = true;
+      }
+    }
+
+    setLoadingStep(
+      "metadata",
+      "active",
+      `Loading file metadata (${Math.min(completed, totalUncached).toLocaleString()} / ${totalUncached.toLocaleString()})`
+    );
+  }
+
+  setLoadingStep("metadata", "done");
+  setLoadingStep("render", "active");
+
+  // Refresh every Tabulator instance the user has already opened so
+  // tab-switches after enrichment show up-to-date data without another
+  // round trip. Each init function knows whether it filters the data
+  // (DR/SHEAF) or shows everything (MIDP/MDR).
+  const refreshers = {
+    MIDP: typeof initMidpTable === "function" ? initMidpTable : null,
+    DR: typeof initDrawingRegisterTable === "function" ? initDrawingRegisterTable : null,
+    DRSHEAF: typeof initSheafDrawingRegisterTable === "function" ? initSheafDrawingRegisterTable : null,
+  };
+  if (typeof tabulators !== "undefined") {
+    for (const key of Object.keys(tabulators)) {
+      if (refreshers[key]) {
+        try { await refreshers[key](); } catch (e) { console.warn(`refresh ${key} failed:`, e); }
+      }
+    }
+  }
+  if (typeof openTab === "function" && selectedTab) {
+    await openTab("", selectedTab);
+  }
+
+  setLoadingStep("render", "done");
+  teardownLoadingPanel();
 }
 async function loadTables() {
     // fileData = sessionStorage.getItem('projectData')
@@ -85,41 +297,61 @@ async function groupItemData(data) {
 }
 
 async function addToFilesArray(item) {
-    folderPaths.push(item.folder_path);
+    // The PA index now ships only basic file metadata — Name, folderID,
+    // folderPath, itemID, itemIdVersion. Everything else (revision, title
+    // lines, status, dates, activity code, etc.) is fetched on demand from
+    // ACC and patched into this row later. Initialise those fields so the
+    // shape stays stable and downstream code doesn't crash on missing keys.
+    const versionMatch = (item.itemIdVersion || '').match(/\?version=(\d+)/);
+    const accversion = versionMatch ? parseInt(versionMatch[1], 10) : 1;
+    const rawProjectID = (projectID || '').replace('b.', '');
+    // Match the URL format ACC web uses (and that Forma deep-links to):
+    //   .eu host for EMEA-hosted projects (URN includes "wipemea"),
+    //     .com otherwise.
+    //   entityId is the *lineage* URN (itemID), not the version URN — the
+    //     web UI then opens the latest version automatically.
+    //   folderUrn must be URI-encoded (raw colons in the URL break the
+    //     deep-link in some browsers).
+    const region = (item.itemID || item.folderID || '').includes('wipemea') ? 'eu' : 'com';
+    const fileUrl = item.itemID && item.folderID
+      ? `https://acc.autodesk.${region}/docs/files/projects/${rawProjectID}?folderUrn=${encodeURIComponent(item.folderID)}&entityId=${encodeURIComponent(item.itemID)}&viewModel=detail&moduleId=folders`
+      : '';
+
+    folderPaths.push(item.folderPath);
     originalFileData.push(item);
     files.push({
-      name: item.name,
-      accversion: item.accversion,
-      file_url: item.file_url,
-      revision: item.revision,
-      folder_path: item.folder_path,
-      folderid: item.folderid,
-      function: item.function || '',
-      file_description: item.file_description,
-      title_line_1: item.title_line_1,
-      title_line_2: item.title_line_2,
-      title_line_3: item.title_line_3,
-      title_line_4: item.title_line_4,
-      last_modified_user: item.last_modified_user,
-      last_modified_date: item.last_modified_date,
-      created_by: item.created_by_user,
-      status: item.status || '',
-      activity_code: item.activity_code,
-      id: item.id,
-      // id_no_version: item.id.split("?")[0],
-      deliverable: item.deliverable || '',
-      discipline: item.discipline || '',
-      form: item.form || '',
-      project_pin: item.project_pin || '',
-      spatial: item.spatial || '',
-      originator: item.originator || '',
-      notes: item.notes,
-      tracking_status: item.tracking_status,
-      category: item.category,
-      planned_start_date: item.planned_start_date,
-      actual_start_date: item.actual_start_date,
-      actual_finish_date: item.actual_finish_date,
-      planned_finish_date: item.planned_finish_date,
+      name: item.Name,
+      accversion: accversion,
+      file_url: fileUrl,
+      revision: undefined,
+      folder_path: item.folderPath,
+      folderid: item.folderID,
+      function: '',
+      file_description: undefined,
+      title_line_1: undefined,
+      title_line_2: undefined,
+      title_line_3: undefined,
+      title_line_4: undefined,
+      last_modified_user: item.lastModifiedUserName,
+      last_modified_date: item.lastModifiedTime,
+      created_by_user: item.createUserName,
+      status: '',
+      activity_code: undefined,
+      id: item.itemIdVersion,
+      itemID: item.itemID,
+      deliverable: '',
+      discipline: '',
+      form: '',
+      project_pin: '',
+      spatial: '',
+      originator: '',
+      notes: undefined,
+      tracking_status: undefined,
+      category: undefined,
+      planned_start_date: undefined,
+      actual_start_date: undefined,
+      actual_finish_date: undefined,
+      planned_finish_date: undefined,
     });
   }
 

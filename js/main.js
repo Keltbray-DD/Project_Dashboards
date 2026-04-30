@@ -1,5 +1,5 @@
 document.addEventListener("DOMContentLoaded", async function () {
-  // table = document.querySelector("#dataTable");
+  table = document.querySelector("#dataTable");
   // tableBody = document.querySelector("#dataTable tbody");
   // tableHeader = document.querySelector("#dataTable");
   // searchInput = document.getElementById("searchInput");
@@ -16,21 +16,21 @@ document.addEventListener("DOMContentLoaded", async function () {
   document.getElementById("appInfo").textContent = `${appName} ${appVersion}`;
   // Split the URL at the "?" and take the first part
   toolURL = fullUrl.split("?")[0];
+
+  buildLoadingPanel();
+  setLoadingStep("auth", "active");
   await checkLogin();
-  // await checkIsClient()
+  setLoadingStep("auth", "done");
+
   loadingScreen = document.getElementById("loadingScreen");
   statusUpdateLoading = document.getElementById("statusUpdateLoading");
   const logoutButton = document.getElementById("logoutBtn");
 
-  // Add an event listener for the button click event
-  // logoutButton.addEventListener("click", function () {
-  //   signOut();
-  // });
   getProjectFromURL();
   projectName = sessionStorage.getItem('projectName')
-  await showLoadingSpinner(tableHeader)
+  setLoadingStep("files", "active");
   await getData()
-  await hideLoadingSpinner(tableHeader)
+  setLoadingStep("files", "done");
 
 //await createFilterOptions()
   
@@ -53,30 +53,34 @@ document.addEventListener("DOMContentLoaded", async function () {
   //     "block";
   // }
 
-  rows = tableBody.getElementsByTagName("tr");
+  // Skip the legacy DOM-based search wiring on MIDP — Tabulator owns the
+  // table now and the search input is wired via openTab → tabulatorSearch.
+  if (tableBody && selectedTab !== "MIDP") {
+    rows = tableBody.getElementsByTagName("tr");
 
-  searchInput.addEventListener("keyup", function () {
-    const filter = searchInput.value.toLowerCase();
+    searchInput.addEventListener("keyup", function () {
+      const filter = searchInput.value.toLowerCase();
 
-    for (let i = 0; i < rows.length; i++) {
-      // Start at 1 to skip the header row
-      const cells = rows[i].getElementsByTagName("td");
-      let match = false;
+      for (let i = 0; i < rows.length; i++) {
+        // Start at 1 to skip the header row
+        const cells = rows[i].getElementsByTagName("td");
+        let match = false;
 
-      for (let j = 0; j < cells.length; j++) {
-        if (cells[j].textContent.toLowerCase().includes(filter)) {
-          match = true;
-          break;
+        for (let j = 0; j < cells.length; j++) {
+          if (cells[j].textContent.toLowerCase().includes(filter)) {
+            match = true;
+            break;
+          }
+        }
+
+        if (match) {
+          rows[i].style.display = ""; // Show the row
+        } else {
+          rows[i].style.display = "none"; // Hide the row
         }
       }
-
-      if (match) {
-        rows[i].style.display = ""; // Show the row
-      } else {
-        rows[i].style.display = "none"; // Hide the row
-      }
-    }
-  });
+    });
+  }
   // Add event listener to filter the table based on selected folder path
   // folderFilter.addEventListener('change', function () {
   //     const selectedPath = this.value;
@@ -150,7 +154,9 @@ async function populateFolderDropdown(folderPaths) {
 
 async function resetValues() {
   // files = [];
-  tableBody.innerHTML = "";
+  // Tabulator-managed tabs (MIDP after batch 1) set tableBody = null —
+  // the table content is owned by Tabulator, not a <tbody> we can clear.
+  if (tableBody) tableBody.innerHTML = "";
   //folderFilter.options.length = 1
   folderPaths = [];
   filteredData = [];
@@ -166,6 +172,10 @@ async function resetValues() {
   descriptionPresentCount = 0;
   descriptionPlaceHolderCount = 0;
   folderCount = [];
+  // chartChecks() accumulates into statusCounts — has to be wiped here
+  // too, otherwise the second openTab pass after enrichment doubles up
+  // the "Missing" bucket and the chart bars stop matching the data.
+  statusCounts = {};
 }
 
 function isMissing(value) {
@@ -259,29 +269,58 @@ async function openTab(evt, tabName) {
   document.getElementById("chartButton").style.display = "block";
   switch (tabName) {
     case "MIDP":
-      tableBody = document.querySelector("#dataTable tbody");
+      tableBody = null; // Tabulator owns #dataTable now
       tableHeader = document.getElementById("dataTable");
       searchInput = document.getElementById("searchInput");
+      tableType = "MIDP Table"; // legacy global, read by getCustomDetailsData
       await showLoadingSpinner(tableHeader)
-      //folderFilter = document.getElementById("folderFilter");
-      tableBody.innerHTML = "";
       searchInput.value = "";
-      // tableHeader.innerHTML = '';
-      await generateMIDPTable();
+      // Run the existing per-row counters so the compliance gauges have
+      // their numbers; then hand the data to Tabulator and render charts.
+      resetValues();
+      mainFileArray = files;
+      for (const item of files) {
+        if (typeof chartChecks === "function") chartChecks(item);
+        if (typeof checkFolder === "function") checkFolder(item.folder_path || "");
+      }
+      await initMidpTable();
+      if (typeof generateCharts === "function") generateCharts();
+      // Recompute compliance against the (possibly enriched) files array.
+      if (!isClient && typeof getUniqueValues === "function") {
+        const filesData = await getUniqueValues(mainFileArray);
+        if (typeof invalidFileCheck === "function") await invalidFileCheck(filesData);
+        if (typeof complianceCalc === "function") complianceCalc(filesData);
+      }
+      // Wire toolbar controls to the Tabulator instance (re-bind every
+      // time we open the tab so handlers point at the live instance).
+      searchInput.oninput = () => {
+        tabulatorSearch(searchInput.value);
+        tabulatorUpdateResetButton();
+      };
+      const editBtn = document.getElementById("toggleEditBtn");
+      if (editBtn) editBtn.onclick = tabulatorToggleEdit;
+      const resetBtn = document.getElementById("resetFiltersBtn");
+      if (resetBtn) resetBtn.onclick = tabulatorClearFilters;
+      tabulatorWireColumnPicker();
       await hideLoadingSpinner(tableHeader)
       break;
 
     case "DrawingRegister":
-      tableBody = document.querySelector("#dataTableDR tbody");
+      tableBody = null;
       tableHeader = document.getElementById("dataTableDR");
       searchInput = document.getElementById("searchInputDR");
-      folderFilter = document.getElementById("folderFilterDR");
+      tableType = "Drawing Register Table";
       await showLoadingSpinner(tableHeader)
-      tableBody.innerHTML = "";
       searchInput.value = "";
-      //tableHeader.innerHTML=''
-      await generateDrawingRegisterTable();
-      await addFolderPathListener();
+      await initDrawingRegisterTable();
+      searchInput.oninput = () => {
+        tabulatorSearchAny("DR", searchInput.value);
+        tabulatorUpdateResetButton("DR");
+      };
+      const drEditBtn = document.getElementById("toggleEditBtn");
+      if (drEditBtn) drEditBtn.onclick = tabulatorToggleEdit;
+      const drResetBtn = document.getElementById("resetFiltersBtnDR");
+      if (drResetBtn) drResetBtn.onclick = () => tabulatorClearFiltersAny("DR");
       document.getElementById("openModal").style.display = "none";
       document.getElementById("chartButton").style.display = "none";
       document.getElementById("chartsSection").style.display = "none";
@@ -289,49 +328,21 @@ async function openTab(evt, tabName) {
       break;
 
     case "DrawingRegisterSHEAF":
-      tableBody = document.querySelector("#dataTableDRSHEAF tbody");
+      tableBody = null;
       tableHeader = document.getElementById("dataTableDRSHEAF");
       searchInput = document.getElementById("searchInputDRSHEAF");
-      folderFilter = document.getElementById("folderFilterDRSHEAF");
+      tableType = "SHEAF Drawing Register Table";
       await showLoadingSpinner(tableHeader)
-      tableBody.innerHTML = "";
       searchInput.value = "";
-      //tableHeader.innerHTML=''
-      await generateSHEAFDrawingRegisterTable();
-      await addFolderPathListener();
-      document.getElementById("openModal").style.display = "none";
-      document.getElementById("chartButton").style.display = "none";
-      document.getElementById("chartsSection").style.display = "none";
-      await hideLoadingSpinner(tableHeader)
-      break;
-
-    case "TransmittalRegister":
-      tableBody = document.querySelector("#dataTableTR tbody");
-      tableHeader = document.getElementById("dataTableTR");
-      searchInput = document.getElementById("searchInputTR");
-      folderFilter = document.getElementById("folderFilterTR");
-      await showLoadingSpinner(tableHeader)
-      tableBody.innerHTML = "";
-      searchInput.value = "";
-      DCDataRetrieval();
-      generateTransmittalTable();
-      document.getElementById("openModal").style.display = "none";
-      document.getElementById("chartButton").style.display = "none";
-      document.getElementById("chartsSection").style.display = "none";
-      await hideLoadingSpinner(tableHeader)
-      break;
-
-    case "MDR":
-      tableBody = document.querySelector("#dataTableMDR tbody");
-      tableHeader = document.getElementById("dataTableMDR");
-      searchInput = document.getElementById("searchInputMDR");
-      folderFilter = document.getElementById("folderFilterMDR");
-      await showLoadingSpinner(tableHeader)
-      tableBody.innerHTML = "";
-      searchInput.value = "";
-      await getNSArray();
-      await generateMDRTable(files);
-      await addFolderPathListener();
+      await initSheafDrawingRegisterTable();
+      searchInput.oninput = () => {
+        tabulatorSearchAny("DRSHEAF", searchInput.value);
+        tabulatorUpdateResetButton("DRSHEAF");
+      };
+      const sheafEditBtn = document.getElementById("toggleEditBtn");
+      if (sheafEditBtn) sheafEditBtn.onclick = tabulatorToggleEdit;
+      const sheafResetBtn = document.getElementById("resetFiltersBtnDRSHEAF");
+      if (sheafResetBtn) sheafResetBtn.onclick = () => tabulatorClearFiltersAny("DRSHEAF");
       document.getElementById("openModal").style.display = "none";
       document.getElementById("chartButton").style.display = "none";
       document.getElementById("chartsSection").style.display = "none";
@@ -341,6 +352,11 @@ async function openTab(evt, tabName) {
     default:
       break;
   }
+  // All four tabs are now Tabulator-managed and set tableBody = null —
+  // their search/filter wiring is handled inside each switch case.
+  // Bail before the legacy DOM-based search/filter code runs.
+  if (!tableBody) return;
+
   rows = tableBody.getElementsByTagName("tr");
   searchInput.addEventListener("keyup", function () {
     const filter = searchInput.value.toLowerCase();
@@ -747,16 +763,17 @@ async function createFilterOptions() {
 
 async function showLoadingSpinner(table) {
   const loadingSpinner = document.getElementById('loading');
-
-  // Show the loading spinner
-  // table.style.display = 'none';
+  if (!loadingSpinner) return;
+  // While the multi-step panel is owning the overlay, leave it alone —
+  // openTab calls during initial load and enrichment must not flicker
+  // the panel off.
+  if (loadingSpinner.classList.contains('loading-panel-mode')) return;
   loadingSpinner.style.display = 'block';
 }
 
 async function hideLoadingSpinner(table) {
   const loadingSpinner = document.getElementById('loading');
-
-  // Show the loading spinner
+  if (!loadingSpinner) return;
+  if (loadingSpinner.classList.contains('loading-panel-mode')) return;
   loadingSpinner.style.display = 'none';
-  // table.style.display = 'block';
 }
