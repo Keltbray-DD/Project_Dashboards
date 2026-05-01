@@ -656,7 +656,7 @@ function sortTableByColumn(table, column, order = "asc") {
 
 
 
-////////////////////////////////////// Get CSV Data from ACC Data Connector
+////////////////////////////////////// Get CSV Data from Forma Data Connector
 
 async function DCDataRetrieval() {
   fetchReviewData().then(() => {

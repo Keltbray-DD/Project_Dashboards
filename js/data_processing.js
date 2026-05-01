@@ -14,8 +14,8 @@ async function processData(fileName, updated, Project_Name, folders, files_list)
   )}`;
   document.getElementById(
     "title"
-  ).innerHTML = `${projectName} - ACC Docs Dashboard`;
-  document.title = `${projectName} ACC Docs Dashboard`;
+  ).innerHTML = `${projectName} - Forma Docs Dashboard`;
+  document.title = `${projectName} Forma Docs Dashboard`;
 
   orginalACCExport = fileData.files_list;
 
@@ -199,7 +199,7 @@ async function enrichFilesWithCustomAttributes() {
         sessionStorage.setItem(CACHE_KEY, JSON.stringify(cache));
       } catch (e) {
         console.warn(
-          `Custom-attr cache exceeded sessionStorage quota — subsequent loads will re-fetch from ACC instead of cache. (${e && e.name})`
+          `Custom-attr cache exceeded sessionStorage quota — subsequent loads will re-fetch from Forma instead of cache. (${e && e.name})`
         );
         cachePersistFailed = true;
       }
@@ -213,6 +213,14 @@ async function enrichFilesWithCustomAttributes() {
   }
 
   setLoadingStep("metadata", "done");
+
+  // Overlay any cell edits the user made since PA's current extract was
+  // generated — they're stored in localStorage with timestamps and
+  // dropped automatically once PA's next extract catches up.
+  if (typeof applyPendingEdits === "function") {
+    try { applyPendingEdits(); } catch (e) { console.warn("applyPendingEdits failed:", e); }
+  }
+
   setLoadingStep("render", "active");
 
   // Refresh every Tabulator instance the user has already opened so
@@ -300,12 +308,12 @@ async function addToFilesArray(item) {
     // The PA index now ships only basic file metadata — Name, folderID,
     // folderPath, itemID, itemIdVersion. Everything else (revision, title
     // lines, status, dates, activity code, etc.) is fetched on demand from
-    // ACC and patched into this row later. Initialise those fields so the
+    // Forma and patched into this row later. Initialise those fields so the
     // shape stays stable and downstream code doesn't crash on missing keys.
     const versionMatch = (item.itemIdVersion || '').match(/\?version=(\d+)/);
     const accversion = versionMatch ? parseInt(versionMatch[1], 10) : 1;
     const rawProjectID = (projectID || '').replace('b.', '');
-    // Match the URL format ACC web uses (and that Forma deep-links to):
+    // Match the URL format Forma web uses (and that Forma deep-links to):
     //   .eu host for EMEA-hosted projects (URN includes "wipemea"),
     //     .com otherwise.
     //   entityId is the *lineage* URN (itemID), not the version URN — the
