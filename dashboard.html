@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ACC Docs Dashboard</title>
+    <title>Forma Docs Dashboard</title>
     <!-- <link rel="stylesheet" href="assets/css/main.css"> -->
     <link rel="stylesheet" href="assets/css/dashboards.css">
     <link rel="stylesheet" href="assets/css/userBox.css">
@@ -15,7 +15,7 @@
         <img src="https://www.aureos.com/wp-content/themes/keltbray/assets/img/logo/AUREOS_logo_wh.svg" 
         class="logo logo--white" 
         alt="Aureos Logo">
-        <div class="title"><h2 id="title">ACC Docs Dashboard</h2></div>
+        <div class="title"><h2 id="title">Forma Docs Dashboard</h2></div>
         <div class="profile-container" id="profileMenu">
           <img id="userPic" src="https://images.profile.autodesk.com/default/user_X58.png" alt="Profile" class="profile-pic" />
           <div class="dropdown-menu" id="dropdown">
@@ -37,6 +37,25 @@
         <button class="modal-btn" id="applyColumns">Apply</button>
         </div>
     </div>
+
+    <!-- All Revisions modal — opened from the info icon on a MIDP row -->
+    <div id="versionsModal" class="modal">
+        <div class="modal-content versions-modal-content">
+            <span class="close" id="versionsModalClose">&times;</span>
+            <h3 id="versionsModalTitle">All revisions</h3>
+            <div id="versionsModalLoading">Loading…</div>
+            <table id="versionsModalTable" class="versions-modal-table" style="display:none">
+                <thead>
+                    <tr>
+                        <th>Doc No</th>
+                        <th>Revision</th>
+                        <th>Folder/State</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
     <section id="menu-bar" class="menu-bar">
         <div class="tab">
             <button id="MIDP_Button" class="tablinks" onclick="openTab(event, 'MIDP')">MIDP</button>
@@ -46,6 +65,7 @@
             <button id="toggleEditBtn" class="editButton">✏️ Enable Edit Mode</button>
             <button id="openModal" class="modal-btn" > ⚙️ Select Columns</button>
             <button id="chartButton" class="tablinks" onclick="openChartsSelection('chartsSection')">📊 Show/Hide Charts</button>
+            <button id="refreshDataBtn" class="modal-btn" title="Reload the dashboard with the latest data from Forma">↻ Refresh data</button>
         </div>
     </section>
     <!-- Popup message -->

@@ -1,5 +1,5 @@
 const appName = "Forma Docs Dashboard";
-const appVersion = "v1.5.2";
+const appVersion = "v1.6.0";
 
 let projectID;
 const hubID = "b.24d2d632-e01b-4ca0-b988-385be827cb04"
@@ -95,7 +95,7 @@ const defaultHiddenColumns = [
     "Spatial"
 ]; // Columns to hide by default
 
-// Maps the ACC custom attribute display name (as stored in the project's
+// Maps the Forma custom attribute display name (as stored in the project's
 // naming standard) to the field key our `files[]` rows use. The batch-get
 // response gives us {name, value} per attribute — this is how we translate
 // "Title Line 1" → title_line_1 etc. when patching a file row in place.

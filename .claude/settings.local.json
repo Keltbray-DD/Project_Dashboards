@@ -16,7 +16,8 @@
       "Bash(curl -s -L -A \"Mozilla/5.0\" \"https://www.google.com/search?q=%22versions%3Abatch-get%22+bim360+%22customAttributes%22\" -o /tmp/g1.html)",
       "Bash(curl -s -L -A \"Mozilla/5.0\" \"https://duckduckgo.com/html/?q=%22versions%3Abatch-get%22+bim360+customAttributes+JSON\" -o /tmp/ddg1.html)",
       "WebSearch",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(py -m http.server 8000 --bind 127.0.0.1)"
     ]
   }
 }

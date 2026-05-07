@@ -866,6 +866,27 @@ table {
 .tabulator .tabulator-row .tabulator-cell.tabulator-editable.editMode { background: #fff7e6; }
 .tabulator .tabulator-cell .highlight { display: inline-block; padding: 2px 6px; border-radius: 3px; background: #fde2e2; color: #b00020; font-weight: 600; }
 .tabulator .tabulator-cell .highlightYellow { display: inline-block; padding: 2px 6px; border-radius: 3px; background: #fff3cd; color: #8a6d3b; font-weight: 600; }
+.tabulator .tabulator-cell .highlightOrange { display: inline-block; padding: 2px 6px; border-radius: 3px; background: #ffe1bf; color: #a85700; font-weight: 600; cursor: help; }
+
+/* Info icon in the leading column — opens the "All revisions" modal. */
+.tabulator .tabulator-cell .row-info-icon { color: #006e3c; font-size: 16px; cursor: pointer; }
+.tabulator .tabulator-cell .row-info-icon:hover { color: #00aa5c; }
+
+/* "All revisions" modal — wider than the column-picker modal because
+   it shows a table, not a checkbox list. */
+.versions-modal-content { width: min(640px, 90vw) !important; max-height: 80vh; overflow: auto; }
+.versions-modal-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+.versions-modal-table th { background: #006e3c; color: #fff; text-align: left; padding: 10px 12px; font-weight: 600; }
+.versions-modal-table td { padding: 10px 12px; border-bottom: 1px solid #eee; }
+.versions-modal-table tr:last-child td { border-bottom: none; }
+.versions-modal-table tr.modal-row-approved td { background: #c6f0d2; font-weight: 600; }
+.versions-modal-table tr.modal-row-pending td { background: #ffd9a8; font-weight: 600; }
+#versionsModalLoading { text-align: center; padding: 20px; color: #666; }
+
+/* Refresh-data button: subtle until 30 minutes have passed, then turns
+   amber so users notice without being interrupted. */
+#refreshDataBtn.stale { background: #ffd9a8 !important; color: #a85700 !important; border-color: #a85700 !important; }
+#refreshDataBtn.stale::after { content: " •"; color: #a85700; }
 .tabulator .tabulator-cell .file-link { color: #006e3c; text-decoration: none; font-weight: 600; }
 .tabulator .tabulator-cell .file-link:hover { text-decoration: underline; }
 .tabulator .tabulator-row .tabulator-cell .tabulator-data-tree-control { background: transparent; border: none; }
