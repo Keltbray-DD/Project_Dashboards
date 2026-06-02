@@ -1,5 +1,5 @@
 const appName = "Forma Docs Dashboard";
-const appVersion = "v1.6.0";
+const appVersion = "v1.7.0";
 
 let projectID;
 const hubID = "b.24d2d632-e01b-4ca0-b988-385be827cb04"
@@ -119,7 +119,7 @@ const ATTR_NAME_MAP = {
     "Actual Finish Date": "actual_finish_date",
     "Planned Finish Date": "planned_finish_date",
     "Series": "series",
-    // The following come from ACC's naming-standard validation — they
+    // The following come from Forma's naming-standard validation — they
     // populate the Drawing Register / SHEAF filters and other downstream
     // rendering. If your project's attribute is named differently (e.g.
     // "Project PIN" with a capital PIN), add another key here pointing

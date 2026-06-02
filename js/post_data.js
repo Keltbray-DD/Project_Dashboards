@@ -82,7 +82,7 @@ async function patchDataToACC(editMode, cell) {
       if (!response.ok) {
         console.error("custom-attributes:batch-update HTTP " + response.status, body);
       }
-      // ACC's batch endpoint reports per-attribute outcomes in body.results
+      // Forma's batch endpoint reports per-attribute outcomes in body.results
       // even on a 200 — flag rows whose status is non-2xx as failed too.
       const perRowOk =
         !body ||

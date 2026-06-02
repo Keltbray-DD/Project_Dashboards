@@ -35,6 +35,7 @@ async function getData() {
   if (rawData.type == "framework") {
     let filesList = [];
     let folderArrayDeliverables = [];
+    let additionalMidpFolders = [];
     for (let index = 0; index < rawData.data.length; index++) {
       const element = rawData.data[index];
       console.log(element);
@@ -42,6 +43,10 @@ async function getData() {
       const tempFolderArrayDeliverables = await convertStringToJSON(
         element.folder_array_deliverables
       );
+      // PA may or may not populate this column yet — treat as optional.
+      const tempAdditional = element.additional_MIDP_folders
+        ? await convertStringToJSON(element.additional_MIDP_folders)
+        : [];
       console.log(tempFilesList);
       console.log(tempFolderArrayDeliverables);
       if (!tempFilesList || !tempFolderArrayDeliverables) {
@@ -50,6 +55,9 @@ async function getData() {
         folderArrayDeliverables = folderArrayDeliverables.concat(
           tempFolderArrayDeliverables
         );
+      }
+      if (Array.isArray(tempAdditional)) {
+        additionalMidpFolders = additionalMidpFolders.concat(tempAdditional);
       }
     }
     console.log(
@@ -64,7 +72,8 @@ async function getData() {
       rawData.data[0].Modified,
       rawData.data[0].ProjectName,
       folderArrayDeliverables,
-      filesList
+      filesList,
+      additionalMidpFolders
     );
   } else {
     rawFileData = rawData.data;
@@ -75,10 +84,83 @@ async function getData() {
         element.Modified,
         element.ProjectName,
         await convertStringToJSON(element.folder_array_deliverables),
-        await convertStringToJSON(element.files_list)
+        await convertStringToJSON(element.files_list),
+        element.additional_MIDP_folders
+          ? await convertStringToJSON(element.additional_MIDP_folders)
+          : []
       );
     });
   }
+}
+
+// Walks a folder and returns a flat list of every file (item) inside it.
+// When `includeSubFolders` is true (default), descends recursively with
+// sub-folder fetches running in parallel; when false, stops at the
+// root's direct children. Used to surface "additional MIDP folders"
+// that PA's per-project extract doesn't cover — files in those folders
+// aren't in files_list, so the dashboard enumerates them live against
+// the Data Management API.
+//
+// Returned shape per file:
+//   {
+//     item: {id, attributes, ...}  — the lineage entry as returned by /contents
+//     tipVersion: {id, attributes}  — the latest version object (from `included`)
+//     folderPath: "RAMS / Sub-folder"  — joined display path from the root
+//     folderID: "<urn of immediate parent folder>"
+//   }
+async function getFolderContents(accessToken, rawProjectID, rootFolderID, rootFolderName, includeSubFolders) {
+  // Default to true so behaviour is backwards-compatible with entries
+  // that don't yet have the includeSubFolders field.
+  const recurse = includeSubFolders !== false;
+  const collected = [];
+  const baseUrl =
+    "https://developer.api.autodesk.com/data/v1/projects/b." + rawProjectID + "/folders/";
+
+  async function walk(folderId, pathParts) {
+    const url = baseUrl + encodeURIComponent(folderId) + "/contents?includeHidden=false";
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: { Authorization: "Bearer " + accessToken },
+      });
+      if (!response.ok) {
+        console.error("getFolderContents " + folderId + " HTTP " + response.status);
+        return;
+      }
+      const data = await response.json();
+      const entries = data.data || [];
+      // `included` holds the tip version objects, keyed by version URN.
+      const tipByVersionId = {};
+      for (const inc of data.included || []) {
+        tipByVersionId[inc.id] = inc;
+      }
+      const folderPath = pathParts.join(" / ");
+      const subfolderTasks = [];
+      for (const entry of entries) {
+        if (entry.type === "items") {
+          const tipUrn =
+            entry.relationships &&
+            entry.relationships.tip &&
+            entry.relationships.tip.data &&
+            entry.relationships.tip.data.id;
+          const tipVersion = tipUrn ? tipByVersionId[tipUrn] : null;
+          if (tipVersion) {
+            collected.push({ item: entry, tipVersion, folderPath, folderID: folderId });
+          }
+        } else if (entry.type === "folders" && recurse) {
+          const childName =
+            (entry.attributes && (entry.attributes.displayName || entry.attributes.name)) || "";
+          subfolderTasks.push(walk(entry.id, pathParts.concat([childName])));
+        }
+      }
+      await Promise.all(subfolderTasks);
+    } catch (e) {
+      console.error("Error walking folder " + folderId, e);
+    }
+  }
+
+  await walk(rootFolderID, [rootFolderName]);
+  return collected;
 }
 
 // Fetches all versions of a single file lineage. Used by the lazy
@@ -110,8 +192,8 @@ async function getItemVersions(accessToken, rawProjectID, lineageURN) {
   }
 }
 
-// Fetches custom attribute values for a chunk of version URNs via the ACC
-// batch-get endpoint. Returns the `results` array verbatim — caller is
+// Fetches custom attribute values for a chunk of version URNs via the
+// Forma batch-get endpoint. Returns the `results` array verbatim — caller is
 // responsible for matching results back to its URNs (the API preserves
 // input order; unknown URNs are silently dropped, so length may be < urns
 // if any are stale/deleted/permission-denied).

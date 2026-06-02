@@ -1,10 +1,11 @@
-async function processData(fileName, updated, Project_Name, folders, files_list) {
+async function processData(fileName, updated, Project_Name, folders, files_list, additionalMidpFolders) {
   console.log(fileName, files_list);
 
   fileData = {
     updated: updated,
     folderData: folders,
-    files_list: files_list
+    files_list: files_list,
+    additionalMidpFolders: Array.isArray(additionalMidpFolders) ? additionalMidpFolders : []
   };
   sessionStorage.setItem('projectData',fileData)
   console.log(fileData);
@@ -20,11 +21,116 @@ async function processData(fileName, updated, Project_Name, folders, files_list)
   orginalACCExport = fileData.files_list;
 
   await generateArrays()
+  // Pull in any files from "additional MIDP folders" before the table
+  // renders. PA doesn't crawl those folders so we have to enumerate them
+  // live via the Data Management API.
+  if (fileData.additionalMidpFolders.length > 0) {
+    await fetchAdditionalMIDPFiles(fileData.additionalMidpFolders);
+  }
   console.log(folderPaths)
   await loadTables()
   // Fire-and-forget: lets the basic table render immediately while custom
   // attributes stream in chunk-by-chunk in the background.
   enrichFilesWithCustomAttributes();
+}
+
+// Fetches every file inside each entry of the additional_MIDP_folders
+// list (recursively, in parallel) and merges them into the global
+// `files[]` array so they appear in the MIDP table alongside PA's
+// extract. Custom attributes (revision, status, title lines, …) are
+// filled in later by enrichFilesWithCustomAttributes, which already
+// walks files[] — no extra wiring needed for that.
+async function fetchAdditionalMIDPFiles(folderEntries) {
+  if (!Array.isArray(folderEntries) || folderEntries.length === 0) return;
+  if (!accesToken && typeof getAccessToken === "function") {
+    try {
+      accesToken = await getAccessToken("data:read data:write");
+    } catch (e) {
+      console.warn("Could not obtain access token for additional folder fetch:", e);
+    }
+  }
+  if (!accesToken) {
+    console.warn("Skipping additional MIDP folder fetch — no access token.");
+    return;
+  }
+  const rawProjectID = (projectID || "").replace("b.", "");
+  // Fetch each top-level additional folder in parallel — typical case is
+  // only one or two folders per project, so no chunking needed.
+  const perFolderResults = await Promise.all(
+    folderEntries.map((entry) => {
+      if (!entry || !entry.folderID) return Promise.resolve([]);
+      return getFolderContents(
+        accesToken,
+        rawProjectID,
+        entry.folderID,
+        entry.folderName || "",
+        entry.includeSubFolders
+      );
+    })
+  );
+  let added = 0;
+  for (const items of perFolderResults) {
+    for (const itemInfo of items) {
+      addItemToFilesArray(itemInfo);
+      added++;
+    }
+  }
+  console.log(`fetchAdditionalMIDPFiles: added ${added} files across ${folderEntries.length} folders`);
+}
+
+// Converts a /folders/{id}/contents item entry (returned by
+// getFolderContents) into the `files[]` row shape that addToFilesArray
+// uses for PA-sourced rows. Keeps both code paths producing identical
+// downstream data so the table, dedup, enrichment, and modal all work
+// without any awareness of which source the row came from.
+function addItemToFilesArray(itemInfo) {
+  if (!itemInfo || !itemInfo.item || !itemInfo.tipVersion) return;
+  const { item, tipVersion, folderPath, folderID } = itemInfo;
+  const itemAttrs = item.attributes || {};
+  const versionAttrs = tipVersion.attributes || {};
+  const accversion = versionAttrs.versionNumber || 1;
+  const rawProjectID = (projectID || "").replace("b.", "");
+  // Match the URL format Forma web uses, identical to addToFilesArray.
+  const region = (item.id || folderID || "").includes("wipemea") ? "eu" : "com";
+  const fileUrl = item.id && folderID
+    ? `https://acc.autodesk.${region}/docs/files/projects/${rawProjectID}?folderUrn=${encodeURIComponent(folderID)}&entityId=${encodeURIComponent(item.id)}&viewModel=detail&moduleId=folders`
+    : "";
+
+  folderPaths.push(folderPath);
+  files.push({
+    name: itemAttrs.displayName,
+    accversion: accversion,
+    file_url: fileUrl,
+    revision: undefined,
+    folder_path: folderPath,
+    folderid: folderID,
+    function: "",
+    file_description: undefined,
+    title_line_1: undefined,
+    title_line_2: undefined,
+    title_line_3: undefined,
+    title_line_4: undefined,
+    last_modified_user: versionAttrs.lastModifiedUserName,
+    last_modified_date: versionAttrs.lastModifiedTime,
+    created_by_user: itemAttrs.createUserName,
+    status: "",
+    activity_code: undefined,
+    id: tipVersion.id,
+    itemID: item.id,
+    deliverable: "",
+    discipline: "",
+    form: "",
+    project_pin: "",
+    spatial: "",
+    originator: "",
+    notes: undefined,
+    tracking_status: undefined,
+    category: undefined,
+    planned_start_date: undefined,
+    actual_start_date: undefined,
+    actual_finish_date: undefined,
+    planned_finish_date: undefined,
+  });
 }
 
 function applyAttrsToFile(file, attrs) {
@@ -90,7 +196,7 @@ function setLoadingStep(stepId, state, label) {
   }
 }
 
-// Calls ACC's versions:batch-get endpoint in chunks, merges custom
+// Calls Forma's versions:batch-get endpoint in chunks, merges custom
 // attribute values into the in-memory `files[]`, and re-renders the active
 // tab when finished so populated cells and compliance gauges update.
 // Results are cached in sessionStorage keyed by version URN, so the same

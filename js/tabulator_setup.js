@@ -229,7 +229,7 @@ function versionToFileRow(versionItem, parentRowData) {
     (versionItem.attributes && versionItem.attributes.versionNumber) ||
     parseInt((id || "").split("=")[1] || "1", 10);
   const rawProjectID = (projectID || "").replace("b.", "");
-  // ACC's webView link from /items/.../versions points at the specific
+  // Forma's webView link from /items/.../versions points at the specific
   // version, but our preference is the lineage-based URL the parent row
   // uses so the View link is consistent. Fall back to webView if no parent.
   const region = (id || "").includes("wipemea") ? "eu" : "com";
@@ -354,7 +354,7 @@ async function getGroupHistory(parentData) {
   const siblings = Array.isArray(parentData._groupSiblings)
     ? parentData._groupSiblings
     : [];
-  // Parent + each sibling are separate ACC lineages — fetch all version
+  // Parent + each sibling are separate Forma lineages — fetch all version
   // histories in parallel.
   const lineages = [
     { context: parentData, lineage: parentData.itemID },
@@ -453,7 +453,7 @@ async function openVersionsModal(parentData) {
   }
 
   // One row per logical revision — when a single revision (e.g. P01.03)
-  // has multiple ACC uploads, keep the highest accversion.
+  // has multiple Forma uploads, keep the highest accversion.
   const byRev = new Map();
   for (const r of all || []) {
     if (!r) continue;
@@ -837,7 +837,7 @@ function getDropdownOptions(fieldName) {
   if (!accName) return null;
   const attr = customAttributes.find((a) => a.name === accName);
   if (!attr) return null;
-  // ACC's actual schema (as exposed via /custom-attribute-definitions):
+  // Forma's actual schema (as exposed via /custom-attribute-definitions):
   //   { type: "array", arrayValues: [...] }   — dropdown
   //   { type: "string" }                      — free-text
   //   { type: "date" }                        — date
@@ -926,7 +926,7 @@ function smartCellEditor(cell, onRendered, success, cancel) {
 //
 // The PA extract runs on a fixed schedule (~30 min) so freshly PATCHed
 // cell values don't show on a refresh until the next extract pulls them
-// out of ACC. We bridge that gap by caching successful edits in
+// out of Forma. We bridge that gap by caching successful edits in
 // localStorage with a timestamp, and overlaying them on the loaded data
 // whenever the edit timestamp is newer than the PA extract timestamp
 // (fileData.updated). Once PA catches up, the entry is older than the

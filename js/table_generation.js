@@ -207,7 +207,7 @@ function highlightCellNotMandatory(value, column) {
 function MissingUser(value) {
   if (value === undefined || value === null || value === "") {
     return `<span>${
-      value === undefined || value === null ? "ACC System" : value
+      value === undefined || value === null ? "Forma System" : value
     }</span>`;
   } else {
     return value;
@@ -632,7 +632,7 @@ async function revisionCheck() {
       if (value.includes("Missing")) {
         cells[4].setAttribute(
           "data-tooltip",
-          "Data is missing please correct on ACC"
+          "Data is missing please correct in Forma"
         );
       } else {
         cells[4].style.backgroundColor = "#FFDBBB";
@@ -676,7 +676,7 @@ async function titlelineCheck() {
       cells[7].classList.add("tooltip");
       cells[7].setAttribute(
         "data-tooltip",
-        "All files require a Title Line please amend on ACC"
+        "All files require a Title Line please amend in Forma"
       );
     }
   }
@@ -694,7 +694,7 @@ async function descriptionlineCheck() {
       cells[6].classList.add("tooltip");
       cells[6].setAttribute(
         "data-tooltip",
-        "All files require a description please amend on ACC"
+        "All files require a description please amend in Forma"
       );
     }
     if (value == "TIDP Placeholder File") {
