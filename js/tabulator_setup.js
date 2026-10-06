@@ -4,7 +4,9 @@
 //
 // Public surface used by the rest of the app:
 //   initMidpTable()           — (re)render the MIDP table from `files[]`
-//   tabulatorSearch(query)    — wired to the MIDP search input
+//   tabulatorSearch(query)    — wired to the MIDP search input (routes
+//                               through js/midp_search_panel.js, which
+//                               owns all programmatic MIDP filters)
 //   tabulatorExport(name)     — wired to the MIDP export button
 //   tabulatorToggleEdit()     — wired to the MIDP edit-mode toggle button
 //
@@ -142,6 +144,27 @@ function buildMidpColumns() {
   // so they expand more than narrow value columns (revision, status,
   // version). minWidth keeps each column readable on smaller screens.
   const cols = [
+    // Row-selection checkbox. Selection drives the search panel's
+    // "Export selected" / "Copy names" actions. Header checkbox selects
+    // every row currently passing the filters.
+    {
+      title: "",
+      field: "_select",
+      formatter: "rowSelection",
+      titleFormatter: "rowSelection",
+      titleFormatterParams: { rowRange: "active" },
+      width: 40,
+      widthShrink: 0,
+      hozAlign: "center",
+      headerHozAlign: "center",
+      headerSort: false,
+      download: false,
+      cellClick: (e, cell) => {
+        // Tree children and "Loading…" placeholders aren't selectable,
+        // so their checkbox click is a no-op.
+        if (e.target.tagName !== "INPUT") cell.getRow().toggleSelect();
+      },
+    },
     // Tiny info-icon column. Click opens the "All revisions" modal for
     // the row. Skipped for child rows (only the parent has a meaningful
     // group view).
@@ -155,6 +178,7 @@ function buildMidpColumns() {
       widthShrink: 0,
       hozAlign: "center",
       headerSort: false,
+      download: false,
       formatter: (cell) => {
         const d = cell.getRow().getData();
         if (d && d._loading) return "";
@@ -183,6 +207,12 @@ function buildMidpColumns() {
     { title: "Title Line 3", field: "title_line_3", widthGrow: 2, minWidth: 140, formatter: missingFormatterYellow, editor: smartCellEditor, editable, cellEdited, visible: !defaultHiddenColumns.includes("Title Line 3") },
     { title: "Title Line 4", field: "title_line_4", widthGrow: 2, minWidth: 140, formatter: missingFormatterYellow, editor: smartCellEditor, editable, cellEdited, visible: !defaultHiddenColumns.includes("Title Line 4") },
     { title: "Status", field: "status", width: 90, formatter: missingFormatter, editor: smartCellEditor, editable, cellEdited, headerFilter: "list", headerFilterParams: { valuesLookup: "all", clearable: true } },
+    // Naming-standard attributes from Forma (read-only here — they're
+    // validated against the file name by Forma, not free-edited).
+    { title: "Form", field: "form", width: 80, formatter: missingFormatterYellow },
+    { title: "Originator", field: "originator", width: 100, formatter: missingFormatterYellow },
+    { title: "Function", field: "function", width: 95, formatter: missingFormatterYellow },
+    { title: "File Type", field: "file_type", width: 80, hozAlign: "center" },
     { title: "Activity Code", field: "activity_code", widthGrow: 1, minWidth: 120, formatter: missingFormatterYellow, editor: smartCellEditor, editable, cellEdited, visible: !defaultHiddenColumns.includes("Activity Code") },
   ];
 
@@ -269,6 +299,7 @@ function versionToFileRow(versionItem, parentRowData) {
     id: id,
     itemID: undefined, // older versions don't need their own itemID
     spatial: "",
+    file_type: fileTypeFromName(versionItem.attributes && versionItem.attributes.displayName),
   };
 }
 
@@ -568,6 +599,11 @@ function parseDocNumber(filename) {
   return { docNo: s.slice(0, i), ext: s.slice(i + 1).toLowerCase() };
 }
 
+// "Drawing-01.pdf" → "PDF". Blank when the name has no extension.
+function fileTypeFromName(filename) {
+  return parseDocNumber(filename).ext.toUpperCase();
+}
+
 // Cycle-aware rank: each P-major occupies 200 slots so the natural
 // lifecycle order falls out of integer comparison.
 //   slots 1-99   →  P##.01 … P##.99   (WIP drafts of that major)
@@ -737,6 +773,7 @@ async function initMidpTable() {
 
   // Collapse duplicates of the same document (across WIP/SHARED/PUBLISHED)
   // into a single parent row whose chevron reveals the older revisions.
+  for (const f of files) f.file_type = fileTypeFromName(f.name);
   const dedupedFiles = dedupByDocNumber(files);
 
   if (tabulators.MIDP) {
@@ -760,6 +797,13 @@ async function initMidpTable() {
       // Render the +/- tree-expand control on the File Name column so
       // it doesn't compete with the info icon for space in column 1.
       dataTreeElementColumn: "name",
+      // Filters (search panel, header, chart) apply to the document rows
+      // only — expanding a row always shows its full revision history.
+      dataTreeFilter: false,
+      // "highlight" = selection only via the checkbox column, so clicking
+      // a cell to edit it doesn't also toggle the row's selection.
+      selectable: "highlight",
+      selectableCheck: (row) => !row.getData()._loading && !row.getTreeParent(),
       reactiveData: false,
       index: "id",
       // Tag parent rows that have children with a class so we can give
@@ -785,26 +829,48 @@ async function initMidpTable() {
 
     // Keep the Reset Filters button's "active" state in sync with
     // whether any kind of filter is currently applied.
-    tabulators.MIDP.on("dataFiltered", () => tabulatorUpdateResetButton());
+    tabulators.MIDP.on("dataFiltered", (filters, rows) => {
+      tabulatorUpdateResetButton();
+      updateMidpCount(rows.length);
+      if (typeof midpSearchPanelUpdateSummary === "function") midpSearchPanelUpdateSummary();
+    });
+    tabulators.MIDP.on("rowSelectionChanged", (data) => {
+      if (typeof midpSearchPanelSelectionChanged === "function") midpSearchPanelSelectionChanged(data.length);
+    });
+    // Tabulator only exposes the table API once tableBuilt fires.
+    if (!tabulators.MIDP.initialized) {
+      await new Promise((resolve) => tabulators.MIDP.on("tableBuilt", resolve));
+    }
   }
 
-  // Update the file-count label that the existing layout shows next to
-  // the table title — deduped count of unique documents, not raw rows.
-  const countEl = document.getElementById("MIDPCount");
-  if (countEl) countEl.textContent = `(${dedupedFiles.length} documents)`;
+  midpDocumentTotal = dedupedFiles.length;
+  if (typeof midpSearchPanelDataChanged === "function") midpSearchPanelDataChanged(dedupedFiles);
+  updateMidpCount(tabulators.MIDP.getDataCount("active"));
 
   wireVersionsModal();
 }
 
-// ---------- search / export / edit-toggle wiring ----------
+// Total deduped documents, so the count label can show "x of y" while
+// a filter is active.
+let midpDocumentTotal = 0;
 
-function tabulatorSearch(query) {
-  // Backwards-compat shim used by the MIDP openTab branch — delegates to
-  // the generalised any-tab implementation.
-  return tabulatorSearchAny("MIDP", query);
+function updateMidpCount(shown) {
+  const countEl = document.getElementById("MIDPCount");
+  if (!countEl) return;
+  countEl.textContent = shown === midpDocumentTotal
+    ? `(${midpDocumentTotal} documents)`
+    : `(${shown} of ${midpDocumentTotal} documents)`;
 }
 
-// Backwards-compat shim used by the MIDP openTab branch.
+// ---------- search / export / edit-toggle wiring ----------
+
+// MIDP search goes through the search panel's combined filter so the
+// toolbar box, the panel box, the panel dropdowns and chart clicks all
+// stack instead of replacing each other.
+function tabulatorSearch(query) {
+  midpSearchPanelSetSearch(query);
+}
+
 function tabulatorClearFilters() {
   return tabulatorClearFiltersAny("MIDP");
 }
@@ -1195,6 +1261,7 @@ function tabulatorSearchAny(tabKey, query) {
 function tabulatorClearFiltersAny(tabKey) {
   const t = tabulators[tabKey];
   if (!t) return;
+  if (tabKey === "MIDP") midpSearchPanelReset();
   t.clearFilter(true);
   t.clearHeaderFilter();
   const ids = TAB_TOOLBAR_IDS[tabKey];
@@ -1306,27 +1373,29 @@ async function tabulatorToggleEdit() {
 const _legacyFilterTable = typeof window !== "undefined" ? window.filterTable : undefined;
 function filterTable(label, field) {
   if (selectedTab === "MIDP" && tabulators.MIDP) {
-    const t = tabulators.MIDP;
-    t.clearFilter(true);
     const isMissingLabel = (l) => l === undefined || l === null || l === "" || l === "Missing";
+    const isBlank = (v) => v === undefined || v === null || v === "";
+    // Chart filters are one slot in the search panel's combined filter,
+    // so a chart click narrows the panel's results rather than wiping them.
     if (field === "statusBar") {
       // Bars are labelled by status value, with a synthetic "Missing"
       // bucket for rows whose status is empty/undefined — match the
       // original filterTable semantics.
       if (isMissingLabel(label)) {
-        t.setFilter((row) => row.status === undefined || row.status === null || row.status === "");
+        midpSearchPanelSetChartFilter((row) => isBlank(row.status));
       } else {
-        t.setFilter("status", "=", label);
+        midpSearchPanelSetChartFilter((row) => row.status === label);
       }
     } else if (field === "folderBar") {
       if (isMissingLabel(label)) {
-        t.setFilter((row) => row.folder_path === undefined || row.folder_path === null || row.folder_path === "");
+        midpSearchPanelSetChartFilter((row) => isBlank(row.folder_path));
       } else {
-        t.setFilter("folder_path", "like", label);
+        const l = String(label).toLowerCase();
+        midpSearchPanelSetChartFilter((row) => String(row.folder_path || "").toLowerCase().includes(l));
       }
     } else {
       // Compliance gauges — pass an inline filter mirroring the original.
-      t.setFilter((row) => {
+      midpSearchPanelSetChartFilter((row) => {
         const has = (k) => row[k] !== undefined && row[k] !== null && row[k] !== "";
         const isoOk = (v) => v && ISO_REVISION_PATTERN.test(v);
         switch (label) {

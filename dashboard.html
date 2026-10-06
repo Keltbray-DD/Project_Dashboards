@@ -129,17 +129,68 @@
     <section id="MIDP" class="dashboard tabcontent">
         <div class="tableOptions">
             <h1>MIDP <span id="MIDPCount"></span></h1>
+            <div id="midpSelectionActions" class="selection-actions" hidden>
+                <span id="midpSelectionCount"></span>
+                <button id="midpCopyNamesBtn" class="exportButton secondaryButton" title="Copy the selected file names to the clipboard, one per line">Copy names</button>
+                <button id="midpExportSelectedBtn" class="exportButton" title="Export only the selected rows to Excel">Export selected</button>
+                <button id="midpClearSelectionBtn" class="linkButton" title="Clear selection">Clear</button>
+            </div>
             <input type="text" id="searchInput" class="searchInput" placeholder="Search for anything...">
+            <button id="midpSearchPanelToggle" class="exportButton searchPanelToggle" title="Show search and filter panel">
+                <i class="fa-solid fa-filter"></i> Filters <span id="midpFilterBadge" class="filterBadge" hidden></span>
+            </button>
             <button id="resetFiltersBtn" class="exportButton resetFiltersBtn" title="Clear chart, column and search filters">↺ Reset Filters</button>
             <button onclick="exportTableToExcel('dataTable','MIDP')" class="exportButton"> Export</button>
-            <!-- <i style="font-size:24px" class="fa resetbtn" onclick="resetTable()">&#xf021;</i> -->
-        </div>
-        <div class="filterOptions hidden">
-
         </div>
 
-        <div class="table-container">
-            <div id="dataTable" class="tabulator-host"></div>
+        <div class="midp-body">
+            <div class="table-container">
+                <div id="dataTable" class="tabulator-host"></div>
+            </div>
+
+            <!-- Forma-style search & filter panel. Filters apply live and
+                 stack with the toolbar search, column header filters and
+                 chart clicks. Built by js/midp_search_panel.js. -->
+            <aside id="midpSearchPanel" class="search-panel" hidden aria-label="Search and filter">
+                <div class="search-panel-header">
+                    <h2>Search</h2>
+                    <button id="midpSearchPanelClose" class="search-panel-close" title="Close">&times;</button>
+                </div>
+                <div class="search-panel-body">
+                    <div class="sp-search">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                        <input type="text" id="midpPanelSearch" placeholder="Search">
+                    </div>
+
+                    <h3 class="sp-heading">Search and filter settings</h3>
+                    <div class="sp-folder-mode">
+                        <label><input type="radio" name="midpFolderMode" value="all" checked> All folders</label>
+                        <label><input type="radio" name="midpFolderMode" value="selected"> Selected folders <span id="midpFolderCount"></span></label>
+                        <button id="midpFolderSelectBtn" class="linkButton">Select</button>
+                    </div>
+                    <label class="sp-check"><input type="checkbox" id="midpSubfolders" checked> Subfolders</label>
+                    <div id="midpFolderPicker" class="sp-folder-picker" hidden>
+                        <input type="text" id="midpFolderFilter" class="sp-mini-search" placeholder="Find folder">
+                        <div id="midpFolderTree" class="sp-folder-tree"></div>
+                    </div>
+
+                    <div class="sp-filters-header">
+                        <h3 class="sp-heading">Filters</h3>
+                        <div class="sp-add-filter">
+                            <button id="midpAddFilterBtn" class="sp-icon-btn" title="Add filter"><i class="fa-solid fa-circle-plus"></i></button>
+                            <div id="midpAddFilterMenu" class="sp-add-filter-menu" hidden></div>
+                        </div>
+                    </div>
+                    <div id="midpChartFilterChip" class="sp-chip" hidden>
+                        Chart filter applied <button id="midpChartFilterClear" title="Remove chart filter">&times;</button>
+                    </div>
+                    <div id="midpFilterFields"></div>
+                </div>
+                <div class="search-panel-footer">
+                    <span id="midpPanelResultCount"></span>
+                    <button id="midpPanelClearBtn" class="linkButton">Clear filters</button>
+                </div>
+            </aside>
         </div>
 
     </section>
@@ -258,6 +309,7 @@
     <script src="js/post_data.js"></script>
     <script src="js/output_data.js"></script>
     <script src="js/tabulator_setup.js"></script>
+    <script src="js/midp_search_panel.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

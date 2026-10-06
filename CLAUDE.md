@@ -71,7 +71,8 @@ Project_Dashboards/
     ├── output_data.js            Excel export — delegates to Tabulator if present
     ├── chart_generation.js       Compliance gauges + bar charts (Chart.js)
     ├── table_generation.js       LEGACY — most functions unused after the Tabulator migration; kept around for the few helpers (chartChecks, runChecks, getCustomDetailsData) that data_processing.js still calls
-    └── tabulator_setup.js        ALL Tabulator config, formatters, editors, filters, edit hook, version expand, pending edits
+    ├── tabulator_setup.js        ALL Tabulator config, formatters, editors, filters, edit hook, version expand, pending edits
+    └── midp_search_panel.js      Forma-style MIDP search/filter panel; owns ALL programmatic MIDP filters (search, folders, attribute dropdowns, chart clicks) + row-selection Copy/Export
 ```
 
 ---
