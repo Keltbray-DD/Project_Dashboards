@@ -1,0 +1,96 @@
+# Forma Docs Dashboard — v2.0.0 plan
+
+Agreed October 2026. Work happens on the `v2` branch; `main` (the live
+GitHub Pages site) stays on v1.8.x with hotfixes only until v2 is ready,
+then `v2` is merged in.
+
+## Goals
+
+- Keep everything the MIDP does today: version stacking (one row per
+  document, approved-preferring parent, expandable revision history,
+  "All revisions" modal), the Forma-style search & filter panel, row
+  selection with Copy names / Export selected, inline editing with the
+  pending-edits cache.
+- Keep the Drawing Register / SHEAF views, the client read-only view and
+  the project picker.
+- Rebuild the compliance dashboard on clean logic with clearer charts.
+- New layout and styling that flows better.
+- Pay down the structural tech debt (global scope, dead code, duplicated
+  config) while we're in there.
+
+## Decisions
+
+| Topic | Decision |
+|---|---|
+| Tech | Native ES modules, **no build step** — still static on GitHub Pages. Pure logic is unit-tested with `node --test` (Node runs ES modules natively). |
+| Rollout | `v2` branch, swap at release. |
+| Pages | Keep `index.html`, `dashboard.html`, `dashboard_client.html` so the APS redirect URIs don't change. Views inside the dashboard use hash routes (`dashboard.html?id=…#/compliance`). |
+| Layout | Sidebar app layout: slim left nav (Projects / MIDP / Drawing Register / Compliance), header with project name + user, Aureos green accents on neutral surfaces. Mockups for sign-off at the start of phase 2. |
+| Compliance location | Its own view, with click-through to the MIDP pre-filtered (via the search panel). |
+| Compliance basis | **One row per document** — the same stacked documents the MIDP shows. |
+| Compliance checks | Title Line 1 · Revision (ISO 19650 format) · File Description (present, not the TIDP placeholder) · Status · Form · Originator · Function · Spatial. A naming-standard check is skipped when the project's naming standard doesn't define that field. |
+| Compliance scores | Headline: **% fully compliant documents**. Secondary: **% of checks passed**. |
+| Compliance breakdowns | Per-check pass rate · by folder / lifecycle (WIP / SHARED / PUBLISHED) · by Originator / Function · status distribution. |
+| APS token | **The signed-in user's own 3-legged token** for every APS call (reads and edits), with automatic refresh. ACC then enforces each user's real permissions and the audit log shows who edited what. The Power Automate "get access token" flow is no longer used by v2 and should be retired once v2 is live. |
+
+## Code layout
+
+```
+src/
+  app.js                    entry point + hash router (phase 2)
+  core/   config.js         app constants, PA flow URLs, attribute map, per-project features
+          log.js            DEBUG-gated logging
+          storage.js        safe local/sessionStorage JSON helpers
+          store.js          tiny observable state store
+  auth/   pkce.js           PKCE sign-in, token refresh, getAccessToken()
+          roles.js          internal vs client (cosmetic — not access control)
+  api/    http.js           fetch wrapper: auth header, errors, 429 retry
+          aps.js            Autodesk endpoints
+          powerAutomate.js  project list + project extract flows
+  data/   extract.js        parse the PA extract payload (framework + single)
+          fileRows.js       build file rows from each source, apply attributes
+          stacking.js       document stacking (dedup / pickWinner) — pure
+          enrich.js         chunked versions:batch-get with cache + progress
+          history.js        full revision history for a document
+          pendingEdits.js   edit overlay until the next PA extract
+          project.js        orchestrates loading a project
+  compliance/ rules.js · engine.js                      (phase 4)
+  views/  shell · projects · midp · searchPanel · drawingRegister · compliance   (phases 2–5)
+  ui/     formatters · editors · charts                  (phases 2–5)
+tests/    node --test unit tests for core/data/compliance
+```
+
+The v1 scripts in `js/` keep working on this branch until each view is
+ported, and are deleted in phase 6.
+
+## Phases
+
+1. **Foundation** — config, logging, storage, store; PKCE auth with
+   token refresh; API layer (user token); data pipeline (extract parsing,
+   file rows, stacking, enrichment, history, pending edits) as pure,
+   tested modules.
+2. **App shell** — sidebar/header layout, design tokens, restyled project
+   picker, hash router, loading states. Mockups first.
+3. **MIDP** — Tabulator table, search panel, selection, inline editing,
+   pending edits, revision history, carried over intact on the new core.
+4. **Compliance** — rules engine + Compliance view + click-through.
+5. **Drawing Register / SHEAF / client view** on the same shell, nav
+   gated by role and project features.
+6. **Cleanup & hardening** — delete v1 `js/` + `table_generation.js`;
+   `endsWith` email-domain check; `URLSearchParams`; CSP meta tag;
+   DEBUG-gated logging; identifier typo sweep; update CLAUDE.md.
+
+## Open items
+
+- **Framework sub-projects** — the abandoned `claude/happy-brown-59cc93`
+  worktree started a sub-project picker. v2's extract parser already tags
+  rows with `sub_project` / `sub_program`; decide whether it becomes a
+  search-panel filter.
+- **ACC integration for the user-token app** — the APS app behind
+  `apsClientId` must be added as a custom integration in the ACC account
+  for the `bim360/docs` custom-attribute endpoints to accept user tokens.
+  Verify on first real-data run.
+- **Refresh token storage** — stays in `localStorage` for silent re-login
+  (now isolated in `auth/pkce.js`); revisit moving to `sessionStorage`.
+- **Power Automate flows are still unauthenticated** (project list,
+  extract, feedback). Needs flow-side validation of the user's token.
