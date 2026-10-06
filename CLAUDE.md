@@ -1,8 +1,11 @@
-# Forma Docs Dashboard — Project Notes
+# Project Dashboard — Project Notes
 
-Internal Aureos web tool that surfaces Autodesk Construction Cloud (ACC,
-branded "Forma") document-control data — the MIDP, the Drawing Register
-and metadata Compliance — for civil/infrastructure projects.
+Internal Aureos web tool for project dashboards, grouped into sidebar
+sections by discipline. The first section, **Information Management**,
+surfaces Autodesk Construction Cloud (ACC, branded "Forma") document
+control data — the MIDP, the Drawing Register and metadata Compliance —
+for civil/infrastructure projects. Further sections (Project Management,
+Quality, …) are planned; see "Add a dashboard section" below.
 
 Static client-side app: native **ES modules, no build step**, hosted on
 GitHub Pages (`https://keltbray-dd.github.io/Project_Dashboards/`).
@@ -139,6 +142,15 @@ docs/     v2-plan.md
 ---
 
 ## How to do common things
+
+### Add a dashboard section (e.g. Project Management, Quality)
+1. Add the section to `SECTIONS` in `src/core/config.js` with its view
+   route names, in sidebar order.
+2. Build each view as `(container, ctx) => cleanup` under `src/views/` and
+   register it in `VIEWS` in `src/pages/dashboard.js` (label + icon).
+3. Decide who sees it where `routes` is built in `pages/dashboard.js`
+   (role, project features). Sections with no visible views are hidden.
+Data that isn't from the Forma extract needs its own loader in `data/`.
 
 ### Add a project feature (Drawing Register, extra editable field)
 Add/extend its entry in `PROJECT_FEATURES` in `src/core/config.js`

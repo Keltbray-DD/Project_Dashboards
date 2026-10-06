@@ -1,4 +1,4 @@
-# Forma Docs Dashboard — v2.0.0 plan
+# Project Dashboard (formerly Forma Docs Dashboard) — v2.0.0 plan
 
 Agreed October 2026. Work happens on the `v2` branch; `main` (the live
 GitHub Pages site) stays on v1.8.x with hotfixes only until v2 is ready,

@@ -3,6 +3,7 @@
 // shows). Every number is clickable and opens the MIDP filtered to
 // exactly those documents.
 
+import { sectionOf } from "../core/config.js";
 import { navigate } from "../core/router.js";
 import { store } from "../core/store.js";
 import { evaluate, breakdown, biggestGap, lifecycleOf, LIFECYCLES } from "../compliance/engine.js";
@@ -71,7 +72,7 @@ function render(root, project, documents, redraw) {
     h(
       "div",
       {},
-      h("div", { class: "eyebrow" }, `${project.code ? project.code + " · " : ""}Document control`),
+      h("div", { class: "eyebrow" }, `${project.code ? project.code + " · " : ""}${sectionOf("compliance")?.label || ""}`),
       h("h1", {}, "Compliance"),
       h("div", { class: "sub" }, `${formatNumber(totals.documents)} documents · ${ev.activeRules.length} metadata checks · click anything to see those documents in the MIDP`)
     ),

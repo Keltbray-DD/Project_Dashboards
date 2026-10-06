@@ -1,7 +1,7 @@
 // index.html — the project picker.
 
 import { signOut } from "../auth/pkce.js";
-import { bareProjectId } from "../core/config.js";
+import { APP_NAME, bareProjectId } from "../core/config.js";
 import { log } from "../core/log.js";
 import { startSession, userProjects } from "../session.js";
 import { createShell, stateCard } from "../views/shell.js";
@@ -14,7 +14,7 @@ shell.setProject({ name: "Your projects" });
 mount(
   shell.content,
   stateCard({
-    eyebrow: "Forma Docs Dashboard",
+    eyebrow: APP_NAME,
     title: "Loading your projects",
     steps: [
       { label: "Signing in with Autodesk", state: "active" },
@@ -29,7 +29,7 @@ try {
   mount(
     shell.content,
     stateCard({
-      eyebrow: "Forma Docs Dashboard",
+      eyebrow: APP_NAME,
       title: "Loading your projects",
       steps: [
         { label: "Signing in with Autodesk", state: "done" },
@@ -44,7 +44,7 @@ try {
   mount(
     shell.content,
     stateCard({
-      eyebrow: "Forma Docs Dashboard",
+      eyebrow: APP_NAME,
       title: "Couldn't load your projects",
       error: err.message,
       actions: h("button", { class: "btn primary", onclick: () => location.reload() }, icon("rotate"), "Try again"),
@@ -84,7 +84,7 @@ function renderProjects(projects, user) {
     h(
       "div",
       { class: "page-head" },
-      h("div", {}, h("div", { class: "eyebrow" }, "Forma Docs Dashboard"), h("h1", {}, "Your projects"), count),
+      h("div", {}, h("div", { class: "eyebrow" }, APP_NAME), h("h1", {}, "Your projects"), count),
       h("div", { class: "actions" }, h("div", { class: "search" }, icon("magnifying-glass"), search))
     ),
     grid

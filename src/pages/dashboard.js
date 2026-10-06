@@ -2,7 +2,7 @@
 // views (dashboard.html?id=<project>#/midp | #/drawings | #/compliance).
 
 import { signOut } from "../auth/pkce.js";
-import { projectFeatures, bareProjectId } from "../core/config.js";
+import { APP_NAME, projectFeatures, bareProjectId, SECTIONS } from "../core/config.js";
 import { log } from "../core/log.js";
 import { startRouter } from "../core/router.js";
 import { store } from "../core/store.js";
@@ -38,7 +38,7 @@ function showSteps(activeIndex, error) {
   mount(
     shell.content,
     stateCard({
-      eyebrow: "Forma Docs Dashboard",
+      eyebrow: APP_NAME,
       title: error ? "Something went wrong" : "Opening project",
       steps: STEP_LABELS.map((label, i) => ({
         label,
@@ -80,7 +80,12 @@ async function start() {
   const routes = ["midp"];
   if (features.registers.includes("drawingRegister")) routes.push("drawings");
   if (user.isInternal) routes.push("compliance");
-  shell.setNav({ section: project.code || "Project", items: routes.map((route) => ({ route, ...VIEWS[route] })) });
+  shell.setNav(
+    SECTIONS.map((section) => ({
+      label: section.label,
+      items: section.views.filter((route) => routes.includes(route)).map((route) => ({ route, ...VIEWS[route] })),
+    }))
+  );
 
   ctx = { aps, user, project, routes };
 

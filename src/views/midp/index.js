@@ -9,6 +9,7 @@
 // Filter state and panel visibility are kept per register at module level
 // so they survive switching to another view and back.
 
+import { sectionOf } from "../../core/config.js";
 import { store } from "../../core/store.js";
 import { documentHistory } from "../../data/history.js";
 import { emptyFilterState, buildPredicate, activeFilterCount, BLANK } from "../../data/filters.js";
@@ -48,7 +49,6 @@ export const setMidpExternalFilter = (external) => setExternalFilter("midp", ext
 // config:
 //   id            "midp" | "drawings" — keys remembered state
 //   title         page heading
-//   section       eyebrow after the project code
 //   select        (documents) => the documents this register lists
 //   description   text after the count
 //   exportName    file name stem for Excel exports
@@ -148,7 +148,7 @@ function renderRegister(container, ctx, config) {
       h(
         "div",
         { class: "page-head" },
-        h("div", {}, h("div", { class: "eyebrow" }, `${project.code ? project.code + " · " : ""}${config.section}`), h("h1", {}, config.title), countText),
+        h("div", {}, h("div", { class: "eyebrow" }, `${project.code ? project.code + " · " : ""}${sectionOf(config.id)?.label || ""}`), h("h1", {}, config.title), countText),
         h(
           "div",
           { class: "actions" },

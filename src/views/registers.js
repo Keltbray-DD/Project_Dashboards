@@ -6,7 +6,6 @@ import { registerView } from "./midp/index.js";
 export const midpView = registerView({
   id: "midp",
   title: "MIDP",
-  section: "Information delivery",
   select: (docs) => docs,
   description: "one row per document, showing its current approved revision",
   exportName: "MIDP",
@@ -15,7 +14,6 @@ export const midpView = registerView({
 export const drawingRegisterView = registerView({
   id: "drawings",
   title: "Drawing Register",
-  section: "Drawings",
   select: (docs) => docs.filter((d) => isDrawingRegisterRow(d.current)),
   description: "client-approved drawings (C revisions, DR form) and deliverables",
   exportName: "Drawing Register",

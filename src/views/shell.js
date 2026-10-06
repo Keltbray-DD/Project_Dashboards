@@ -2,7 +2,7 @@
 // with the gradient line, navy sidebar (views, feedback, compact toggle)
 // and the content area views render into.
 
-import { APP_VERSION } from "../core/config.js";
+import { APP_NAME, APP_VERSION } from "../core/config.js";
 import { compactPreference, setCompact } from "../core/prefs.js";
 import { h, icon, mount } from "../ui/dom.js";
 import { initials } from "../ui/format.js";
@@ -41,7 +41,7 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
     { class: "topbar" },
     h("a", { class: "brand", href: "index.html", title: "All projects" },
       h("img", { src: LOGO_URL, alt: "Aureos" }),
-      h("span", { class: "app-name" }, "Docs Dashboard")
+      h("span", { class: "app-name" }, "Project Dashboard")
     ),
     h("div", { class: "crumbs" }, projectName, projectCode, viewOnly),
     h("div", { class: "spacer" }),
@@ -103,7 +103,7 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
       projectCode.textContent = code || "";
       projectCode.hidden = !code;
       viewOnly.hidden = !readOnly;
-      document.title = name ? `${name} · Forma Docs Dashboard` : "Forma Docs Dashboard";
+      document.title = name ? `${name} · ${APP_NAME}` : APP_NAME;
     },
 
     // state: "loading" | "ready" | "error"
@@ -113,18 +113,23 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
       freshness.lastChild.textContent = text || "";
     },
 
-    // items: [{ route, label, icon, href? }] — `section` labels the group.
-    setNav({ section, items }) {
+    // sections: [{ label, items: [{ route, label, icon, href? }] }]
+    // Empty sections are skipped.
+    setNav(sections) {
       navLinks.clear();
       mount(
         nav,
         h("a", { href: "index.html", dataset: { tip: "All projects" } }, icon("table-cells-large"), h("span", {}, "All projects")),
-        section && h("div", { class: "nav-label" }, section),
-        items.map((item) => {
-          const link = h("a", { href: item.href || `#/${item.route}`, dataset: { tip: item.label } }, icon(item.icon), h("span", {}, item.label));
-          navLinks.set(item.route, link);
-          return link;
-        })
+        sections
+          .filter((s) => s.items.length)
+          .map((s) => [
+            h("div", { class: "nav-label", role: "presentation" }, s.label),
+            s.items.map((item) => {
+              const link = h("a", { href: item.href || `#/${item.route}`, dataset: { tip: item.label } }, icon(item.icon), h("span", {}, item.label));
+              navLinks.set(item.route, link);
+              return link;
+            }),
+          ])
       );
     },
 

@@ -2,7 +2,7 @@
 // variables.js, get_data.js and acc_functions.js lives here, so there is
 // one place to change a flow URL or add a project feature.
 
-export const APP_NAME = "Forma Docs Dashboard";
+export const APP_NAME = "Project Dashboard";
 export const APP_VERSION = "v2.0.0";
 
 export const APS_BASE = "https://developer.api.autodesk.com";
@@ -26,6 +26,21 @@ export const PA_FLOWS = {
   extract: PA_BASE + "aa3b3f6ba93f4901acef15184cd5b8de" + PA_QS + "rsVMeC9t3eP3LkX1-vcOI2Xk4M-aopqMjV8W_7Y-LF4",
   feedback: PA_BASE + "9c87a5536bdb4693a934559d0ce9d483" + PA_QS + "47zaCSAjFCwW5znjpZKgifJK8YVhJQdsICqIJM91MQ4",
 };
+
+// Sidebar sections. Each groups the views for one discipline, in order.
+// A section only appears when the user can see at least one of its views
+// (role + project features decide which views exist — see
+// pages/dashboard.js). Route names must be unique across sections.
+//
+// To add a discipline later (e.g. Project Management, Quality), add an
+// entry here and register its views in pages/dashboard.js VIEWS.
+export const SECTIONS = [
+  { id: "information-management", label: "Information Management", views: ["midp", "drawings", "compliance"] },
+  // { id: "project-management", label: "Project Management", views: [] },
+  // { id: "quality", label: "Quality", views: [] },
+];
+
+export const sectionOf = (route) => SECTIONS.find((s) => s.views.includes(route));
 
 // Email domains treated as internal (admin view). Cosmetic only — real
 // authorisation is ACC checking the user's own token on every call.
