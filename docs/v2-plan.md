@@ -37,11 +37,15 @@ then `v2` is merged in.
 
 ```
 src/
-  app.js                    entry point + hash router (phase 2)
+  pages/  projects.js       index.html entry — project picker
+          dashboard.js      dashboard.html entry — loading, nav, hash routing
+  session.js                shared sign-in + user + project-list lookup
   core/   config.js         app constants, PA flow URLs, attribute map, per-project features
           log.js            DEBUG-gated logging
           storage.js        safe local/sessionStorage JSON helpers
           store.js          tiny observable state store
+          router.js         hash router (#/midp, #/drawings, #/compliance)
+          prefs.js          per-browser display prefs (compact mode)
   auth/   pkce.js           PKCE sign-in, token refresh, getAccessToken()
           roles.js          internal vs client (cosmetic — not access control)
   api/    http.js           fetch wrapper: auth header, errors, 429 retry
@@ -55,10 +59,26 @@ src/
           pendingEdits.js   edit overlay until the next PA extract
           project.js        orchestrates loading a project
   compliance/ rules.js · engine.js                      (phase 4)
-  views/  shell · projects · midp · searchPanel · drawingRegister · compliance   (phases 2–5)
-  ui/     formatters · editors · charts                  (phases 2–5)
+  views/  shell.js (top bar, sidebar, state cards) · feedback.js · placeholder.js (temporary)
+          midp · searchPanel · drawingRegister · compliance   (phases 3–5)
+  ui/     dom.js (safe element builder) · toast.js · format.js · editors · charts
+assets/css/app.css          design tokens + shell + components (Aureos website look)
+dev/      mock-api.js + index.html / dashboard.html — the app against generated
+          data with no sign-in (http://localhost:8000/dev/index.html)
+mockups/  approved static layout mockup
 tests/    node --test unit tests for core/data/compliance
 ```
+
+### Design (approved Oct 2026)
+
+Aligned to aureos.com: white top bar with the full-colour logo and the
+logo's blue→green gradient as a 3px line beneath it; deep navy sidebar
+(#1d1e4e) with a lime (#9bc53d) marker on the active view; Inter;
+uppercase letter-spaced eyebrow labels; navy primary buttons and lime
+outline secondary buttons with a "›"; near-square cards with thin grey
+borders. **Compact mode** (icon-only sidebar, denser rows) is a user
+toggle remembered per browser, on by default below 1280px wide. Charts
+are plain HTML/CSS (no Chart.js).
 
 The v1 scripts in `js/` keep working on this branch until each view is
 ported, and are deleted in phase 6.

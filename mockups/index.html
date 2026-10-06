@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>v2 Layout Mockups</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<style>
+/* ============================================================
+   v2 layout mockup — static, mock data only.
+   Chosen direction: Forest (dark green sidebar) + grey top bar
+   carrying the Aureos logo, with a user-selectable Compact mode.
+   ============================================================ */
+:root {
+  --brand: #006e3c;
+  --brand-strong: #00552e;
+  --brand-soft: #e6f2ec;
+  --ok: #1e8a4c;
+  --warn: #c98a00;
+  --bad: #c62828;
+  --warn-soft: #fdf3dc;
+  --bad-soft: #fdeaea;
+  --font: "Segoe UI", system-ui, -apple-system, Roboto, Helvetica, Arial, sans-serif;
+  --radius: 8px;
+  --row-h: 38px;
+  --header-h: 56px;
+
+  /* Forest */
+  --bg: #eef1ef; --surface: #ffffff; --border: #dde3df; --text: #17201b; --muted: #5f6b65;
+  --side-bg: #0f3d28; --side-text: #d5e6dc; --side-muted: #86a897; --side-active-bg: rgba(255,255,255,.12); --side-active-text: #ffffff;
+  --side-w: 232px;
+}
+/* Top bar: dark grey (as v1) or light grey */
+body.header-dark {
+  --header-bg: #333333; --header-text: #ffffff; --header-muted: #c9c9c9; --header-border: #333333;
+  --header-chip-bg: #444444; --header-chip-border: #555555; --header-btn-bg: #444444;
+}
+body.header-light {
+  --header-bg: #e9ecea; --header-text: #17201b; --header-muted: #5f6b65; --header-border: #d4dad6;
+  --header-chip-bg: #ffffff; --header-chip-border: #d4dad6; --header-btn-bg: #ffffff;
+}
+/* Compact: icon rail + denser rows, for smaller screens */
+body.compact { --side-w: 60px; --row-h: 31px; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { font-family: var(--font); font-size: 14px; color: var(--text); background: var(--bg); }
+button { font: inherit; color: inherit; }
+
+/* ---------- mockup switcher (not part of the design) ---------- */
+.switcher {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 100;
+  display: flex; gap: 12px; align-items: center; padding: 8px 12px;
+  background: #1d2521; color: #fff; border-radius: 999px; box-shadow: 0 8px 24px rgba(0,0,0,.25); font-size: 13px;
+  white-space: nowrap;
+}
+.switcher .grp { display: flex; gap: 4px; }
+.switcher button { border: 0; background: transparent; color: #cfd8d3; padding: 6px 12px; border-radius: 999px; cursor: pointer; }
+.switcher button.on { background: #fff; color: #1d2521; font-weight: 600; }
+.switcher .sep { width: 1px; height: 20px; background: #44514a; }
+
+/* ---------- app shell: full-width top bar, sidebar + main below ---------- */
+.app {
+  display: grid; height: 100vh;
+  grid-template-columns: var(--side-w) 1fr;
+  grid-template-rows: var(--header-h) 1fr;
+  transition: grid-template-columns .15s ease;
+}
+.header {
+  grid-column: 1 / -1; background: var(--header-bg); color: var(--header-text);
+  border-bottom: 1px solid var(--header-border);
+  display: flex; align-items: center; gap: 16px; padding: 0 20px 0 0;
+}
+.brand { min-width: var(--side-w); flex: 0 0 auto; display: flex; align-items: center; gap: 10px; padding: 0 20px; height: 100%; transition: width .15s ease, flex-basis .15s ease; }
+.brand img { height: 24px; display: block; }
+/* The logo artwork is charcoal on transparent — knock it out to white on the dark bar. */
+body.header-dark .brand img { filter: brightness(0) invert(1); }
+.brand .app-name { font-size: 12px; color: var(--header-muted); white-space: nowrap; border-left: 1px solid var(--header-chip-border); padding-left: 10px; }
+/* The logo keeps its own space in the top bar; only the app name hides in compact. */
+body.compact .brand .app-name { display: none; }
+
+.crumbs { display: flex; align-items: center; gap: 8px; color: var(--header-muted); font-size: 13px; min-width: 0; }
+.crumbs strong { color: var(--header-text); font-size: 16px; white-space: nowrap; }
+.crumbs .code { font-family: ui-monospace, Consolas, monospace; background: var(--header-chip-bg); border: 1px solid var(--header-chip-border); padding: 1px 6px; border-radius: 4px; font-size: 12px; color: var(--header-text); }
+.freshness { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--header-muted); white-space: nowrap; }
+.freshness .dot { width: 8px; height: 8px; border-radius: 50%; background: #3ccf7a; box-shadow: 0 0 0 3px rgba(60,207,122,.25); }
+.icon-btn { border: 1px solid var(--header-chip-border); background: var(--header-btn-bg); color: var(--header-text); border-radius: 6px; height: 32px; padding: 0 10px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 13px; }
+.icon-btn:hover { border-color: #3ccf7a; }
+.avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--brand); color: #fff; display: grid; place-items: center; font-weight: 600; font-size: 13px; }
+
+.side { background: var(--side-bg); color: var(--side-text); display: flex; flex-direction: column; overflow: hidden; }
+.nav { padding: 10px 12px; display: flex; flex-direction: column; gap: 2px; }
+.nav-label { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--side-muted); padding: 14px 10px 6px; white-space: nowrap; }
+.nav a {
+  display: flex; align-items: center; gap: 12px; padding: 9px 10px; border-radius: 6px;
+  color: var(--side-text); text-decoration: none; cursor: pointer; white-space: nowrap; position: relative;
+}
+.nav a i { width: 18px; text-align: center; opacity: .85; }
+.nav a:hover { background: var(--side-active-bg); }
+.nav a.on { background: var(--side-active-bg); color: var(--side-active-text); font-weight: 600; box-shadow: inset 3px 0 0 #3ccf7a; }
+.nav a .count { margin-left: auto; font-size: 11px; background: var(--bad-soft); color: var(--bad); padding: 1px 7px; border-radius: 999px; font-weight: 600; }
+.side-foot { margin-top: auto; padding: 12px; font-size: 12px; color: var(--side-muted); line-height: 1.6; }
+.side-foot .meta { padding: 0 8px 10px; white-space: nowrap; }
+.side-foot a { color: inherit; }
+.collapse-btn {
+  width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--side-text); cursor: pointer; white-space: nowrap; font-size: 13px;
+}
+.collapse-btn:hover { background: var(--side-active-bg); }
+.collapse-btn i { width: 18px; text-align: center; }
+
+/* Compact rail: icons only, labels as hover tooltips */
+body.compact .nav { padding: 10px 8px; align-items: center; }
+body.compact .nav-label, body.compact .nav a span, body.compact .side-foot .meta, body.compact .collapse-btn span { display: none; }
+body.compact .nav a { width: 44px; height: 42px; justify-content: center; padding: 0; }
+body.compact .nav a .count { position: absolute; top: 3px; right: 0; padding: 0 4px; font-size: 10px; }
+body.compact .nav a:hover::after, body.compact .collapse-btn:hover::after {
+  content: attr(data-label); position: absolute; left: 52px; background: #1d2521; color: #fff;
+  padding: 4px 8px; border-radius: 4px; font-size: 12px; white-space: nowrap; z-index: 10; font-weight: 500;
+}
+body.compact .collapse-btn { justify-content: center; position: relative; }
+body.compact .side-foot { padding: 8px; }
+
+.main { min-width: 0; min-height: 0; overflow: auto; }
+.content { padding: 20px 24px 80px; }
+body.compact .content { padding: 14px 16px 80px; }
+.view { display: none; }
+body.view-midp .view-midp, body.view-compliance .view-compliance { display: block; }
+
+/* ---------- page header ---------- */
+.page-head { display: flex; align-items: flex-end; gap: 12px; margin-bottom: 16px; flex-wrap: wrap; }
+.page-head h1 { margin: 0; font-size: 22px; font-weight: 650; }
+.page-head .sub { color: var(--muted); font-size: 13px; margin-top: 2px; }
+.page-head .actions { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+.btn { height: 34px; padding: 0 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); cursor: pointer; display: inline-flex; align-items: center; gap: 8px; font-size: 13px; }
+.btn.primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+.btn.primary:hover { background: var(--brand-strong); }
+.btn.active { border-color: var(--brand); color: var(--brand); background: var(--brand-soft); }
+.btn .badge { background: var(--brand); color: #fff; border-radius: 999px; padding: 0 6px; font-size: 11px; line-height: 17px; }
+.search { position: relative; }
+.search i { position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+.search input { height: 34px; width: 260px; border: 1px solid var(--border); border-radius: 6px; padding: 0 10px 0 32px; font: inherit; background: var(--surface); }
+.search input:focus { outline: 2px solid var(--brand-soft); border-color: var(--brand); }
+
+/* ---------- MIDP ---------- */
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 4px 6px 4px 12px; font-size: 12px; }
+.chip b { font-weight: 600; }
+.chip button { border: 0; background: var(--bg); width: 18px; height: 18px; border-radius: 50%; cursor: pointer; font-size: 11px; line-height: 1; }
+.chip.clear { border-style: dashed; padding-right: 12px; color: var(--muted); cursor: pointer; }
+.midp-body { display: grid; grid-template-columns: 1fr 300px; gap: 16px; align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.table-card { overflow-x: auto; min-width: 0; }
+.selection-bar { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--brand-soft); border-bottom: 1px solid var(--border); font-size: 13px; }
+.selection-bar b { color: var(--brand); }
+.selection-bar .btn { height: 28px; }
+table.grid { width: 100%; border-collapse: collapse; font-size: 13px; }
+.grid th { text-align: left; font-weight: 600; color: var(--muted); font-size: 12px; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--surface); position: sticky; top: 0; white-space: nowrap; }
+.grid td { padding: 0 12px; height: var(--row-h); border-bottom: 1px solid var(--border); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 260px; }
+.grid tr:hover td { background: #f7faf8; }
+.grid tr.sel td { background: var(--brand-soft); }
+.grid tr.child td { background: #fafbfa; color: var(--muted); font-style: italic; }
+.grid tr.child td:nth-child(3) { padding-left: 44px; }
+.grid input[type=checkbox] { accent-color: var(--brand); }
+.expander { width: 20px; height: 20px; border: 1px solid var(--border); border-radius: 4px; display: inline-grid; place-items: center; font-size: 10px; color: var(--brand); margin-right: 8px; cursor: pointer; background: var(--surface); }
+.expander.blank { visibility: hidden; }
+.doc { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; }
+.pill.s { background: #e8f0fb; color: #2456a6; }
+.pill.a { background: var(--brand-soft); color: var(--brand); }
+.missing { display: inline-flex; align-items: center; gap: 4px; color: var(--bad); font-size: 12px; font-weight: 600; }
+.missing.soft { color: var(--warn); }
+.folder { display: inline-flex; align-items: center; gap: 6px; }
+.lc { font-size: 10px; font-weight: 700; letter-spacing: .04em; padding: 2px 6px; border-radius: 4px; }
+.lc.wip { background: #eef0f2; color: #55606a; }
+.lc.shared { background: #e8f0fb; color: #2456a6; }
+.lc.pub { background: var(--brand-soft); color: var(--brand); }
+.newer { color: var(--warn); margin-left: 4px; }
+.table-foot { display: flex; justify-content: space-between; padding: 10px 14px; color: var(--muted); font-size: 12px; }
+
+.panel { padding: 16px; position: sticky; top: 0; }
+.panel h3 { margin: 0 0 12px; font-size: 15px; display: flex; justify-content: space-between; align-items: center; }
+.panel h4 { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 18px 0 8px; display: flex; justify-content: space-between; align-items: center; }
+.panel .field { margin-bottom: 10px; }
+.panel .field-label { display: flex; align-items: center; justify-content: space-between; font-size: 13px; margin-bottom: 4px; }
+.panel .field-label .grip { color: #b0bab4; margin-right: 6px; cursor: grab; }
+.panel .field-label .rm { font-size: 11px; color: var(--muted); border: 1px solid var(--border); border-radius: 999px; padding: 0 7px; }
+.select { height: 34px; border: 1px solid var(--border); border-radius: 6px; display: flex; align-items: center; padding: 0 10px; justify-content: space-between; color: var(--muted); font-size: 13px; }
+.select.val { color: var(--text); border-color: var(--brand); }
+.radios { display: flex; gap: 14px; font-size: 13px; align-items: center; }
+.radios a { color: var(--brand); text-decoration: none; }
+.panel-foot { border-top: 1px solid var(--border); margin: 16px -16px -16px; padding: 10px 16px; display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); }
+.panel-foot a { color: var(--brand); text-decoration: none; }
+/* Compact: the filter panel becomes an overlay opened from the Filters button. */
+body.compact .midp-body { grid-template-columns: 1fr; }
+body.compact .panel { display: none; }
+
+/* ---------- Compliance ---------- */
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 16px; }
+.kpi { padding: 16px 18px; }
+.kpi .label { color: var(--muted); font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.kpi .value { font-size: 30px; font-weight: 700; margin: 6px 0 4px; letter-spacing: -.02em; }
+.kpi .value small { font-size: 15px; color: var(--muted); font-weight: 600; }
+.kpi .note { font-size: 12px; color: var(--muted); }
+.kpi .meter { height: 6px; border-radius: 3px; background: var(--bg); margin-top: 10px; overflow: hidden; }
+.kpi .meter span { display: block; height: 100%; border-radius: 3px; }
+.kpi.hero { background: var(--brand); color: #fff; border-color: var(--brand); }
+.kpi.hero .label, .kpi.hero .note, .kpi.hero .value small { color: rgba(255,255,255,.8); }
+.kpi.hero .meter { background: rgba(255,255,255,.25); }
+.kpi.hero .meter span { background: #fff; }
+.kpi.clickable { cursor: pointer; }
+.kpi.clickable:hover { border-color: var(--brand); }
+
+.c-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 16px; }
+.c-card { padding: 16px 18px; }
+.c-card h3 { margin: 0; font-size: 15px; }
+.c-card .hint { color: var(--muted); font-size: 12px; margin: 2px 0 14px; }
+.wide { grid-column: 1 / -1; }
+
+.check-row { display: grid; grid-template-columns: 150px 1fr 54px 64px; align-items: center; gap: 12px; padding: 6px 4px; border-radius: 6px; cursor: pointer; }
+.check-row:hover { background: var(--bg); }
+.check-row .name { font-size: 13px; }
+.check-row .name small { display: block; color: var(--muted); font-size: 11px; }
+.bar { height: 10px; background: var(--bad-soft); border-radius: 5px; overflow: hidden; }
+.bar span { display: block; height: 100%; background: var(--ok); border-radius: 5px 0 0 5px; }
+.check-row .pct { font-weight: 700; text-align: right; }
+.check-row .fail { font-size: 12px; color: var(--bad); text-align: right; }
+.check-row.skipped { opacity: .45; cursor: default; }
+
+.lifecycle { display: flex; flex-direction: column; gap: 14px; }
+.lc-row { display: grid; grid-template-columns: 90px 1fr 60px; gap: 12px; align-items: center; }
+.stack { display: flex; height: 26px; border-radius: 6px; overflow: hidden; cursor: pointer; }
+.stack span { display: grid; place-items: center; font-size: 11px; font-weight: 600; color: #fff; }
+.stack .ok { background: var(--ok); }
+.stack .part { background: #e3a92c; }
+.stack .bad { background: var(--bad); }
+.legend { display: flex; gap: 14px; font-size: 12px; color: var(--muted); margin-top: 14px; }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+
+table.heat { width: 100%; border-collapse: separate; border-spacing: 3px; font-size: 12px; }
+.heat th { color: var(--muted); font-weight: 600; text-align: center; padding: 4px; }
+.heat th:first-child { text-align: left; }
+.heat td { text-align: center; border-radius: 4px; padding: 7px 4px; font-weight: 600; cursor: pointer; }
+.heat td:first-child { text-align: left; font-weight: 600; background: none; cursor: default; }
+.heat td.n { color: var(--muted); font-weight: 500; text-align: right; cursor: default; }
+
+.status-bars { display: flex; flex-direction: column; gap: 8px; }
+.sb { display: grid; grid-template-columns: 70px 1fr 50px; gap: 10px; align-items: center; font-size: 13px; cursor: pointer; }
+.sb .track { height: 18px; }
+.sb .track span { display: block; height: 100%; border-radius: 4px; background: #5b8fd6; }
+.sb.a .track span { background: var(--ok); }
+.sb.m .track span { background: var(--bad); }
+.sb .v { text-align: right; color: var(--muted); }
+
+.annot { position: relative; }
+.annot::after {
+  content: attr(data-note); position: absolute; right: 12px; top: -10px; background: #fff7d6; color: #6b5300;
+  border: 1px solid #f0d77a; font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 500; font-style: normal;
+}
+body.hide-notes .annot::after { display: none; }
+
+/* ============================================================
+   Aureos website alignment (aureos.com, 2026 refresh):
+   white top bar + full-colour logo, deep navy, lime accents,
+   the logo's blue→green gradient as a signature line, uppercase
+   letter-spaced labels, near-square cards with thin grey borders.
+   ============================================================ */
+body.header-white {
+  --header-bg: #ffffff; --header-text: #1d1e4e; --header-muted: #6b6f86; --header-border: #e3e4ea;
+  --header-chip-bg: #f4f5f8; --header-chip-border: #e3e4ea; --header-btn-bg: #ffffff;
+}
+body.side-navy {
+  --side-bg: #1d1e4e; --side-text: #d9dbea; --side-muted: #8f93b5; --side-active-bg: rgba(255,255,255,.08); --side-active-text: #ffffff;
+}
+body.theme-aureos {
+  --font: "Inter", "Segoe UI", system-ui, sans-serif;
+  --navy: #1d1e4e;
+  --lime: #9bc53d;
+  --lime-strong: #7fa82a;
+  --brand: var(--navy);
+  --brand-strong: #13143a;
+  --brand-soft: #eef0f7;
+  --text: #24253a;
+  --muted: #6b6f86;
+  --bg: #f6f7f9;
+  --border: #dfe1e7;
+  --radius: 3px;
+  --gradient: linear-gradient(90deg, #0d4f8b 0%, #19a3dc 35%, #22a95b 70%, #a6ce39 100%);
+}
+/* signature gradient line under the top bar */
+body.theme-aureos .header { position: relative; border-bottom: 0; }
+body.theme-aureos .header::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 3px; background: var(--gradient); }
+body.theme-aureos .brand img { height: 26px; }
+body.theme-aureos .brand .app-name { text-transform: uppercase; letter-spacing: .12em; font-size: 11px; }
+body.theme-aureos .nav a.on { box-shadow: inset 3px 0 0 var(--lime); }
+body.theme-aureos .nav-label { letter-spacing: .14em; }
+body.theme-aureos .freshness .dot { background: var(--lime); box-shadow: 0 0 0 3px rgba(155,197,61,.25); }
+body.theme-aureos .icon-btn:hover { border-color: var(--lime); }
+
+/* page titles: uppercase eyebrow + bold heading, like the website sections */
+body.theme-aureos .page-head h1 { font-weight: 700; font-size: 24px; color: var(--text); letter-spacing: -.01em; }
+body.theme-aureos .page-head h1::before {
+  content: attr(data-eyebrow); display: block; font-size: 11px; font-weight: 600; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--navy); margin-bottom: 4px;
+}
+body.theme-aureos .c-card h3, body.theme-aureos .panel h3 {
+  text-transform: uppercase; letter-spacing: .12em; font-size: 12px; font-weight: 600; color: var(--navy);
+}
+body.theme-aureos .kpi .label { color: var(--navy); letter-spacing: .12em; }
+
+/* buttons: navy primary, lime outline secondary with chevron */
+body.theme-aureos .btn { border-radius: var(--radius); }
+body.theme-aureos .btn.primary { background: var(--navy); border-color: var(--navy); }
+body.theme-aureos .btn.primary:hover { background: var(--brand-strong); }
+body.theme-aureos .btn.outline {
+  background: transparent; border-color: var(--lime); color: var(--lime-strong); text-transform: uppercase;
+  letter-spacing: .06em; font-size: 12px; font-weight: 600;
+}
+body.theme-aureos .btn.outline::after { content: "›"; font-size: 16px; line-height: 1; }
+body.theme-aureos .btn.outline:hover { background: #f4f9e8; }
+body.theme-aureos .btn.active { border-color: var(--navy); color: var(--navy); background: var(--brand-soft); }
+body.theme-aureos .btn .badge { background: var(--lime); color: var(--navy); }
+
+/* cards: near-square, thin border, gradient strip on the hero KPI */
+body.theme-aureos .card { border-radius: var(--radius); }
+body.theme-aureos .kpi.hero { background: var(--navy); border-color: var(--navy); position: relative; overflow: hidden; }
+body.theme-aureos .kpi.hero::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: var(--gradient); }
+body.theme-aureos .kpi.hero .meter span { background: var(--lime); }
+body.theme-aureos .selection-bar b { color: var(--navy); }
+body.theme-aureos .select.val { border-color: var(--navy); }
+body.theme-aureos .chip { border-radius: var(--radius); }
+body.theme-aureos input[type=checkbox], body.theme-aureos input[type=radio] { accent-color: var(--navy); }
+</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="theme-aureos header-white side-navy view-midp">
+
+<div class="app">
+  <header class="header">
+    <div class="brand">
+      <img src="https://framerusercontent.com/images/L6zTiT4fl5YfHzIJMMOpRZ3wk.png?scale-down-to=512&width=1285&height=289" alt="Aureos">
+      <span class="app-name">Docs Dashboard</span>
+    </div>
+    <div class="crumbs">
+      <strong>Example Project</strong>
+      <span class="code">DT1117</span>
+    </div>
+    <div class="freshness"><span class="dot"></span>Data as of 14:30 today · next update ~15:00</div>
+    <button class="icon-btn" title="Reload latest data"><i class="fa-solid fa-rotate"></i> Refresh</button>
+    <div class="avatar" title="Josh Cole">JC</div>
+  </header>
+
+  <aside class="side">
+    <nav class="nav">
+      <a data-label="All projects"><i class="fa-solid fa-table-cells-large"></i><span>All projects</span></a>
+      <div class="nav-label">DT1117</div>
+      <a class="on" data-view="midp" data-label="MIDP"><i class="fa-solid fa-layer-group"></i><span>MIDP</span></a>
+      <a data-label="Drawing Register"><i class="fa-solid fa-compass-drafting"></i><span>Drawing Register</span></a>
+      <a data-view="compliance" data-label="Compliance"><i class="fa-solid fa-clipboard-check"></i><span>Compliance</span><b class="count">501</b></a>
+    </nav>
+    <div class="side-foot">
+      <div class="meta">v2.0.0 · <a href="#">Send feedback</a></div>
+      <button class="collapse-btn" id="collapseBtn" data-label="Expand sidebar" title="Compact view: icon-only sidebar and denser rows for smaller screens">
+        <i class="fa-solid fa-angles-left"></i><span>Compact view</span>
+      </button>
+    </div>
+  </aside>
+
+  <div class="main">
+    <main class="content">
+
+      <!-- ================= MIDP ================= -->
+      <section class="view view-midp">
+        <div class="page-head">
+          <div>
+            <h1 data-eyebrow="DT1117 · Information delivery">MIDP</h1>
+            <div class="sub">48 of 1,284 documents · one row per document, latest approved revision</div>
+          </div>
+          <div class="actions">
+            <div class="search"><i class="fa-solid fa-magnifying-glass"></i><input value="drainage" aria-label="Search"></div>
+            <button class="btn active"><i class="fa-solid fa-filter"></i> Filters <span class="badge">3</span></button>
+            <button class="btn"><i class="fa-solid fa-table-columns"></i> Columns</button>
+            <button class="btn"><i class="fa-solid fa-pen"></i> Edit</button>
+            <button class="btn primary"><i class="fa-solid fa-file-excel"></i> Export</button>
+          </div>
+        </div>
+
+        <div class="chips annot" data-note="Active filters as removable chips">
+          <span class="chip">Search: <b>drainage</b> <button>×</button></span>
+          <span class="chip">Form: <b>DR</b> <button>×</button></span>
+          <span class="chip">Originator: <b>ARP, KEL</b> <button>×</button></span>
+          <span class="chip clear">Clear all</span>
+        </div>
+
+        <div class="midp-body">
+          <div class="card table-card">
+            <div class="selection-bar annot" data-note="Appears when rows are ticked">
+              <b>3 selected</b>
+              <button class="btn"><i class="fa-regular fa-copy"></i> Copy names</button>
+              <button class="btn"><i class="fa-solid fa-download"></i> Export selected</button>
+              <a style="color:var(--muted);cursor:pointer">Clear</a>
+            </div>
+            <table class="grid">
+              <thead><tr>
+                <th style="width:36px"><input type="checkbox"></th>
+                <th style="width:28px"></th>
+                <th>Document</th><th>Rev</th><th>Status</th><th>Title</th><th>Folder</th><th>Form</th><th>Orig.</th><th>Modified</th><th></th>
+              </tr></thead>
+              <tbody id="midpRows"></tbody>
+            </table>
+            <div class="table-foot"><span>Showing 1–10 of 48</span><span>Metadata loaded · 1,284 / 1,284</span></div>
+          </div>
+
+          <aside class="card panel annot" data-note="Search panel (v1.8) restyled">
+            <h3>Filters <i class="fa-solid fa-xmark" style="color:var(--muted);font-size:14px"></i></h3>
+            <h4>Folders</h4>
+            <div class="radios"><label><input type="radio" checked> All</label><label><input type="radio"> Selected</label><a href="#">Select…</a></div>
+            <h4>Attributes <i class="fa-solid fa-circle-plus" style="color:var(--brand);font-size:15px"></i></h4>
+            <div class="field"><div class="field-label"><span><i class="fa-solid fa-grip-vertical grip"></i>File types</span><span class="rm">× Remove</span></div><div class="select">Select… <i class="fa-solid fa-chevron-down"></i></div></div>
+            <div class="field"><div class="field-label"><span><i class="fa-solid fa-grip-vertical grip"></i>Status</span><span class="rm">× Remove</span></div><div class="select">Select… <i class="fa-solid fa-chevron-down"></i></div></div>
+            <div class="field"><div class="field-label"><span><i class="fa-solid fa-grip-vertical grip"></i>Form</span><span class="rm">× Remove</span></div><div class="select val">DR <i class="fa-solid fa-chevron-down"></i></div></div>
+            <div class="field"><div class="field-label"><span><i class="fa-solid fa-grip-vertical grip"></i>Originator</span><span class="rm">× Remove</span></div><div class="select val">ARP, KEL <i class="fa-solid fa-chevron-down"></i></div></div>
+            <div class="field"><div class="field-label"><span><i class="fa-solid fa-grip-vertical grip"></i>Function</span><span class="rm">× Remove</span></div><div class="select">Select… <i class="fa-solid fa-chevron-down"></i></div></div>
+            <div class="panel-foot"><span>48 of 1,284 documents</span><a href="#">Clear filters</a></div>
+          </aside>
+        </div>
+      </section>
+
+      <!-- ================= Compliance ================= -->
+      <section class="view view-compliance">
+        <div class="page-head">
+          <div>
+            <h1 data-eyebrow="DT1117 · Document control">Compliance</h1>
+            <div class="sub">1,284 documents · checked against 8 metadata rules · click anything to see those documents in the MIDP</div>
+          </div>
+          <div class="actions">
+            <button class="btn outline">View gaps in MIDP</button>
+            <button class="btn"><i class="fa-solid fa-sliders"></i> All folders</button>
+            <button class="btn primary"><i class="fa-solid fa-file-excel"></i> Export gaps</button>
+          </div>
+        </div>
+
+        <div class="kpis">
+          <div class="card kpi hero">
+            <div class="label">Fully compliant</div>
+            <div class="value">61<small>%</small></div>
+            <div class="note">783 of 1,284 documents pass every check</div>
+            <div class="meter"><span style="width:61%"></span></div>
+          </div>
+          <div class="card kpi">
+            <div class="label">Checks passed</div>
+            <div class="value">88<small>%</small></div>
+            <div class="note">9,039 of 10,272 individual checks</div>
+            <div class="meter"><span style="width:88%;background:var(--ok)"></span></div>
+          </div>
+          <div class="card kpi clickable">
+            <div class="label">Documents with gaps</div>
+            <div class="value" style="color:var(--bad)">501</div>
+            <div class="note">View in MIDP <i class="fa-solid fa-arrow-right"></i></div>
+          </div>
+          <div class="card kpi clickable">
+            <div class="label">Biggest gap</div>
+            <div class="value" style="font-size:22px;margin-top:12px">Spatial</div>
+            <div class="note">312 documents missing a value</div>
+          </div>
+        </div>
+
+        <div class="c-grid">
+          <div class="card c-card annot" data-note="Replaces the 4 pie charts">
+            <h3>Checks</h3>
+            <div class="hint">% of documents passing each rule</div>
+            <div id="checkRows"></div>
+          </div>
+
+          <div class="card c-card">
+            <h3>By lifecycle</h3>
+            <div class="hint">Documents by number of failed checks</div>
+            <div class="lifecycle" id="lifecycleRows"></div>
+            <div class="legend"><span><i style="background:var(--ok)"></i>All checks pass</span><span><i style="background:#e3a92c"></i>1–2 gaps</span><span><i style="background:var(--bad)"></i>3+ gaps</span></div>
+          </div>
+
+          <div class="card c-card wide annot" data-note="Who has the gaps — click a cell to filter">
+            <h3>By originator</h3>
+            <div class="hint">% passing per rule · switch to <a href="#" style="color:var(--brand)">Function</a></div>
+            <table class="heat" id="heat"></table>
+          </div>
+
+          <div class="card c-card">
+            <h3>Status distribution</h3>
+            <div class="hint">Current documents by suitability / status code</div>
+            <div class="status-bars" id="statusBars"></div>
+          </div>
+
+          <div class="card c-card">
+            <h3>Revision format</h3>
+            <div class="hint">Revisions that don't match ISO 19650 (P01, C01, P01.01)</div>
+            <div class="status-bars" id="revBars"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+
+<div class="switcher">
+  <span>Theme</span>
+  <div class="grp" id="themeBtns">
+    <button data-t="aureos" class="on">Aureos website</button>
+    <button data-t="forest">Forest</button>
+  </div>
+  <span class="sep"></span>
+  <span>Top bar</span>
+  <div class="grp" id="headerBtns">
+    <button data-h="white" class="on">White</button>
+    <button data-h="light">Light grey</button>
+    <button data-h="dark">Dark grey</button>
+  </div>
+  <span class="sep"></span>
+  <button id="compactBtn">Compact</button>
+  <span class="sep"></span>
+  <div class="grp" id="viewBtns">
+    <button data-view="midp" class="on">MIDP</button>
+    <button data-view="compliance">Compliance</button>
+  </div>
+  <span class="sep"></span>
+  <button id="notesBtn" class="on">Notes</button>
+</div>
+
+<script>
+// ---------- mock data ----------
+const rows = [
+  ["DT1117-ARP-DRN-CH01-DR-C-0101.pdf", "C02", "A1", "Drainage layout sheet 1", "pub", "DR", "ARP", "03 Oct", true, false, true],
+  ["  P03 — 02 SHARED", "P03", "S4", "Drainage layout sheet 1", "shared", "DR", "ARP", "28 Sep", false, true, false],
+  ["  P03.02 — 01 WIP", "P03.02", "S0", "Drainage layout sheet 1", "wip", "DR", "ARP", "21 Sep", false, true, false],
+  ["DT1117-ARP-DRN-CH01-DR-C-0102.pdf", "C01", "A1", "Drainage layout sheet 2", "pub", "DR", "ARP", "02 Oct", false, false, true],
+  ["DT1117-KEL-DRN-CH02-DR-C-0201.dwg", "P02", "S3", "Outfall details", "shared", "DR", "KEL", "30 Sep", true, false, false],
+  ["DT1117-KEL-DRN-ZZ-DR-C-0210.pdf", "P01.04", "", "Catchment plan", "wip", "DR", "KEL", "29 Sep", false, false, false],
+  ["DT1117-ARP-DRN-CH03-DR-C-0301.pdf", "P01", "S2", "", "shared", "DR", "ARP", "26 Sep", true, false, false],
+  ["DT1117-KEL-DRN-CH03-DR-C-0305.pdf", "Rev A", "S2", "Headwall GA", "shared", "DR", "KEL", "25 Sep", false, false, false],
+  ["DT1117-ARP-DRN-CH04-DR-C-0401.pdf", "C01", "A2", "Drainage long sections", "pub", "DR", "ARP", "24 Sep", false, false, true],
+  ["DT1117-KEL-DRN-CH05-DR-C-0501.pdf", "P02", "S3", "Filter drain details", "shared", "DR", "KEL", "22 Sep", false, false, false],
+];
+const lcLabel = { pub: "PUBLISHED", shared: "SHARED", wip: "WIP" };
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const rev = (r) => /^[CP]\d{2}(\.\d{2})?$/.test(r) ? esc(r) : `<span class="missing soft" title="Not ISO 19650 format"><i class="fa-solid fa-triangle-exclamation"></i>${esc(r)}</span>`;
+const missing = '<span class="missing"><i class="fa-solid fa-circle-exclamation"></i>Missing</span>';
+document.getElementById("midpRows").innerHTML = rows.map(([name, r, st, title, lc, form, orig, mod, sel, child, hasKids], i) => `
+  <tr class="${sel ? "sel" : ""} ${child ? "child" : ""}">
+    <td>${child ? "" : `<input type="checkbox" ${sel ? "checked" : ""}>`}</td>
+    <td>${child ? "" : '<i class="fa-solid fa-circle-info" style="color:var(--brand)"></i>'}</td>
+    <td>${child ? "" : `<span class="expander ${hasKids ? "" : "blank"}">${i === 0 ? "−" : "+"}</span>`}<span class="doc">${esc(name.trim())}</span></td>
+    <td>${rev(r)}</td>
+    <td>${st ? `<span class="pill ${st[0] === "A" ? "a" : "s"}">${st}</span>` : missing}</td>
+    <td>${title ? esc(title) : missing}</td>
+    <td><span class="folder"><span class="lc ${lc}">${lcLabel[lc]}</span>${i === 0 ? '<i class="fa-solid fa-code-branch newer" title="Newer revision in progress"></i>' : ""}</span></td>
+    <td>${form}</td><td>${orig}</td><td style="color:var(--muted)">${mod}</td>
+    <td><a style="color:var(--brand)" title="Open in Forma"><i class="fa-solid fa-arrow-up-right-from-square"></i></a></td>
+  </tr>`).join("");
+
+const checks = [
+  ["Title Line 1", "", 97], ["Revision", "ISO 19650 format", 91], ["File Description", "not placeholder", 84], ["Status", "", 95],
+  ["Form", "naming standard", 99], ["Originator", "naming standard", 99], ["Function", "naming standard", 96], ["Spatial", "naming standard", 76],
+];
+document.getElementById("checkRows").innerHTML = checks.map(([n, s, p]) => `
+  <div class="check-row" title="Click to see the ${Math.round(1284 * (100 - p) / 100)} failing documents">
+    <div class="name">${n}${s ? `<small>${s}</small>` : ""}</div>
+    <div class="bar"><span style="width:${p}%;${p < 85 ? "background:var(--warn)" : ""}"></span></div>
+    <div class="pct">${p}%</div>
+    <div class="fail">${Math.round(1284 * (100 - p) / 100)} fail</div>
+  </div>`).join("");
+
+const lifecycle = [["WIP", 52, 33, 15, 402], ["SHARED", 64, 30, 6, 611], ["PUBLISHED", 81, 17, 2, 271]];
+document.getElementById("lifecycleRows").innerHTML = lifecycle.map(([n, ok, part, bad, total]) => `
+  <div class="lc-row"><div><span class="lc ${n === "WIP" ? "wip" : n === "SHARED" ? "shared" : "pub"}">${n}</span></div>
+    <div class="stack"><span class="ok" style="width:${ok}%">${ok}%</span><span class="part" style="width:${part}%">${part}%</span><span class="bad" style="width:${bad}%">${bad > 5 ? bad + "%" : ""}</span></div>
+    <div style="text-align:right;color:var(--muted)">${total}</div></div>`).join("");
+
+const origs = [["ARP", 412], ["KEL", 538], ["JAC", 221], ["WSP", 113]];
+const heatColor = (p) => p >= 95 ? ["#d5eedd", "#1d6b3f"] : p >= 85 ? ["#eef6d8", "#4f6b12"] : p >= 70 ? ["#fdf0d0", "#8a5d00"] : ["#fbdcdc", "#a11d1d"];
+let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+document.getElementById("heat").innerHTML =
+  `<tr><th>Originator</th>${checks.map(([n]) => `<th>${n}</th>`).join("")}<th style="text-align:right">Docs</th></tr>` +
+  origs.map(([o, n]) => `<tr><td>${o}</td>${checks.map(([, , base]) => {
+    const p = Math.max(40, Math.min(100, Math.round(base + (rnd() - .5) * 30)));
+    const [bg, fg] = heatColor(p);
+    return `<td style="background:${bg};color:${fg}">${p}%</td>`;
+  }).join("")}<td class="n">${n}</td></tr>`).join("");
+
+const statuses = [["S0", 96], ["S2", 288], ["S3", 241], ["S4", 205], ["A1", 233], ["A2", 38], ["Missing", 64]];
+const maxS = Math.max(...statuses.map((s) => s[1]));
+document.getElementById("statusBars").innerHTML = statuses.map(([s, n]) => `
+  <div class="sb ${s[0] === "A" ? "a" : s === "Missing" ? "m" : ""}"><div>${s}</div><div class="track"><span style="width:${n / maxS * 100}%"></span></div><div class="v">${n}</div></div>`).join("");
+const revs = [["Valid", 1168], ["Missing", 47], ["Not ISO", 69]];
+document.getElementById("revBars").innerHTML = revs.map(([s, n], i) => `
+  <div class="sb ${i === 0 ? "a" : "m"}"><div>${s}</div><div class="track"><span style="width:${n / 1168 * 100}%;${i === 2 ? "background:var(--warn)" : ""}"></span></div><div class="v">${n}</div></div>`).join("");
+
+// ---------- switcher ----------
+const setTheme = (t) => {
+  document.body.classList.toggle("theme-aureos", t === "aureos");
+  document.body.classList.toggle("side-navy", t === "aureos");
+  document.querySelectorAll("#themeBtns button").forEach((b) => b.classList.toggle("on", b.dataset.t === t));
+};
+document.querySelectorAll("#themeBtns button").forEach((b) => (b.onclick = () => setTheme(b.dataset.t)));
+const setHeader = (h) => {
+  for (const k of ["white", "light", "dark"]) document.body.classList.toggle("header-" + k, h === k);
+  document.querySelectorAll("#headerBtns button").forEach((b) => b.classList.toggle("on", b.dataset.h === h));
+};
+// Compact: the user's choice is remembered; until they choose, it follows
+// screen width (on below 1280px).
+const setCompact = (on, remember) => {
+  document.body.classList.toggle("compact", on);
+  document.getElementById("compactBtn").classList.toggle("on", on);
+  const btn = document.getElementById("collapseBtn");
+  btn.querySelector("i").className = on ? "fa-solid fa-angles-right" : "fa-solid fa-angles-left";
+  btn.dataset.label = on ? "Expand sidebar" : "Compact view";
+  if (remember) try { localStorage.setItem("v2mock.compact", on ? "1" : "0"); } catch {}
+};
+let savedCompact = null;
+try { savedCompact = localStorage.getItem("v2mock.compact"); } catch {}
+setCompact(savedCompact ? savedCompact === "1" : innerWidth < 1280, false);
+document.getElementById("collapseBtn").onclick = () => setCompact(!document.body.classList.contains("compact"), true);
+document.getElementById("compactBtn").onclick = () => setCompact(!document.body.classList.contains("compact"), true);
+document.querySelectorAll("#headerBtns button").forEach((b) => (b.onclick = () => setHeader(b.dataset.h)));
+const setView = (v) => {
+  document.body.className = document.body.className.replace(/view-\w+/, "view-" + v);
+  document.querySelectorAll("#viewBtns button").forEach((b) => b.classList.toggle("on", b.dataset.view === v));
+  document.querySelectorAll(".nav a[data-view]").forEach((a) => a.classList.toggle("on", a.dataset.view === v));
+};
+document.querySelectorAll("#viewBtns button").forEach((b) => (b.onclick = () => setView(b.dataset.view)));
+document.querySelectorAll(".nav a[data-view]").forEach((a) => (a.onclick = () => setView(a.dataset.view)));
+document.getElementById("notesBtn").onclick = (e) => {
+  document.body.classList.toggle("hide-notes");
+  e.target.classList.toggle("on");
+};
+const params = new URLSearchParams(location.search);
+if (params.get("header")) setHeader(params.get("header"));
+if (params.get("theme")) setTheme(params.get("theme"));
+if (params.get("view")) setView(params.get("view"));
+</script>
+</body>
+</html>

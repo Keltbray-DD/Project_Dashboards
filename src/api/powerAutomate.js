@@ -19,3 +19,10 @@ export async function fetchProjects(userId, { fetch } = {}) {
 export function fetchExtract(projectName, { fetch } = {}) {
   return request(PA_FLOWS.extract, { method: "POST", json: { project_Name: projectName }, fetch });
 }
+
+// Bug report / feature request. Same payload as v1's feedback form:
+// { tool, type: "Bug" | "Feature" | "Feedback", description, userEmail,
+//   screenshotBase64 (data URL or null) }
+export function sendFeedback(payload, { fetch } = {}) {
+  return request(PA_FLOWS.feedback, { method: "POST", json: payload, fetch, retries: 0 });
+}
