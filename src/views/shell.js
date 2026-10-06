@@ -63,6 +63,10 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
   compactBtn.addEventListener("click", () => {
     setCompact(!document.body.classList.contains("compact"));
     syncCompactBtn();
+    const sidebarEl = compactBtn.closest(".sidebar");
+    sidebarEl.classList.remove("switching");
+    void sidebarEl.offsetWidth; // restart the fade
+    sidebarEl.classList.add("switching");
   });
   syncCompactBtn();
 
@@ -110,6 +114,7 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
     setFreshness(state, text) {
       freshness.hidden = !text;
       freshness.classList.toggle("loading", state === "loading");
+      topbar.classList.toggle("loading", state === "loading");
       freshness.lastChild.textContent = text || "";
     },
 

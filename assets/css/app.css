@@ -42,6 +42,11 @@
   --side-w: 232px;
   --row-h: 38px;
   --shadow: 0 6px 24px rgba(29, 30, 78, 0.12);
+
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --t-fast: 120ms;
+  --t: 180ms;
+  --t-slow: 280ms;
 }
 /* Compact: icon-only sidebar and denser rows for smaller screens. */
 body.compact {
@@ -420,9 +425,19 @@ dialog.dialog .error-detail { padding: 12px; background: var(--bad-soft); color:
 .chip.clear { border-style: dashed; padding: 3px 10px; color: var(--muted); cursor: pointer; background: transparent; }
 .chip.clear:hover { color: var(--navy); border-color: var(--navy); }
 
-.midp-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; }
-.midp-body.panel-open { grid-template-columns: minmax(0, 1fr) 300px; }
-.midp-body:not(.panel-open) .search-panel { display: none; }
+/* Filter panel: slides over the table's edge (transform/opacity only), then
+   "docks" — the table makes room once. See setPanel in views/midp/index.js. */
+.midp-body { --panel-w: 300px; position: relative; flex: 1; min-height: 0; display: flex; overflow: hidden; }
+.midp-body .table-card { flex: 1; min-width: 0; }
+.midp-body.panel-docked .table-card { margin-right: calc(var(--panel-w) + 16px); }
+.midp-body .search-panel {
+  position: absolute; top: 0; right: 0; bottom: 0; width: var(--panel-w);
+  opacity: 0; visibility: hidden; transform: translateX(calc(100% + 16px)); will-change: transform;
+  transition: transform var(--t-slow) var(--ease), opacity var(--t) var(--ease), box-shadow var(--t) var(--ease), visibility 0s linear var(--t-slow);
+}
+.midp-body.panel-open .search-panel { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
+/* While it's sliding over the table, lift it with a shadow. */
+.midp-body.panel-open:not(.panel-docked) .search-panel { box-shadow: var(--shadow); }
 .table-card { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 .table-host { flex: 1; min-height: 0; }
 .selection-bar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--navy-soft); border-bottom: 1px solid var(--border); font-size: 13px; }
@@ -518,7 +533,7 @@ dialog.dialog .error-detail { padding: 12px; background: var(--bad-soft); color:
 .sp-option-count { color: var(--muted); font-size: 12px; }
 .sp-menu-foot { display: flex; justify-content: flex-end; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 4px; }
 .sp-empty { padding: 8px 4px; color: var(--muted); font-style: italic; font-size: 13px; }
-body.compact .midp-body.panel-open { grid-template-columns: minmax(0, 1fr) 270px; }
+body.compact .midp-body { --panel-w: 270px; }
 
 /* ---------- compliance ---------- */
 .segmented { display: inline-flex; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); padding: 2px; }
@@ -610,6 +625,62 @@ button.kpi { cursor: pointer; }
 @media (max-width: 1100px) {
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .c-grid { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* ---------- motion ---------- */
+@keyframes rise-in { from { opacity: 0; transform: translateY(6px); } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes pop-in { from { opacity: 0; transform: translateY(-4px) scale(0.98); } }
+@keyframes dialog-in { from { opacity: 0; transform: translateY(8px) scale(0.97); } }
+@keyframes grow-x { from { transform: scaleX(0); } }
+@keyframes reveal-x { from { clip-path: inset(0 100% 0 0); } }
+@keyframes tick-pop { 0% { transform: scale(0.4); } 70% { transform: scale(1.15); } 100% { transform: scale(1); } }
+@keyframes gradient-flow { to { background-position: -200% 0; } }
+@keyframes toast-out { to { opacity: 0; transform: translateX(16px); } }
+
+/* Page and loading-card entrances. */
+.view-enter > * { animation: rise-in var(--t-slow) var(--ease) both; }
+.view-enter > * + * { animation-delay: 40ms; }
+.state-card { animation: rise-in var(--t-slow) var(--ease) both; }
+.steps li { transition: color var(--t) var(--ease); }
+.steps li.done .ico { animation: tick-pop var(--t-slow) var(--ease); }
+
+/* Data loading: the gradient line under the top bar flows. */
+.topbar.loading::after {
+  background-image: linear-gradient(90deg, #0d4f8b, #19a3dc, #22a95b, #a6ce39, #22a95b, #19a3dc, #0d4f8b);
+  background-size: 200% 100%;
+  animation: gradient-flow 1.6s linear infinite;
+}
+
+/* Menus, popovers, dropdowns, dialogs. */
+.menu:not([hidden]), .popover:not([hidden]), .sp-add-menu:not([hidden]), .sp-menu, .sp-folder-picker:not([hidden]) {
+  animation: pop-in var(--t) var(--ease);
+  transform-origin: top right;
+}
+dialog.dialog[open] { animation: dialog-in var(--t-slow) var(--ease); }
+dialog.dialog[open]::backdrop { animation: fade-in var(--t-slow) var(--ease); }
+.toast.leaving { animation: toast-out var(--t) var(--ease) forwards; }
+.selection-bar:not([hidden]) { animation: rise-in var(--t) var(--ease); }
+
+/* Compact toggle: the layout switches in one step (animating the width
+   would make the table refit every frame); the sidebar contents fade in. */
+.sidebar.switching .nav, .sidebar.switching .side-foot { animation: fade-in var(--t-slow) var(--ease); }
+
+/* Small hover/press feedback. */
+.btn, .nav a, .side-btn, .sp-select, .chip button, .project-card, .kpi, .pass-row, .count-row {
+  transition: background-color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease), box-shadow var(--t) var(--ease), transform var(--t-fast) var(--ease);
+}
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.project-card:hover { transform: translateY(-2px); }
+.sp-select i { transition: transform var(--t) var(--ease); }
+
+/* Compliance charts grow in from the left when drawn. */
+.kpi-meter span, .pass-bar .fill, .count-track span { transform-origin: left center; animation: grow-x 600ms var(--ease) both; }
+.stack { animation: reveal-x 600ms var(--ease) both; }
+.heat-table tbody tr { animation: fade-in var(--t-slow) var(--ease) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
 }
 
 /* ---------- small screens ---------- */

@@ -171,6 +171,10 @@ function showView(route) {
   if (currentCleanup) currentCleanup();
   shell.setActive(route);
   const cleanup = VIEWS[route].render(shell.content, ctx);
+  // Replay the page entrance animation.
+  shell.content.classList.remove("view-enter");
+  void shell.content.offsetWidth;
+  shell.content.classList.add("view-enter");
   currentCleanup = typeof cleanup === "function" ? cleanup : null;
   shell.content.parentElement.scrollTop = 0;
 }

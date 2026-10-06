@@ -18,5 +18,9 @@ export function toast(title, message = "", { error = false, timeout = 5000 } = {
     h("div", {}, h("strong", {}, title), message)
   );
   host.append(el);
-  setTimeout(() => el.remove(), timeout);
+  setTimeout(() => {
+    el.classList.add("leaving");
+    el.addEventListener("animationend", () => el.remove(), { once: true });
+    setTimeout(() => el.remove(), 400); // in case animations are disabled
+  }, timeout);
 }

@@ -164,12 +164,36 @@ function renderRegister(container, ctx, config) {
     )
   );
 
-  function setPanel(open) {
+  // The panel slides over the table's edge (transform only — cheap), and
+  // the table is resized exactly once: after the panel lands when opening,
+  // before it slides away when closing. Animating the table's width
+  // instead made Tabulator refit its columns every frame (janky).
+  let dockTimer = null;
+  function setPanel(open, { animate = true } = {}) {
     vs.panelOpen = open;
-    body.classList.toggle("panel-open", open);
     filtersBtn.setAttribute("aria-expanded", String(open));
-    if (open) panel.focus();
-    table?.redraw();
+    clearTimeout(dockTimer);
+    const dock = (docked) => {
+      if (body.classList.contains("panel-docked") === docked) return;
+      body.classList.toggle("panel-docked", docked);
+      table?.redraw();
+    };
+    if (!open) dock(false);
+    body.classList.toggle("panel-open", open);
+    if (open) {
+      if (!animate) dock(true);
+      else {
+        const onEnd = (e) => {
+          if (e.target !== panel.element || e.propertyName !== "transform") return;
+          panel.element.removeEventListener("transitionend", onEnd);
+          if (vs.panelOpen) dock(true);
+        };
+        panel.element.addEventListener("transitionend", onEnd);
+        // Fallback if the transition doesn't fire (e.g. reduced motion).
+        dockTimer = setTimeout(() => vs.panelOpen && dock(true), 400);
+      }
+      setTimeout(() => panel.focus(), 50);
+    }
   }
 
   // ---------- filtering ----------
@@ -339,7 +363,7 @@ function renderRegister(container, ctx, config) {
     });
   }
 
-  setPanel(vs.panelOpen);
+  setPanel(vs.panelOpen, { animate: false });
   setDocuments(store.get().documents);
   renderSummary();
 
