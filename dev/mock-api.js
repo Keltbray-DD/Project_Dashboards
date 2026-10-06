@@ -87,6 +87,19 @@
     });
   }
 
+  // Older versions share their tip’s attributes in the mock.
+  const tipByBase = {};
+  for (const urn of Object.keys(attrs)) tipByBase[urn.split("?")[0]] = urn;
+  const attrsFor = (urn) => attrs[urn] || attrs[tipByBase[urn.split("?")[0]]] || [];
+
+  let defId = 1;
+  const def = (name, type, arrayValues) => ({ id: "attr-" + defId++, name, type, ...(arrayValues ? { arrayValues } : {}) });
+  const ATTR_DEFS = [
+    def("Title Line 1", "string"), def("Title Line 2", "string"), def("Title Line 3", "string"), def("Title Line 4", "string"),
+    def("Revision", "string"), def("Status", "array", ["S0", "S1", "S2", "S3", "S4", "A1", "A2", "A3", "B1"]),
+    def("File Description", "string"), def("Activity Code", "string"),
+  ];
+
   const PROJECTS = [
     { id: "b.mock-project-0001", name: "Example Project", code: "EX0001", image: "" },
     { id: "b.mock-project-0002", name: "Example Framework (no data)", code: "EX0002", image: "" },
@@ -130,10 +143,45 @@
     }
     if (url.includes("versions:batch-get") && method === "POST") {
       await delay(250 + rnd() * 250);
-      return json({ results: (body.urns || []).map((urn) => ({ urn, customAttributes: attrs[urn] || [] })) });
+      return json({ results: (body.urns || []).map((urn) => ({ urn, customAttributes: attrsFor(urn) })) });
     }
-    if (url.includes("/versions") && url.includes("/items/")) {
-      return json({ data: [] });
+    if (url.includes("/topFolders")) {
+      return json({ data: [{ id: "urn:adsk.wipemea:fs.folder:co.ProjectFiles", attributes: { name: "Project Files" } }] });
+    }
+    if (url.includes("/custom-attribute-definitions")) {
+      await delay(200);
+      return json({ results: ATTR_DEFS });
+    }
+    if (url.includes("custom-attributes:batch-update") && method === "POST") {
+      await delay(300);
+      const urn = decodeURIComponent(url.split("/versions/")[1].split("/custom-attributes")[0]);
+      const values = JSON.parse(init.body);
+      // A value of "FAIL" simulates Forma rejecting the change.
+      if (values.some((v) => v.value === "FAIL")) return json({ results: values.map((v) => ({ id: v.id, status: 400 })) });
+      for (const v of values) {
+        const def = ATTR_DEFS.find((d) => d.id === v.id);
+        const list = attrs[urn] || (attrs[urn] = []);
+        const existing = list.find((a) => a.name === def.name);
+        if (existing) existing.value = v.value; else list.push({ name: def.name, value: v.value });
+      }
+      return json({ results: values.map((v) => ({ id: v.id, status: 200 })) });
+    }
+    const itemMatch = url.match(/\/items\/([^/]+)\/versions/);
+    if (itemMatch) {
+      await delay(300);
+      const lineage = decodeURIComponent(itemMatch[1]);
+      const file = files.find((f) => f.itemID === lineage);
+      if (!file) return json({ data: [] });
+      const tip = parseInt(file.itemIdVersion.split("=")[1], 10);
+      const base = file.itemIdVersion.split("?")[0];
+      const data = [];
+      for (let v = tip; v >= 1; v--) {
+        data.push({
+          id: base + "?version=" + v,
+          attributes: { displayName: file.Name, versionNumber: v, createTime: iso((tip - v + 1) * 5 * 86400000), lastModifiedTime: iso((tip - v + 1) * 5 * 86400000), createUserName: file.createUserName },
+        });
+      }
+      return json({ data });
     }
     console.warn("[mock-api] unhandled", method, url);
     return json({ message: "not mocked" }, 404);

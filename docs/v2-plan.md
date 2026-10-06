@@ -60,7 +60,8 @@ src/
           project.js        orchestrates loading a project
   compliance/ rules.js · engine.js                      (phase 4)
   views/  shell.js (top bar, sidebar, state cards) · feedback.js · placeholder.js (temporary)
-          midp · searchPanel · drawingRegister · compliance   (phases 3–5)
+          midp/ index (view) · columns · searchPanel · editing · historyDialog · columnPicker
+          drawingRegister · compliance   (phases 4–5)
   ui/     dom.js (safe element builder) · toast.js · format.js · editors · charts
 assets/css/app.css          design tokens + shell + components (Aureos website look)
 dev/      mock-api.js + index.html / dashboard.html — the app against generated

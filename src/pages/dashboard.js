@@ -11,6 +11,7 @@ import { stackDocuments } from "../data/stacking.js";
 import { startSession, findUserProject } from "../session.js";
 import { createShell, stateCard } from "../views/shell.js";
 import { placeholderView } from "../views/placeholder.js";
+import { midpView } from "../views/midp/index.js";
 import { h, icon, mount } from "../ui/dom.js";
 import { formatNumber, formatWhen } from "../ui/format.js";
 import { toast } from "../ui/toast.js";
@@ -24,7 +25,7 @@ const eyebrow = (section) => () => {
 };
 
 const VIEWS = {
-  midp: { label: "MIDP", icon: "layer-group", render: placeholderView({ title: "MIDP", eyebrow: eyebrow("Information delivery"), phase: 3 }) },
+  midp: { label: "MIDP", icon: "layer-group", render: midpView },
   drawings: { label: "Drawing Register", icon: "compass-drafting", render: placeholderView({ title: "Drawing Register", eyebrow: eyebrow("Drawings"), phase: 5 }) },
   compliance: { label: "Compliance", icon: "clipboard-check", render: placeholderView({ title: "Compliance", eyebrow: eyebrow("Document control"), phase: 4 }) },
 };

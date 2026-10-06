@@ -4,13 +4,19 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>[MOCK] Forma Docs Dashboard</title>
+    <link rel="icon" href="https://framerusercontent.com/images/vjRMCMulwfemK0yBMpbyToSGCVs.svg" media="(prefers-color-scheme: light)">
+    <link rel="icon" href="https://framerusercontent.com/images/vjRMCMulwfemK0yBMpbyToSGCVs.svg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="../assets/css/app.css">
     <!-- Dev only: canned API responses, no sign-in. See dev/mock-api.js. -->
     <script src="mock-api.js"></script>
-    <script type="module" src="../src/pages/projects.js"></script>
+    <!-- Only start the app if the mock loaded — otherwise it would try the real Autodesk sign-in. -->
+    <script type="module">
+        if (window.__MOCK__) import("../src/pages/projects.js");
+        else document.addEventListener("DOMContentLoaded", () => { document.body.textContent = "dev/mock-api.js failed to load - see the console."; });
+    </script>
 </head>
 <body></body>
 </html>
