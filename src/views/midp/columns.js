@@ -125,7 +125,9 @@ const user = (cell) => cell.getValue() || "Forma system";
 //   editable      (cell) => boolean
 //   cellEdited    (cell) => void
 //   onInfo        (rowData) => void — opens revision history
-export function buildColumns({ extraFields = [], editor, editable, cellEdited, onInfo }) {
+//   hidden        Set of fields hidden by default (default HIDDEN_BY_DEFAULT)
+//   titles        { field: "Title" } overrides (e.g. Modified → "Issued")
+export function buildColumns({ extraFields = [], editor, editable, cellEdited, onInfo, hidden = HIDDEN_BY_DEFAULT, titles = {} }) {
   const edit = { editor, editable, cellEdited };
   const listFilter = { headerFilter: "list", headerFilterParams: { valuesLookup: "active", clearable: true, sort: "asc" } };
   const cols = [
@@ -188,6 +190,9 @@ export function buildColumns({ extraFields = [], editor, editable, cellEdited, o
     { title: "Modified", field: "last_modified_date", width: 150, formatter: date, sorter: dateSorter },
     { title: "Created by", field: "created_by_user", width: 150, formatter: user }
   );
-  for (const c of cols) if (HIDDEN_BY_DEFAULT.has(c.field)) c.visible = false;
+  for (const c of cols) {
+    if (hidden.has(c.field)) c.visible = false;
+    if (titles[c.field]) c.title = titles[c.field];
+  }
   return cols;
 }

@@ -10,8 +10,8 @@ import { loadProjectFiles, enrichProjectFiles } from "../data/project.js";
 import { stackDocuments } from "../data/stacking.js";
 import { startSession, findUserProject } from "../session.js";
 import { createShell, stateCard } from "../views/shell.js";
-import { placeholderView } from "../views/placeholder.js";
-import { midpView } from "../views/midp/index.js";
+import { midpView, drawingRegisterView } from "../views/registers.js";
+import { isClientVisible } from "../data/registers.js";
 import { complianceView } from "../views/compliance.js";
 import { evaluate } from "../compliance/engine.js";
 import { h, icon, mount } from "../ui/dom.js";
@@ -21,14 +21,9 @@ import { toast } from "../ui/toast.js";
 // PA republishes the extract roughly every 30 minutes.
 const EXTRACT_INTERVAL_MS = 30 * 60 * 1000;
 
-const eyebrow = (section) => () => {
-  const p = store.get().project;
-  return p?.code ? `${p.code} · ${section}` : section;
-};
-
 const VIEWS = {
   midp: { label: "MIDP", icon: "layer-group", render: midpView },
-  drawings: { label: "Drawing Register", icon: "compass-drafting", render: placeholderView({ title: "Drawing Register", eyebrow: eyebrow("Drawings"), phase: 5 }) },
+  drawings: { label: "Drawing Register", icon: "compass-drafting", render: drawingRegisterView },
   compliance: { label: "Compliance", icon: "clipboard-check", render: complianceView },
 };
 
@@ -80,10 +75,10 @@ async function start() {
   const features = projectFeatures(projectId);
   const project = { id: bareProjectId(projectId), name: found.name, code: found.code || features.code || "", features };
   store.set({ project });
-  shell.setProject(project);
+  shell.setProject({ ...project, readOnly: !user.isInternal });
 
   const routes = ["midp"];
-  if (features.registers.some((r) => r.startsWith("drawingRegister"))) routes.push("drawings");
+  if (features.registers.includes("drawingRegister")) routes.push("drawings");
   if (user.isInternal) routes.push("compliance");
   shell.setNav({ section: project.code || "Project", items: routes.map((route) => ({ route, ...VIEWS[route] })) });
 
@@ -113,13 +108,17 @@ async function load() {
 }
 
 async function loadData() {
-  const { aps, project, routes } = ctx;
+  const { aps, user, project, routes } = ctx;
   if (!routerStarted) showSteps(2);
   shell.setFreshness("loading", "Loading project files…");
 
   let extract, files;
   try {
     ({ extract, files } = await loadProjectFiles({ aps, projectId: project.id, projectName: project.name }));
+    // External clients only see client-facing folders (PUBLISHED /
+    // SHARED_TO_CLIENT). Filtered before stacking, so a WIP or SHARED copy
+    // can never surface as a document's current revision or in its history.
+    if (!user.isInternal) files = files.filter(isClientVisible);
   } catch (err) {
     log.error(err);
     if (!routerStarted) showSteps(2, `Couldn't load the project files: ${err.message}`);

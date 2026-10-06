@@ -19,6 +19,11 @@
   Storage.prototype.removeItem = function (k) { return removeItem.call(this, k === REAL_KEY ? MOCK_KEY : k); };
   if (!localStorage.getItem(REAL_KEY)) localStorage.setItem(REAL_KEY, "mock-refresh");
 
+  // ?as=client signs in as an external client; ?as=internal switches back.
+  const asParam = new URLSearchParams(location.search).get("as");
+  if (asParam) sessionStorage.setItem("mock_as", asParam);
+  const AS_CLIENT = sessionStorage.getItem("mock_as") === "client";
+
   // ---------- deterministic generated data ----------
   let seed = 42;
   const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
@@ -118,7 +123,9 @@
       return json({ access_token: "mock-access", refresh_token: "mock-refresh", expires_in: 3600 });
     }
     if (url.includes("userprofile.autodesk.com/userinfo")) {
-      return json({ sub: "MOCKUSER", name: "Josh Cole", email: "josh.cole@aureos.com", picture: "" });
+      return json(AS_CLIENT
+        ? { sub: "MOCKCLIENT", name: "Client User", email: "client.user@example.com", picture: "" }
+        : { sub: "MOCKUSER", name: "Josh Cole", email: "josh.cole@aureos.com", picture: "" });
     }
     if (url.includes("30f57be09dd04690be4212eb4ed6df65")) {
       await delay(400);
@@ -196,5 +203,6 @@
   };
 
   window.__MOCK__ = { files, attrs, PROJECTS };
+  window.__DEV_PROJECT_FEATURES__ = { "mock-project-0001": { code: "EX0001", registers: ["midp", "drawingRegister"], extraFields: [] } };
   console.info(`[mock-api] active — ${files.length} file versions across ${new Set(files.map((f) => f.Name)).size} documents`);
 })();

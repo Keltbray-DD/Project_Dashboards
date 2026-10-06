@@ -95,8 +95,15 @@ ported, and are deleted in phase 6.
 3. **MIDP** — Tabulator table, search panel, selection, inline editing,
    pending edits, revision history, carried over intact on the new core.
 4. **Compliance** — rules engine + Compliance view + click-through.
-5. **Drawing Register / SHEAF / client view** on the same shell, nav
-   gated by role and project features.
+5. **Drawing Register / client view** on the same shell, nav gated by
+   role and project features. Decided Oct 2026:
+   - Drawing Register lists one row per document whose current revision
+     matches v1's rule (revision contains C and Form is DR, or
+     Deliverable = Yes); DT1116 gets the standard register.
+   - The SHEAF-specific register is dropped.
+   - External clients get MIDP + Drawing Register, read-only, limited to
+     PUBLISHED / SHARED_TO_CLIENT folders (filtered before stacking).
+     `dashboard_client.html` is now the same app, kept for old links.
 6. **Cleanup & hardening** — delete v1 `js/` + `table_generation.js`;
    `endsWith` email-domain check; `URLSearchParams`; CSP meta tag;
    DEBUG-gated logging; identifier typo sweep; update CLAUDE.md.

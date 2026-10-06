@@ -23,6 +23,7 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
   // ---------- top bar ----------
   const projectName = h("strong", {});
   const projectCode = h("span", { class: "code", hidden: true });
+  const viewOnly = h("span", { class: "view-only", hidden: true, title: "You can view but not edit this project's data" }, icon("eye"), "View only");
   const freshness = h("div", { class: "freshness", hidden: true }, h("span", { class: "dot" }), h("span", {}));
 
   const avatar = h("button", { class: "avatar", type: "button", "aria-haspopup": "menu", "aria-label": "Account" }, "…");
@@ -42,7 +43,7 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
       h("img", { src: LOGO_URL, alt: "Aureos" }),
       h("span", { class: "app-name" }, "Docs Dashboard")
     ),
-    h("div", { class: "crumbs" }, projectName, projectCode),
+    h("div", { class: "crumbs" }, projectName, projectCode, viewOnly),
     h("div", { class: "spacer" }),
     freshness,
     onRefresh && h("button", { class: "btn", type: "button", title: "Reload the latest data", onclick: onRefresh }, icon("rotate"), "Refresh"),
@@ -97,10 +98,11 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
       );
     },
 
-    setProject({ name, code }) {
+    setProject({ name, code, readOnly }) {
       projectName.textContent = name || "";
       projectCode.textContent = code || "";
       projectCode.hidden = !code;
+      viewOnly.hidden = !readOnly;
       document.title = name ? `${name} · Forma Docs Dashboard` : "Forma Docs Dashboard";
     },
 

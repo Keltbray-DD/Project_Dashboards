@@ -4,70 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Forma Docs Dashboard</title>
-    <link rel="stylesheet" href="assets/css/dashboards.css">
-    <link rel="stylesheet" href="assets/css/userBox.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <link rel="icon" href="https://www.aureos.com/wp-content/uploads/2025/02/AUREOS-FAVicon_512px-x-512px-150x150.png" sizes="32x32">
+    <link rel="icon" href="https://framerusercontent.com/images/vjRMCMulwfemK0yBMpbyToSGCVs.svg" media="(prefers-color-scheme: light)">
+    <link rel="icon" href="https://framerusercontent.com/images/vjRMCMulwfemK0yBMpbyToSGCVs.svg">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/tabulator-tables@5.6.1/dist/css/tabulator.min.css">
+    <link rel="stylesheet" href="assets/css/app.css">
+    <script src="https://unpkg.com/tabulator-tables@5.6.1/dist/js/tabulator.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script type="module" src="src/pages/dashboard.js"></script>
 </head>
 <body>
-    <div class="top-bar">
-        <img src="https://www.aureos.com/wp-content/themes/keltbray/assets/img/logo/AUREOS_logo_wh.svg"
-        class="logo logo--white"
-        alt="Aureos Logo">
-        <div class="title"><h2 id="title">Forma Docs Dashboard</h2></div>
-        <div class="profile-container" id="profileMenu">
-          <img id="userPic" src="https://images.profile.autodesk.com/default/user_X58.png" alt="Profile" class="profile-pic" />
-          <div class="dropdown-menu" id="dropdown">
-            <div ><strong>User:</strong> <p id="userName"></p></div>
-            <div ><strong>Email:</strong> <p id="userEmail"></p></div>
-            <div class="logout" onclick="logout()">Logout</div>
-          </div>
-        </div>
-      </div>
-
-    <section id="menu-bar" class="menu-bar">
-        <div class="tab">
-            <button id="DrawingRegisterSHEAF_Button" class="tablinks" onclick="openTab(event, 'DrawingRegisterSHEAF')" style="display: none;">Drawing Register</button>
-        </div>
-    </section>
-    <!-- Popup message -->
-    <div id="popup" class="popup"></div>
-
-    <section id="DrawingRegisterSHEAF" class="dashboard tabcontent">
-        <div class="tableOptions">
-            <h1>Drawing Register <span id="DRCountSHEAF"></span></h1>
-            <input type="text" id="searchInputDRSHEAF" class="searchInput" placeholder="Search for anything...">
-            <button id="resetFiltersBtnDRSHEAF" class="exportButton resetFiltersBtn" title="Clear column and search filters">↺ Reset Filters</button>
-            <button onclick="exportTableToExcel('dataTableDRSHEAF','DrawingRegister')" class="exportButton"> Export</button>
-        </div>
-        <div class="table-container">
-            <div id="dataTableDRSHEAF" class="tabulator-host"></div>
-        </div>
-    </section>
-
-    <div id="loading" class="loading-spinner">
-        Loading...
-    </div>
-    <div id="appInfo"></div>
-    <div id="dataInfo"></div>
-
-    <link href="https://unpkg.com/tabulator-tables@5.6.1/dist/css/tabulator_modern.min.css" rel="stylesheet">
-    <script src="https://unpkg.com/tabulator-tables@5.6.1/dist/js/tabulator.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
-    <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js" integrity="sha512-dlPw+ytv/6JyepmelABrgeYgHI0O+frEwgfnPdXDTOIZz+eDgfW07QXG02/O8COfivBdGNINy+Vex+lYmJ5rxw==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
-    <script src="js/variables.js"></script>
-    <script src="js/login.js"></script>
-    <script src="js/table_generation.js"></script>
-    <script src="js/chart_generation.js"></script>
-    <script src="js/data_processing.js"></script>
-    <script src="js/get_data.js"></script>
-    <script src="js/post_data.js"></script>
-    <script src="js/output_data.js"></script>
-    <script src="js/tabulator_setup.js"></script>
-    <script src="js/main_client.js"></script>
+    <noscript>The Forma Docs Dashboard needs JavaScript enabled.</noscript>
 </body>
 </html>

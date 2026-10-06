@@ -3,13 +3,13 @@
 import { local } from "../../core/storage.js";
 import { h, icon } from "../../ui/dom.js";
 
-const KEY = "v2.midp.columns";
+const keyFor = (registerId = "midp") => `v2.${registerId}.columns`;
 // Always shown — the table doesn't make sense without them.
 const LOCKED = new Set(["_select", "_info", "name"]);
 
 // Applies saved visibility to the table's columns.
-export function applySavedColumns(table) {
-  const prefs = local.get(KEY, {}) || {};
+export function applySavedColumns(table, registerId) {
+  const prefs = local.get(keyFor(registerId), {}) || {};
   for (const col of table.getColumns()) {
     const f = col.getField();
     if (prefs[f] === false) col.hide();
@@ -17,7 +17,8 @@ export function applySavedColumns(table) {
   }
 }
 
-export function columnPickerButton(getTable) {
+export function columnPickerButton(getTable, registerId) {
+  const KEY = keyFor(registerId);
   const panel = h("div", { class: "popover column-picker", hidden: true });
   const button = h("button", { class: "btn", type: "button", "aria-haspopup": "true" }, icon("table-columns"), "Columns");
 

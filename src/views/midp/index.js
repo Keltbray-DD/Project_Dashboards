@@ -1,10 +1,13 @@
-// MIDP view: one row per stacked document (the current approved
+// Register view: one row per stacked document (the current approved
 // revision), expandable revision history, the Forma-style search panel,
 // filter chips, row selection with Copy names / Export selected, column
 // picker, export, and inline editing for internal users.
 //
-// Filter state and panel visibility live at module level so they survive
-// switching to another view and back.
+// Used for both the MIDP and the Drawing Register (see views/registers.js);
+// each register supplies which documents it lists and a few labels.
+//
+// Filter state and panel visibility are kept per register at module level
+// so they survive switching to another view and back.
 
 import { store } from "../../core/store.js";
 import { documentHistory } from "../../data/history.js";
@@ -18,8 +21,11 @@ import { createEditing } from "./editing.js";
 import { openHistoryDialog } from "./historyDialog.js";
 import { createSearchPanel, clearPanelState, labelOf } from "./searchPanel.js";
 
-const filterState = emptyFilterState();
-let panelOpen = false;
+const viewStates = new Map();
+function stateFor(id) {
+  if (!viewStates.has(id)) viewStates.set(id, { filters: emptyFilterState(), panelOpen: false });
+  return viewStates.get(id);
+}
 
 // Stack → table rows. Copies, so Tabulator's tree bookkeeping never
 // touches the store's file rows.
@@ -32,14 +38,30 @@ function toRows(documents) {
   }));
 }
 
-// Lets other views (Compliance) open the MIDP pre-filtered:
-//   showInMidp({ label: "Missing Spatial", predicate: (row) => … })
-export function setMidpExternalFilter(external) {
-  filterState.external = external;
+// Lets other views (Compliance) open a register pre-filtered:
+//   setExternalFilter("midp", { label: "Fails: Spatial", predicate: (row) => … })
+export function setExternalFilter(registerId, external) {
+  stateFor(registerId).filters.external = external;
+}
+export const setMidpExternalFilter = (external) => setExternalFilter("midp", external);
+
+// config:
+//   id            "midp" | "drawings" — keys remembered state
+//   title         page heading
+//   section       eyebrow after the project code
+//   select        (documents) => the documents this register lists
+//   description   text after the count
+//   exportName    file name stem for Excel exports
+//   columns       buildColumns overrides ({ hidden, titles })
+export function registerView(config) {
+  return (container, ctx) => renderRegister(container, ctx, config);
 }
 
-export function midpView(container, ctx) {
+function renderRegister(container, ctx, config) {
   const { aps, project, user } = ctx;
+  const vs = stateFor(config.id);
+  const filterState = vs.filters;
+  const exportStem = `${project.code ? project.code + " " : ""}${config.exportName}`;
   let table = null;
   let documents = [];
   let docsByKey = new Map();
@@ -57,7 +79,7 @@ export function midpView(container, ctx) {
     panel.sync();
   });
   const filtersBtn = h("button", { class: "btn", type: "button", "aria-expanded": "false" });
-  filtersBtn.addEventListener("click", () => setPanel(!panelOpen));
+  filtersBtn.addEventListener("click", () => setPanel(!vs.panelOpen));
 
   const editing = user.isInternal
     ? createEditing({
@@ -85,7 +107,7 @@ export function midpView(container, ctx) {
   });
 
   const exportBtn = h("button", { class: "btn primary", type: "button", title: "Export the filtered documents to Excel" }, icon("file-excel"), "Export");
-  exportBtn.addEventListener("click", () => table?.download("xlsx", `${project.code || "MIDP"} MIDP.xlsx`, { sheetName: "MIDP" }, "active"));
+  exportBtn.addEventListener("click", () => table?.download("xlsx", `${exportStem}.xlsx`, { sheetName: config.title }, "active"));
 
   // ---------- chips + selection ----------
   const chips = h("div", { class: "chips" });
@@ -98,7 +120,7 @@ export function midpView(container, ctx) {
     h("button", {
       class: "btn",
       type: "button",
-      onclick: () => table?.download("xlsx", `${project.code || "MIDP"} MIDP selected.xlsx`, { sheetName: "MIDP" }, "selected"),
+      onclick: () => table?.download("xlsx", `${exportStem} selected.xlsx`, { sheetName: config.title }, "selected"),
     }, icon("download"), "Export selected"),
     h("button", { class: "link-btn", type: "button", onclick: () => table?.deselectRow() }, "Clear selection")
   );
@@ -126,13 +148,13 @@ export function midpView(container, ctx) {
       h(
         "div",
         { class: "page-head" },
-        h("div", {}, h("div", { class: "eyebrow" }, `${project.code ? project.code + " · " : ""}Information delivery`), h("h1", {}, "MIDP"), countText),
+        h("div", {}, h("div", { class: "eyebrow" }, `${project.code ? project.code + " · " : ""}${config.section}`), h("h1", {}, config.title), countText),
         h(
           "div",
           { class: "actions" },
           h("div", { class: "search" }, icon("magnifying-glass"), toolbarSearch),
           filtersBtn,
-          columnPickerButton(() => table),
+          columnPickerButton(() => table, config.id),
           editBtn,
           exportBtn
         )
@@ -143,7 +165,7 @@ export function midpView(container, ctx) {
   );
 
   function setPanel(open) {
-    panelOpen = open;
+    vs.panelOpen = open;
     body.classList.toggle("panel-open", open);
     filtersBtn.setAttribute("aria-expanded", String(open));
     if (open) panel.focus();
@@ -171,10 +193,10 @@ export function midpView(container, ctx) {
   }
 
   function renderSummary() {
-    countText.textContent = `${resultText()} · one row per document, showing its current approved revision`;
+    countText.textContent = `${resultText()} · ${config.description}`;
     const n = activeFilterCount(filterState) + (table ? table.getHeaderFilters().length : 0);
     mount(filtersBtn, icon("filter"), "Filters", n > 0 && h("span", { class: "badge" }, String(n)));
-    filtersBtn.classList.toggle("active", n > 0 || panelOpen);
+    filtersBtn.classList.toggle("active", n > 0 || vs.panelOpen);
     renderChips();
   }
 
@@ -241,6 +263,7 @@ export function midpView(container, ctx) {
       height: "100%",
       placeholder: "No documents match",
       columns: buildColumns({
+        ...config.columns,
         extraFields: project.features?.extraFields || [],
         editor: editing ? (...a) => editing.editor(...a) : undefined,
         editable: editing ? (cell) => editing.editable(cell) : () => false,
@@ -271,7 +294,7 @@ export function midpView(container, ctx) {
     });
 
     table.on("tableBuilt", () => {
-      applySavedColumns(table);
+      applySavedColumns(table, config.id);
       applyFilters();
     });
     table.on("dataFiltered", (_filters, rows) => {
@@ -302,7 +325,7 @@ export function midpView(container, ctx) {
   }
 
   function setDocuments(next) {
-    documents = next || [];
+    documents = config.select(next || []);
     activeCount = null;
     docsByKey = new Map(documents.map((d) => [d.key, d]));
     const rows = toRows(documents);
@@ -319,7 +342,7 @@ export function midpView(container, ctx) {
     });
   }
 
-  setPanel(panelOpen);
+  setPanel(vs.panelOpen);
   setDocuments(store.get().documents);
   renderSummary();
 

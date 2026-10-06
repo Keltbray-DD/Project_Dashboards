@@ -52,10 +52,10 @@ try {
   );
 }
 
-function dashboardUrl(project, user) {
-  // External clients still use the v1 read-only page until phase 5.
-  const page = user.isInternal ? "dashboard.html" : "dashboard_client.html";
-  return `${page}?id=${encodeURIComponent(bareProjectId(project.id))}`;
+// One dashboard for everyone — what a user sees (editing, Compliance,
+// client-facing folders only) follows from their role.
+function dashboardUrl(project) {
+  return `dashboard.html?id=${encodeURIComponent(bareProjectId(project.id))}`;
 }
 
 function renderProjects(projects, user) {
@@ -103,7 +103,7 @@ function projectCard(project, user) {
   }
   return h(
     "a",
-    { class: "card project-card", href: dashboardUrl(project, user) },
+    { class: "card project-card", href: dashboardUrl(project) },
     media,
     h(
       "div",

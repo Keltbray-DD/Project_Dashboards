@@ -86,11 +86,14 @@ const DEFAULT_FEATURES = { registers: ["midp"], extraFields: [] };
 export const PROJECT_FEATURES = {
   "76c59b97-feaf-413c-9bd0-43cf8aaa3133": { code: "HI7411", registers: ["midp", "drawingRegister"], extraFields: ["series"] },
   "2e6449f9-ce25-4a9c-8835-444cb5ea03bf": { code: "DT1117", registers: ["midp", "drawingRegister"], extraFields: [] },
-  "7c7ca0c5-bfc3-4ef1-9396-c72c6270f457": { code: "DT1116", registers: ["midp", "drawingRegisterSheaf"], extraFields: [] },
+  "7c7ca0c5-bfc3-4ef1-9396-c72c6270f457": { code: "DT1116", registers: ["midp", "drawingRegister"], extraFields: [] },
 };
 
 export function projectFeatures(projectId) {
-  return { ...DEFAULT_FEATURES, ...(PROJECT_FEATURES[bareProjectId(projectId)] || {}) };
+  const id = bareProjectId(projectId);
+  // dev/mock-api.js declares features for its mock projects here.
+  const dev = globalThis.__DEV_PROJECT_FEATURES__?.[id];
+  return { ...DEFAULT_FEATURES, ...(PROJECT_FEATURES[id] || dev || {}) };
 }
 
 // Project IDs arrive both as "b.<guid>" and as the bare GUID.
