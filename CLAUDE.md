@@ -18,12 +18,18 @@ v2.0.0 was a full rewrite of v1.x; the plan and decisions are in
 ## Running locally
 
 ```bash
-py -m http.server 8000 --bind 127.0.0.1
+py dev/serve.py
 ```
+
+`dev/serve.py` is `http.server` with `Cache-Control: no-store`, so the
+browser never runs stale ES modules after an edit (plain `py -m http.server`
+sends no cache headers and browsers keep modules for a while).
 
 - Real data: `http://localhost:8000/index.html` (Autodesk sign-in).
 - Mock data, no sign-in: `http://localhost:8000/dev/index.html`
-  (`?as=client` / `?as=internal` switches the mock user).
+  (`?as=client` / `?as=internal` switches the mock user; on the dashboard,
+  `?slow=1` simulates a slow metadata load and `?size=N` sets the number of
+  documents).
 - Tests: `npm test` (runs `node --test` over `tests/`; Node 20+).
 
 OAuth redirect URIs registered on the APS app (must match exactly):

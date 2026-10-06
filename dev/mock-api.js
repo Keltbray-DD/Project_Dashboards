@@ -24,6 +24,12 @@
   if (asParam) sessionStorage.setItem("mock_as", asParam);
   const AS_CLIENT = sessionStorage.getItem("mock_as") === "client";
 
+  // ?slow=1 makes metadata loading take a while (like a big live project);
+  // ?size=N sets the number of documents (default 420).
+  const qs = new URLSearchParams(location.search);
+  const SLOW = qs.get("slow") === "1";
+  const DOC_COUNT = Math.max(1, parseInt(qs.get("size") || "420", 10));
+
   // ---------- deterministic generated data ----------
   let seed = 42;
   const rnd = () => ((seed = (seed * 9301 + 49297) % 233280) / 233280);
@@ -42,7 +48,7 @@
   const now = Date.now();
   const iso = (msAgo) => new Date(now - msAgo).toISOString();
 
-  for (let i = 0; i < 420; i++) {
+  for (let i = 0; i < DOC_COUNT; i++) {
     const orig = pick(ORIGINATORS);
     const func = pick(FUNCTIONS);
     const spatial = pick(SPATIAL);
@@ -149,7 +155,7 @@
       return json({ ok: true });
     }
     if (url.includes("versions:batch-get") && method === "POST") {
-      await delay(250 + rnd() * 250);
+      await delay(SLOW ? 2500 + rnd() * 1500 : 250 + rnd() * 250);
       return json({ results: (body.urns || []).map((urn) => ({ urn, customAttributes: attrsFor(urn) })) });
     }
     if (url.includes("/topFolders")) {

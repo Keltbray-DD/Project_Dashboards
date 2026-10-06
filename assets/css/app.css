@@ -440,6 +440,9 @@ dialog.dialog .error-detail { padding: 12px; background: var(--bad-soft); color:
 .midp-body.panel-open:not(.panel-docked) .search-panel { box-shadow: var(--shadow); }
 .table-card { display: flex; flex-direction: column; min-height: 0; overflow: hidden; }
 .table-host { flex: 1; min-height: 0; }
+.load-strip { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--info-soft); color: var(--info); border-bottom: 1px solid var(--border); font-size: 13px; animation: rise-in var(--t) var(--ease); }
+.load-strip > i { animation: spin 1s linear infinite; }
+.load-strip .progress { flex: 0 0 160px; margin-left: auto; height: 6px; background: rgba(36, 86, 166, 0.15); }
 .selection-bar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--navy-soft); border-bottom: 1px solid var(--border); font-size: 13px; }
 .selection-bar strong { color: var(--navy); margin-right: 4px; }
 .selection-bar .btn { height: 28px; }

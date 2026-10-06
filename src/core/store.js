@@ -33,6 +33,8 @@ export function createStore(initial = {}) {
 //   files         file rows (one per file version in the extract)
 //   documents     stacked documents (see data/stacking.js)
 //   attrDefs      Forma custom-attribute definitions (for editors)
+//   metadataProgress { done, total, complete } while attributes stream in
+//   editsVersion  bumped after each successful inline edit
 //   loading       { step, label } | null
 export const store = createStore({
   user: null,
@@ -41,5 +43,6 @@ export const store = createStore({
   files: [],
   documents: [],
   attrDefs: [],
+  metadataProgress: null,
   loading: null,
 });

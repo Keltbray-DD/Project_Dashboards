@@ -31,7 +31,7 @@ export function complianceView(container, ctx) {
   const draw = () => render(root, project, store.get().documents || [], draw);
   draw();
   const unsubscribe = store.subscribe((_s, changed) => {
-    if (changed.includes("documents") || changed.includes("editsVersion")) draw();
+    if (changed.includes("documents") || changed.includes("editsVersion") || changed.includes("metadataProgress")) draw();
   });
   return unsubscribe;
 }

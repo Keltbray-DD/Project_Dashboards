@@ -138,7 +138,10 @@ function renderRegister(container, ctx, config) {
   });
 
   const tableHost = h("div", { class: "table-host" });
-  const body = h("div", { class: "midp-body" }, h("div", { class: "card table-card" }, selectionBar, tableHost), panel.element);
+  const loadText = h("span", {});
+  const loadBar = h("span", {});
+  const loadStrip = h("div", { class: "load-strip", hidden: true, role: "status" }, icon("spinner"), loadText, h("div", { class: "progress" }, loadBar));
+  const body = h("div", { class: "midp-body" }, h("div", { class: "card table-card" }, loadStrip, selectionBar, tableHost), panel.element);
 
   mount(
     container,
@@ -345,8 +348,45 @@ function renderRegister(container, ctx, config) {
     });
   }
 
+  // While metadata streams in, update the rows whose attributes have
+  // arrived in place (keeps expanded rows, selection and scroll). If the
+  // register's membership changes (the Drawing Register depends on
+  // attributes), fall back to a full refresh.
+  let loadedKeys = new Set();
+  function applyProgress(progress) {
+    loadStrip.hidden = !progress || progress.complete;
+    if (progress && !progress.complete) {
+      const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
+      loadText.textContent = progress.total
+        ? `Loading file metadata — ${formatNumber(progress.done)} of ${formatNumber(progress.total)}. Cells fill in as it arrives.`
+        : "Loading file metadata…";
+      loadBar.style.width = `${pct}%`;
+    }
+    if (!table || !progress || progress.complete) return;
+    const next = config.select(store.get().documents || []);
+    const sameMembers = next.length === documents.length && next.every((d, i) => d.key === documents[i].key);
+    if (!sameMembers) {
+      setDocuments(store.get().documents);
+      return;
+    }
+    const updates = [];
+    for (const doc of documents) {
+      if (doc.current.attrs_loaded && !loadedKeys.has(doc.key)) {
+        loadedKeys.add(doc.key);
+        updates.push({ ...doc.current, _key: doc.key, _hasNewerRevision: doc.hasNewerRevision });
+      }
+    }
+    if (updates.length) {
+      table.updateData(updates).then(() => {
+        table.refreshFilter();
+        panel.refresh();
+      });
+    }
+  }
+
   function setDocuments(next) {
     documents = config.select(next || []);
+    loadedKeys = new Set(documents.filter((d) => d.current.attrs_loaded).map((d) => d.key));
     activeCount = null;
     docsByKey = new Map(documents.map((d) => [d.key, d]));
     const rows = toRows(documents);
@@ -354,10 +394,12 @@ function renderRegister(container, ctx, config) {
       buildTable(rows);
       return;
     }
-    // Keep the user's selection across a data refresh.
+    // Keep the user's selection and expanded rows across a data refresh.
     const selected = new Set(table.getSelectedData().map((r) => r._key));
+    const expanded = new Set(table.getRows().filter((r) => r.isTreeExpanded()).map((r) => r.getData()._key));
     table.replaceData(rows).then(() => {
       if (selected.size) table.selectRow(table.getRows().filter((r) => selected.has(r.getData()._key)));
+      for (const r of table.getRows()) if (expanded.has(r.getData()._key)) r.treeExpand();
       applyFilters();
       panel.refresh();
     });
@@ -369,7 +411,9 @@ function renderRegister(container, ctx, config) {
 
   const unsubscribe = store.subscribe((state, changed) => {
     if (changed.includes("documents") && state.documents !== documents) setDocuments(state.documents);
+    if (changed.includes("metadataProgress")) applyProgress(state.metadataProgress);
   });
+  applyProgress(store.get().metadataProgress);
 
   return () => {
     unsubscribe();

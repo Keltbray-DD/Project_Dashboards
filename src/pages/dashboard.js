@@ -139,16 +139,39 @@ async function loadData() {
     startRouter({ routes, fallback: "midp", onChange: showView });
   }
 
-  const { documents, stats } = await enrichProjectFiles({
-    aps,
-    projectId: project.id,
-    extract,
-    files,
-    onProgress: ({ done, total }) => {
-      if (total) shell.setFreshness("loading", `Loading metadata ${formatNumber(done)} / ${formatNumber(total)}`);
-    },
-  });
-  store.set({ files: [...files], documents });
+  // Attributes are written into the rows in place as each batch arrives.
+  // Views are told at most once a second (metadataProgress) so cells fill
+  // in progressively instead of all at once at the very end.
+  let lastPublish = 0;
+  const publish = (p, force = false) => {
+    const now = Date.now();
+    if (!force && now - lastPublish < 1000) return;
+    lastPublish = now;
+    store.set({ metadataProgress: { done: p.done, total: p.total, complete: false } });
+  };
+  publish({ done: 0, total: 0 }, true);
+
+  let documents;
+  let stats;
+  try {
+    ({ documents, stats } = await enrichProjectFiles({
+      aps,
+      projectId: project.id,
+      extract,
+      files,
+      onProgress: (p) => {
+        if (p.total) shell.setFreshness("loading", `Loading metadata ${formatNumber(p.done)} / ${formatNumber(p.total)}`);
+        publish(p, p.done === 0);
+      },
+    }));
+  } catch (err) {
+    // Never leave the table half-loaded: publish whatever arrived.
+    log.error(err);
+    toast("Some metadata couldn't be loaded", err.message, { error: true, timeout: 12000 });
+    documents = stackDocuments(files);
+    stats = { failedChunks: 0 };
+  }
+  store.set({ files: [...files], documents, metadataProgress: { complete: true } });
 
   if (stats.failedChunks) {
     toast(
