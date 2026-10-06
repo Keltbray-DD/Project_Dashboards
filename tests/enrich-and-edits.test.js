@@ -8,9 +8,13 @@ const rowsFor = (n) =>
   Array.from({ length: n }, (_, i) => fromExtractItem({ Name: `f${i}.pdf`, itemIdVersion: `urn:v${i}?version=1` }, "p"));
 
 // Fake APS client: returns results in REVERSED order (with urns) to prove
-// matching is by urn, records concurrency.
-function fakeAps({ failUrn } = {}) {
+// matching is by urn, records concurrency. Options:
+//   failTimes   urn → number of times a batch containing it throws first
+//   unavailable urns Forma reports in `errors`
+//   noUrns      results without urns (position matching)
+function fakeAps({ failTimes = {}, unavailable = [], noUrns = false } = {}) {
   const calls = [];
+  const remaining = { ...failTimes };
   let inFlight = 0;
   let maxInFlight = 0;
   return {
@@ -24,24 +28,39 @@ function fakeAps({ failUrn } = {}) {
       maxInFlight = Math.max(maxInFlight, inFlight);
       await new Promise((r) => setTimeout(r, 5));
       inFlight--;
-      if (failUrn && urns.includes(failUrn)) throw new Error("boom");
-      return urns
-        .map((urn) => ({ urn, customAttributes: [{ name: "Revision", value: "R-" + urn }] }))
-        .reverse();
+      const failing = urns.find((u) => remaining[u] > 0);
+      if (failing) {
+        remaining[failing]--;
+        throw Object.assign(new Error("boom"), { status: 503 });
+      }
+      const ok = urns.filter((u) => !unavailable.includes(u));
+      const results = ok.map((urn) => ({ ...(noUrns ? {} : { urn }), customAttributes: [{ name: "Revision", value: "R-" + urn }] }));
+      return {
+        results: noUrns ? results : results.reverse(),
+        errors: urns.filter((u) => unavailable.includes(u)).map((urn) => ({ urn, title: "Not found" })),
+      };
     },
   };
 }
 
-test("enrichRows chunks, runs concurrently, and matches results by urn", async () => {
+const opts = (aps, extra = {}) => ({ aps, projectId: "p", retryPauseMs: 1, ...extra });
+
+test("enrichRows batches, runs concurrently, and matches results by urn", async () => {
   const rows = rowsFor(25);
   const aps = fakeAps();
   const progress = [];
-  const stats = await enrichRows(rows, { aps, projectId: "p", chunkSize: 4, concurrency: 3, onProgress: (p) => progress.push(p) });
+  const stats = await enrichRows(rows, opts(aps, { chunkSize: 4, concurrency: 3, onProgress: (p) => progress.push(p) }));
   assert.equal(aps.calls.length, 7);
   assert.ok(aps.maxInFlight <= 3 && aps.maxInFlight > 1);
-  assert.ok(rows.every((r) => r.revision === "R-" + r.id && r.attrs_loaded));
-  assert.deepEqual(stats, { total: 25, fetched: 25, cached: 0, failedChunks: 0 });
+  assert.ok(rows.every((r) => r.revision === "R-" + r.id && r.attrs_loaded && !r.attrs_error));
+  assert.deepEqual(stats, { total: 25, fetched: 25, cached: 0, failed: 0, unavailable: 0 });
   assert.deepEqual(progress.at(-1), { done: 25, total: 25, cached: 0 });
+});
+
+test("enrichRows defaults to batches of 50", async () => {
+  const aps = fakeAps();
+  await enrichRows(rowsFor(120), opts(aps));
+  assert.deepEqual(aps.calls.map((c) => c.length).sort((a, b) => b - a), [50, 50, 20]);
 });
 
 test("enrichRows uses the cache and only fetches the misses", async () => {
@@ -52,7 +71,7 @@ test("enrichRows uses the cache and only fetches the misses", async () => {
     save: (s) => (saved = s),
   };
   const aps = fakeAps();
-  const stats = await enrichRows(rows, { aps, projectId: "p", cache });
+  const stats = await enrichRows(rows, opts(aps, { cache }));
   assert.equal(stats.cached, 2);
   assert.equal(stats.fetched, 3);
   assert.deepEqual(aps.calls.flat().sort(), ["urn:v2?version=1", "urn:v3?version=1", "urn:v4?version=1"]);
@@ -60,12 +79,58 @@ test("enrichRows uses the cache and only fetches the misses", async () => {
   assert.equal(Object.keys(saved).length, 5);
 });
 
-test("enrichRows survives a failing chunk and reports it", async () => {
+test("a batch that fails once is recovered by the retry pass", async () => {
   const rows = rowsFor(6);
-  const stats = await enrichRows(rows, { aps: fakeAps({ failUrn: "urn:v0?version=1" }), projectId: "p", chunkSize: 3 });
-  assert.equal(stats.failedChunks, 1);
+  const aps = fakeAps({ failTimes: { "urn:v0?version=1": 1 } });
+  const stats = await enrichRows(rows, opts(aps, { chunkSize: 3 }));
+  assert.equal(stats.failed, 0);
+  assert.ok(rows.every((r) => r.attrs_loaded && !r.attrs_error));
+});
+
+test("a batch that keeps failing is reported and its rows marked attrs_error", async () => {
+  const rows = rowsFor(6);
+  const aps = fakeAps({ failTimes: { "urn:v0?version=1": 99 } });
+  const stats = await enrichRows(rows, opts(aps, { chunkSize: 3 }));
+  // The retry pass uses smaller batches, so only the batch holding v0 fails.
+  assert.ok(stats.failed >= 1 && stats.failed <= 3);
   assert.equal(rows[0].attrs_loaded, false);
+  assert.equal(rows[0].attrs_error, true);
   assert.equal(rows[5].attrs_loaded, true);
+});
+
+test("a full outage is reported straight away, without a second pass", async () => {
+  const rows = rowsFor(10);
+  const failTimes = Object.fromEntries(rows.map((r) => [r.id, 99]));
+  const aps = fakeAps({ failTimes });
+  const stats = await enrichRows(rows, opts(aps, { chunkSize: 5 }));
+  assert.equal(stats.failed, 10);
+  assert.equal(aps.calls.length, 2); // first pass only
+  assert.ok(rows.every((r) => r.attrs_error));
+});
+
+test("files Forma reports as unavailable are flagged, not retried or misaligned", async () => {
+  const rows = rowsFor(4);
+  const aps = fakeAps({ unavailable: ["urn:v1?version=1"] });
+  const stats = await enrichRows(rows, opts(aps));
+  assert.deepEqual([stats.failed, stats.unavailable], [0, 1]);
+  assert.equal(aps.calls.length, 1); // no retry for unavailable files
+  assert.equal(rows[1].attrs_error, true);
+  assert.equal(rows[2].revision, "R-urn:v2?version=1"); // others still matched correctly
+});
+
+test("without urns in the response, position is only trusted when it lines up", async () => {
+  const rows = rowsFor(3);
+  await enrichRows(rows, opts(fakeAps({ noUrns: true })));
+  assert.equal(rows[2].revision, "R-urn:v2?version=1");
+
+  // A missing file shortens the results, so the first pass can't match by
+  // position; the retry pass asks for just the unmatched files, where the
+  // positions do line up — and every row ends up with its own values.
+  const rows2 = rowsFor(3);
+  const stats = await enrichRows(rows2, opts(fakeAps({ noUrns: true, unavailable: ["urn:v0?version=1"] })));
+  assert.deepEqual([stats.failed, stats.unavailable], [0, 1]);
+  assert.equal(rows2[1].revision, "R-urn:v1?version=1");
+  assert.equal(rows2[2].revision, "R-urn:v2?version=1");
 });
 
 function memoryStorage() {

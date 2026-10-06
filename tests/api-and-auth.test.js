@@ -31,6 +31,26 @@ test("request throws HttpError with status and body on failure", async () => {
   await assert.rejects(request("u", { fetch }), (e) => e instanceof HttpError && e.status === 403 && e.body.detail === "nope");
 });
 
+test("request times out a hung call, retries, then throws status 0", async () => {
+  let calls = 0;
+  const fetch = (url, init) => {
+    calls++;
+    return new Promise((_, reject) => init.signal.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" }))));
+  };
+  await assert.rejects(request("u", { fetch, timeoutMs: 5, retries: 2, retryDelayMs: 1 }), (e) => e instanceof HttpError && e.status === 0 && /timed out/.test(e.body.error));
+  assert.equal(calls, 3);
+});
+
+test("request recovers when a timed-out call succeeds on retry", async () => {
+  let calls = 0;
+  const fetch = (url, init) => {
+    calls++;
+    if (calls === 1) return new Promise((_, reject) => init.signal.addEventListener("abort", () => reject(Object.assign(new Error("aborted"), { name: "AbortError" }))));
+    return Promise.resolve(jsonResponse(200, { ok: true }));
+  };
+  assert.deepEqual(await request("u", { fetch, timeoutMs: 5, retryDelayMs: 1 }), { ok: true });
+});
+
 test("aps.walkFolder follows pagination and recurses with folder paths", async () => {
   const pages = {
     "/folders/root/contents?includeHidden=false": {

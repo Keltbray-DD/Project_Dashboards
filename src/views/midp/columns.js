@@ -48,19 +48,22 @@ export function missing(level = "bad") {
 }
 
 const loadingDots = () => h("span", { class: "muted" }, "…");
+const notLoaded = () => h("span", { class: "muted", title: "Couldn't load this file's metadata from Forma — use Retry above the table" }, "—");
+// Placeholder for a blank attribute cell that hasn't been filled in yet.
+const placeholder = (row) => (row.attrs_error ? notLoaded() : loadingDots());
 
 function text(level) {
   return (cell) => {
     const v = cell.getValue();
     if (!isBlank(v)) return document.createTextNode(String(v));
-    return pending(cell.getRow().getData()) ? loadingDots() : missing(level);
+    return pending(cell.getRow().getData()) ? placeholder(cell.getRow().getData()) : missing(level);
   };
 }
 
 function revision(cell) {
   const v = cell.getValue();
   const row = cell.getRow().getData();
-  if (isBlank(v)) return pending(row) ? loadingDots() : missing("bad");
+  if (isBlank(v)) return pending(row) ? placeholder(row) : missing("bad");
   if (ISO_REVISION_PATTERN.test(v)) return document.createTextNode(v);
   const rank = folderRank(row.folder_path);
   const reason =
@@ -78,7 +81,7 @@ function description(cell) {
 
 function status(cell) {
   const v = cell.getValue();
-  if (isBlank(v)) return pending(cell.getRow().getData()) ? loadingDots() : missing("bad");
+  if (isBlank(v)) return pending(cell.getRow().getData()) ? placeholder(cell.getRow().getData()) : missing("bad");
   return h("span", { class: `pill ${/^A/i.test(v) ? "ok" : "info"}` }, v);
 }
 

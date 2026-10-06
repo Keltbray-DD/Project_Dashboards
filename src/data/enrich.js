@@ -1,16 +1,24 @@
 // Fills file rows' custom attributes (revision, status, title lines, …)
-// from Forma's versions:batch-get, in chunks, with a session cache.
+// from Forma's versions:batch-get, in batches, with a session cache.
 //
-// Changes from v1 (enrichFilesWithCustomAttributes):
-//   • A pool of workers pulls chunks continuously instead of
-//     fixed waves, so one slow chunk doesn't stall the rest.
-//   • Results are matched by their `urn`, falling back to position — v1
-//     relied on position only, which misaligned when Forma dropped an
-//     unknown URN from a chunk.
-//   • Row lookup is O(1) via a map (v1 did files.find per result).
-//   • The cache is keyed by the extract timestamp, so values refresh
-//     every time Power Automate publishes a new extract instead of
-//     sticking for the whole browser session.
+// Reliability measures:
+//   • Batches of 50 — the documented maximum for versions:batch-get.
+//     (v1 sent 200; that mostly works but gets throttled under load.)
+//   • Every request has a timeout (api/http.js), so a hung request can't
+//     stall loading; 429 / 5xx / timeouts back off and retry.
+//   • Batches that still fail (after the HTTP layer's own retries) get one
+//     more, gentler pass — fewer in flight, one quick retry each — unless
+//     every file failed, which means Forma is down: then report at once
+//     rather than make the user wait through another round of back-offs.
+//   • Results are matched to rows by their urn. Files Forma reports as
+//     unavailable (deleted, no permission) are marked attrs_error rather
+//     than left looking "still loading" forever. Position is only used as
+//     a fallback when a response carries no urns and has one result per
+//     requested file.
+//   • The cache is saved at most every 2 s (and at the end) — saving it
+//     after every batch re-serialised the whole thing each time.
+//   • The cache is keyed by the extract timestamp, so values refresh when
+//     Power Automate publishes a new extract.
 //
 // Rows are updated in place (applyAttributes) — callers re-publish the
 // array to the store afterwards to trigger re-renders.
@@ -19,10 +27,13 @@ import { bareProjectId } from "../core/config.js";
 import { log } from "../core/log.js";
 import { applyAttributes, attributesFromResult } from "./fileRows.js";
 
-// 200 works in practice (docs say 50; the endpoint is more permissive).
-// 4 in flight stays well under the ~300 req/min APS limit.
-const CHUNK_SIZE = 200;
-const CONCURRENCY = 4;
+const CHUNK_SIZE = 50;
+const CONCURRENCY = 6;
+const RETRY_CONCURRENCY = 3;
+const RETRY_PAUSE_MS = 1500;
+const SAVE_EVERY_MS = 2000;
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // Session cache of { versionUrn: { attrName: value } } for one project +
 // extract. Older extracts' caches for the same project are discarded.
@@ -65,9 +76,12 @@ export function sessionAttributeCache(projectId, extractUpdated) {
 //   aps          createAps() client
 //   projectId
 //   cache        { load(), save(obj) } — defaults to no persistence
-//   onProgress   ({ done, total, cached }) after each chunk
-//   chunkSize, concurrency
-// Returns { total, fetched, cached, failedChunks }.
+//   onProgress   ({ done, total, cached }) as batches complete
+//   chunkSize, concurrency, retryPauseMs
+// Returns { total, fetched, cached, failed, unavailable }:
+//   failed       files whose attributes couldn't be fetched (network /
+//                server errors after retries) — worth retrying later
+//   unavailable  files Forma reported it can't return (deleted, no access)
 export async function enrichRows(rows, options) {
   const {
     aps,
@@ -76,6 +90,7 @@ export async function enrichRows(rows, options) {
     onProgress = () => {},
     chunkSize = CHUNK_SIZE,
     concurrency = CONCURRENCY,
+    retryPauseMs = RETRY_PAUSE_MS,
   } = options;
 
   const byUrn = new Map();
@@ -89,42 +104,104 @@ export async function enrichRows(rows, options) {
   let cached = 0;
   for (const [urn, list] of byUrn) {
     if (store[urn]) {
-      for (const row of list) applyAttributes(row, store[urn]);
+      for (const row of list) {
+        applyAttributes(row, store[urn]);
+        delete row.attrs_error;
+      }
       cached++;
     }
   }
 
   const pending = [...byUrn.keys()].filter((urn) => !store[urn]);
-  const chunks = [];
-  for (let i = 0; i < pending.length; i += chunkSize) chunks.push(pending.slice(i, i + chunkSize));
-
   let done = 0;
-  let failedChunks = 0;
+  const unavailable = new Set();
   onProgress({ done, total: pending.length, cached });
 
-  let next = 0;
-  const worker = async () => {
-    while (next < chunks.length) {
-      const chunk = chunks[next++];
-      let results = [];
-      try {
-        results = await aps.batchGetVersions(projectId, chunk);
-      } catch (e) {
-        failedChunks++;
-        log.warn(`versions:batch-get failed for ${chunk.length} files`, e);
-      }
-      results.forEach((result, i) => {
-        const urn = result?.urn && byUrn.has(result.urn) ? result.urn : chunk[i];
-        const attrs = attributesFromResult(result);
-        store[urn] = attrs;
-        for (const row of byUrn.get(urn) || []) applyAttributes(row, attrs);
-      });
-      done += chunk.length;
-      cache.save(store);
-      onProgress({ done, total: pending.length, cached });
+  let lastSave = 0;
+  const maybeSave = (force = false) => {
+    const now = Date.now();
+    if (!force && now - lastSave < SAVE_EVERY_MS) return;
+    lastSave = now;
+    cache.save(store);
+  };
+
+  const applyResult = (urn, result) => {
+    const attrs = attributesFromResult(result);
+    store[urn] = attrs;
+    for (const row of byUrn.get(urn) || []) {
+      applyAttributes(row, attrs);
+      delete row.attrs_error;
     }
   };
-  await Promise.all(Array.from({ length: Math.min(concurrency, chunks.length) }, worker));
 
-  return { total: byUrn.size, fetched: pending.length, cached, failedChunks };
+  // Fetches one batch. Returns the urns that should be retried.
+  const fetchBatch = async (batch, retries) => {
+    let response;
+    try {
+      response = await aps.batchGetVersions(projectId, batch, retries === undefined ? {} : { retries });
+    } catch (e) {
+      log.warn(`versions:batch-get failed for ${batch.length} files (${e.status || e.name})`, e);
+      return batch;
+    }
+    const { results = [], errors = [] } = response || {};
+    const matched = new Set();
+    const anyUrns = results.some((r) => r?.urn);
+    if (anyUrns) {
+      for (const result of results) {
+        if (result?.urn && byUrn.has(result.urn)) {
+          applyResult(result.urn, result);
+          matched.add(result.urn);
+        }
+      }
+    } else if (results.length === batch.length) {
+      // No urns in the response: only trust position when it lines up 1:1.
+      results.forEach((result, i) => {
+        applyResult(batch[i], result);
+        matched.add(batch[i]);
+      });
+    }
+    // Forma lists files it can't return in `errors` (deleted, no access).
+    for (const err of errors) {
+      const urn = err?.urn;
+      if (urn && byUrn.has(urn) && !matched.has(urn)) {
+        unavailable.add(urn);
+        matched.add(urn);
+        for (const row of byUrn.get(urn)) row.attrs_error = true;
+      }
+    }
+    // Anything neither returned nor reported gets retried.
+    return batch.filter((urn) => !matched.has(urn));
+  };
+
+  const runPass = async (urns, size, workers, retries) => {
+    const batches = [];
+    for (let i = 0; i < urns.length; i += size) batches.push(urns.slice(i, i + size));
+    const leftovers = [];
+    let next = 0;
+    const worker = async () => {
+      while (next < batches.length) {
+        const batch = batches[next++];
+        const retry = await fetchBatch(batch, retries);
+        leftovers.push(...retry);
+        done += batch.length - retry.length;
+        maybeSave();
+        onProgress({ done, total: pending.length, cached });
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(workers, batches.length) }, worker));
+    return leftovers;
+  };
+
+  let failed = await runPass(pending, chunkSize, concurrency);
+  const outage = failed.length > 0 && failed.length === pending.length;
+  if (failed.length && !outage) {
+    log.warn(`Retrying metadata for ${failed.length} files`);
+    await sleep(retryPauseMs);
+    failed = await runPass(failed, chunkSize, RETRY_CONCURRENCY, 1);
+  }
+  for (const urn of failed) for (const row of byUrn.get(urn) || []) row.attrs_error = true;
+  maybeSave(true);
+  onProgress({ done: pending.length, total: pending.length, cached });
+
+  return { total: byUrn.size, fetched: pending.length, cached, failed: failed.length, unavailable: unavailable.size };
 }

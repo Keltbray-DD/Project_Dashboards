@@ -28,8 +28,10 @@ sends no cache headers and browsers keep modules for a while).
 - Real data: `http://localhost:8000/index.html` (Autodesk sign-in).
 - Mock data, no sign-in: `http://localhost:8000/dev/index.html`
   (`?as=client` / `?as=internal` switches the mock user; on the dashboard,
-  `?slow=1` simulates a slow metadata load and `?size=N` sets the number of
-  documents).
+  `?slow=1` simulates a slow metadata load, `?size=N` sets the number of
+  documents, `?flaky=1` makes Forma randomly throttle / error / hang and
+  report ~1% of files unavailable, and `?down=1` fails every metadata
+  request until `__MOCK__.down = false` — for testing Retry).
 - Tests: `npm test` (runs `node --test` over `tests/`; Node 20+).
 
 OAuth redirect URIs registered on the APS app (must match exactly):
@@ -80,8 +82,12 @@ user's **own token**, so ACC enforces what they can read and edit.
 4. **Rows** — `data/fileRows.js` builds one row shape (one per file
    version) from every source.
 5. **Attributes** — `data/enrich.js` fills custom attributes via
-   `versions:batch-get` (chunks of 200, 4 workers, matched by URN),
-   cached in `sessionStorage` per project + extract timestamp.
+   `versions:batch-get` (batches of 50, 6 workers, matched by URN; 30 s
+   request timeout with back-off; one gentler retry pass; files Forma
+   reports unavailable are flagged `attrs_error`), cached in
+   `sessionStorage` per project + extract timestamp. Views fill cells in
+   progressively (`metadataProgress`); a warning strip with Retry shows if
+   anything still failed.
 6. **Pending edits** — `data/pendingEdits.js` overlays successful edits
    newer than the extract (`localStorage[pendingEdits_<projectId>]`,
    7-day max age).

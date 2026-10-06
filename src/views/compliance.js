@@ -28,7 +28,7 @@ export function complianceView(container, ctx) {
   const root = h("div", {});
   mount(container, root);
 
-  const draw = () => render(root, project, store.get().documents || [], draw);
+  const draw = () => render(root, ctx, store.get().documents || [], draw);
   draw();
   const unsubscribe = store.subscribe((_s, changed) => {
     if (changed.includes("documents") || changed.includes("editsVersion") || changed.includes("metadataProgress")) draw();
@@ -36,7 +36,8 @@ export function complianceView(container, ctx) {
   return unsubscribe;
 }
 
-function render(root, project, documents, redraw) {
+function render(root, ctx, documents, redraw) {
+  const { project } = ctx;
   const ev = evaluate(documents, { scope });
   const { totals } = ev;
 
@@ -85,9 +86,14 @@ function render(root, project, documents, redraw) {
     )
   );
 
+  const progress = store.get().metadataProgress;
   const notice =
     ev.pending > 0 &&
-    h("div", { class: "notice" }, icon("hourglass-half"), `${formatNumber(ev.pending)} document${ev.pending === 1 ? "" : "s"} still loading metadata — not counted yet.`);
+    (progress?.complete
+      ? h("div", { class: "notice warn" }, icon("triangle-exclamation"),
+          `${formatNumber(ev.pending)} document${ev.pending === 1 ? "" : "s"} couldn't be checked — their metadata didn't load from Forma.`,
+          progress.failed > 0 && h("button", { class: "link-btn", type: "button", onclick: () => ctx.retryMetadata?.() }, "Retry"))
+      : h("div", { class: "notice" }, icon("hourglass-half"), `${formatNumber(ev.pending)} document${ev.pending === 1 ? "" : "s"} still loading metadata — not counted yet.`));
 
   if (!totals.documents) {
     mount(root, head, notice, h("div", { class: "card card-pad muted" }, ev.pending ? "Waiting for metadata…" : "No documents in this scope."));

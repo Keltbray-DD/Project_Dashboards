@@ -87,7 +87,7 @@ async function start() {
     }))
   );
 
-  ctx = { aps, user, project, routes };
+  ctx = { aps, user, project, routes, retryMetadata: () => retryMetadata() };
 
   // Red count of documents with gaps on the Compliance nav item, kept
   // current as metadata loads and edits are made.
@@ -139,6 +139,14 @@ async function loadData() {
     startRouter({ routes, fallback: "midp", onChange: showView });
   }
 
+  await enrichMetadata(extract, files);
+}
+
+// Fills custom attributes for the loaded files. Also run on its own by the
+// "Retry" button when some files' metadata didn't load: the session cache
+// already holds everything that did, so only the missing files are fetched.
+async function enrichMetadata(extract, files) {
+  const { aps, project } = ctx;
   // Attributes are written into the rows in place as each batch arrives.
   // Views are told at most once a second (metadataProgress) so cells fill
   // in progressively instead of all at once at the very end.
@@ -150,9 +158,10 @@ async function loadData() {
     store.set({ metadataProgress: { done: p.done, total: p.total, complete: false } });
   };
   publish({ done: 0, total: 0 }, true);
+  shell.setFreshness("loading", "Loading metadata…");
 
   let documents;
-  let stats;
+  let stats = { failed: 0, unavailable: 0 };
   try {
     ({ documents, stats } = await enrichProjectFiles({
       aps,
@@ -169,18 +178,28 @@ async function loadData() {
     log.error(err);
     toast("Some metadata couldn't be loaded", err.message, { error: true, timeout: 12000 });
     documents = stackDocuments(files);
-    stats = { failedChunks: 0 };
   }
-  store.set({ files: [...files], documents, metadataProgress: { complete: true } });
-
-  if (stats.failedChunks) {
-    toast(
-      "Some metadata couldn't be loaded",
-      `${stats.failedChunks} batch(es) of file attributes failed. If this keeps happening, the dashboard app may need enabling in your ACC account.`,
-      { error: true, timeout: 12000 }
-    );
-  }
+  store.set({
+    files: [...files],
+    documents,
+    metadataProgress: { complete: true, failed: stats.failed, unavailable: stats.unavailable },
+  });
+  if (stats.failed || stats.unavailable) log.warn("Metadata load incomplete", stats);
   shell.setFreshness("ready", freshnessText(extract.updated));
+}
+
+// Re-fetches only the files whose metadata is missing.
+async function retryMetadata() {
+  if (!ctx || loading) return;
+  const { extract, files } = store.get();
+  if (!extract) return;
+  loading = true;
+  try {
+    for (const f of files) delete f.attrs_error;
+    await enrichMetadata(extract, files);
+  } finally {
+    loading = false;
+  }
 }
 
 function freshnessText(updated) {

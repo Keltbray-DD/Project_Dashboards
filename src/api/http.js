@@ -1,5 +1,6 @@
-// Shared fetch wrapper: bearer auth, JSON in/out, typed errors, and
-// automatic back-off on HTTP 429 (APS rate limit) and transient 5xx.
+// Shared fetch wrapper: bearer auth, JSON in/out, typed errors, a
+// per-attempt timeout, and automatic back-off on HTTP 429 (APS rate
+// limit), transient 5xx and timeouts / network drops.
 // v1 swallowed errors into console.error and returned undefined, which
 // surfaced later as "cannot read property of undefined".
 
@@ -13,13 +14,14 @@ export class HttpError extends Error {
   }
 }
 
-const RETRYABLE = new Set([429, 502, 503, 504]);
+const RETRYABLE = new Set([429, 500, 502, 503, 504]);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // options:
 //   method, headers, json (body to JSON-encode), body (raw), token
 //   (bearer string), retries (default 3), fetch (injectable for tests),
-//   retryDelayMs (base back-off, default 1000)
+//   retryDelayMs (base back-off, default 1000), timeoutMs (per attempt,
+//   default 30000; 0 disables)
 export async function request(url, options = {}) {
   const {
     method = "GET",
@@ -30,6 +32,7 @@ export async function request(url, options = {}) {
     retries = 3,
     fetch: fetchImpl = globalThis.fetch,
     retryDelayMs = 1000,
+    timeoutMs = 30000,
   } = options;
 
   const finalHeaders = { ...headers };
@@ -37,11 +40,26 @@ export async function request(url, options = {}) {
   if (json !== undefined) finalHeaders["Content-Type"] = "application/json";
 
   for (let attempt = 0; ; attempt++) {
-    const response = await fetchImpl(url, {
-      method,
-      headers: finalHeaders,
-      body: json !== undefined ? JSON.stringify(json) : body,
-    });
+    const controller = timeoutMs ? new AbortController() : null;
+    const timer = controller && setTimeout(() => controller.abort(), timeoutMs);
+    let response;
+    try {
+      response = await fetchImpl(url, {
+        method,
+        headers: finalHeaders,
+        body: json !== undefined ? JSON.stringify(json) : body,
+        signal: controller?.signal,
+      });
+    } catch (e) {
+      // Timeout or network drop: retry with back-off, then give up.
+      if (attempt < retries) {
+        await sleep(retryDelayMs * 2 ** attempt);
+        continue;
+      }
+      throw new HttpError(0, url, { error: e?.name === "AbortError" ? "Request timed out" : String(e?.message || e) });
+    } finally {
+      if (timer) clearTimeout(timer);
+    }
 
     if (response.ok) {
       if (response.status === 204) return null;

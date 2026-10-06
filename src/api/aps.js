@@ -83,11 +83,13 @@ export function createAps({ getToken, fetch: fetchImpl = globalThis.fetch, retry
       return data;
     },
 
-    // Custom attribute values for up to 200 version URNs. Returns the
-    // results array ([{ urn, customAttributes: [{ name, value }] }]).
-    async batchGetVersions(projectId, urns) {
-      const res = await call(`${docs(projectId)}/versions:batch-get`, { method: "POST", json: { urns } });
-      return res?.results || [];
+    // Custom attribute values for up to 50 version URNs. Returns
+    //   { results: [{ urn, customAttributes: [{ name, value }] }],
+    //     errors:  [{ urn, … }] }   — files Forma couldn't return
+    // options.retries overrides the default HTTP retry count.
+    async batchGetVersions(projectId, urns, { retries } = {}) {
+      const res = await call(`${docs(projectId)}/versions:batch-get`, { method: "POST", json: { urns }, ...(retries !== undefined ? { retries } : {}) });
+      return { results: res?.results || [], errors: res?.errors || [] };
     },
 
     // Attribute definitions for a folder: [{ id, name, type, arrayValues }]

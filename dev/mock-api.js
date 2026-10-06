@@ -29,6 +29,12 @@
   const qs = new URLSearchParams(location.search);
   const SLOW = qs.get("slow") === "1";
   const DOC_COUNT = Math.max(1, parseInt(qs.get("size") || "420", 10));
+  // ?flaky=1: batch-get randomly throttles (429), errors (500) or hangs,
+  // and ~1% of files are reported unavailable (deleted / no access).
+  const FLAKY = qs.get("flaky") === "1";
+  // ?hang=ms shortens how long a hung request waits (default: until the
+  // app's own timeout aborts it).
+  const flakyStats = { calls: 0, throttled: 0, errored: 0, hung: 0 };
 
   // ---------- deterministic generated data ----------
   let seed = 42;
@@ -156,7 +162,27 @@
     }
     if (url.includes("versions:batch-get") && method === "POST") {
       await delay(SLOW ? 2500 + rnd() * 1500 : 250 + rnd() * 250);
-      return json({ results: (body.urns || []).map((urn) => ({ urn, customAttributes: attrsFor(urn) })) });
+      // ?down=1 (or __MOCK__.down = true in the console): every batch fails,
+      // to test the "couldn't load — Retry" path. Set it false, then Retry.
+      if (window.__MOCK__.down) return json({ message: "Service unavailable" }, 503);
+      if (FLAKY) {
+        flakyStats.calls++;
+        const r = Math.random();
+        if (r < 0.05) {
+          // Hang until the app aborts the request.
+          flakyStats.hung++;
+          return new Promise((_, reject) => init?.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError"))));
+        }
+        if (r < 0.25) { flakyStats.throttled++; return new Response("{}", { status: 429, headers: { "Retry-After": "1" } }); }
+        if (r < 0.35) { flakyStats.errored++; return json({ message: "Internal error" }, 500); }
+      }
+      // ~1% of files, chosen by their number so it's stable across calls.
+      const unavailable = (urn) => FLAKY && parseInt(urn.replace(/\D/g, "").slice(-4), 10) % 97 === 0;
+      const urns = body.urns || [];
+      return json({
+        results: urns.filter((u) => !unavailable(u)).map((urn) => ({ urn, customAttributes: attrsFor(urn) })),
+        errors: urns.filter(unavailable).map((urn) => ({ urn, title: "Not found" })),
+      });
     }
     if (url.includes("/topFolders")) {
       return json({ data: [{ id: "urn:adsk.wipemea:fs.folder:co.ProjectFiles", attributes: { name: "Project Files" } }] });
@@ -208,7 +234,7 @@
     return handle(url, init);
   };
 
-  window.__MOCK__ = { files, attrs, PROJECTS };
+  window.__MOCK__ = { files, attrs, PROJECTS, flakyStats, down: qs.get("down") === "1" };
   window.__DEV_PROJECT_FEATURES__ = { "mock-project-0001": { code: "EX0001", registers: ["midp", "drawingRegister"], extraFields: [] } };
   console.info(`[mock-api] active — ${files.length} file versions across ${new Set(files.map((f) => f.Name)).size} documents`);
 })();

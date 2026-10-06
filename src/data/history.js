@@ -34,12 +34,13 @@ export async function documentHistory(doc, options) {
     for (const v of versionLists[i] || []) rows.push(fromVersion(v, owner, projectId));
   });
 
-  for (let i = 0; i < rows.length; i += 200) {
-    const chunk = rows.slice(i, i + 200);
-    const results = await aps.batchGetVersions(projectId, chunk.map((r) => r.id));
+  for (let i = 0; i < rows.length; i += 50) {
+    const chunk = rows.slice(i, i + 50);
+    const { results } = await aps.batchGetVersions(projectId, chunk.map((r) => r.id));
     const byUrn = new Map(chunk.map((r) => [r.id, r]));
+    const anyUrns = results.some((r) => r?.urn);
     results.forEach((result, j) => {
-      const row = (result?.urn && byUrn.get(result.urn)) || chunk[j];
+      const row = anyUrns ? byUrn.get(result?.urn) : results.length === chunk.length ? chunk[j] : null;
       if (row) applyAttributes(row, attributesFromResult(result));
     });
   }

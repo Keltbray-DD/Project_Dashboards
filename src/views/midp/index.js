@@ -140,7 +140,11 @@ function renderRegister(container, ctx, config) {
   const tableHost = h("div", { class: "table-host" });
   const loadText = h("span", {});
   const loadBar = h("span", {});
-  const loadStrip = h("div", { class: "load-strip", hidden: true, role: "status" }, icon("spinner"), loadText, h("div", { class: "progress" }, loadBar));
+  const loadIcon = h("span", { class: "load-icon" });
+  const retryBtn = h("button", { class: "btn", type: "button", hidden: true }, icon("rotate"), "Retry");
+  retryBtn.addEventListener("click", () => ctx.retryMetadata?.());
+  const loadProgress = h("div", { class: "progress" }, loadBar);
+  const loadStrip = h("div", { class: "load-strip", hidden: true, role: "status" }, loadIcon, loadText, loadProgress, retryBtn);
   const body = h("div", { class: "midp-body" }, h("div", { class: "card table-card" }, loadStrip, selectionBar, tableHost), panel.element);
 
   mount(
@@ -354,7 +358,18 @@ function renderRegister(container, ctx, config) {
   // attributes), fall back to a full refresh.
   let loadedKeys = new Set();
   function applyProgress(progress) {
-    loadStrip.hidden = !progress || progress.complete;
+    const problems = progress?.complete && (progress.failed || progress.unavailable);
+    loadStrip.hidden = !progress || (progress.complete && !problems);
+    loadStrip.classList.toggle("warn", !!problems);
+    loadProgress.hidden = !!progress?.complete;
+    retryBtn.hidden = !(progress?.complete && progress.failed);
+    mount(loadIcon, icon(problems ? "triangle-exclamation" : "spinner"));
+    if (problems) {
+      const parts = [];
+      if (progress.failed) parts.push(`Metadata couldn't be loaded for ${formatNumber(progress.failed)} file${progress.failed === 1 ? "" : "s"} (Forma didn't respond or returned errors) — they show "—".`);
+      if (progress.unavailable) parts.push(`${formatNumber(progress.unavailable)} file${progress.unavailable === 1 ? " is" : "s are"} no longer available in Forma or not shared with you.`);
+      loadText.textContent = parts.join(" ");
+    }
     if (progress && !progress.complete) {
       const pct = progress.total ? Math.round((progress.done / progress.total) * 100) : 0;
       loadText.textContent = progress.total
