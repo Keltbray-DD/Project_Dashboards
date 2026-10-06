@@ -115,3 +115,12 @@ ported, and are deleted in phase 6.
   (now isolated in `auth/pkce.js`); revisit moving to `sessionStorage`.
 - **Power Automate flows are still unauthenticated** (project list,
   extract, feedback). Needs flow-side validation of the user's token.
+- **Stale modules after a deploy** — browsers cache ES modules (GitHub
+  Pages sends a 10-minute max-age), so right after a release a user can
+  get a mix of old and new files. Phase 6: version the entry module URL
+  per release and keep imports relative, or add a tiny loader that
+  appends `?v=<APP_VERSION>`.
+- **Compliance: naming-standard checks** are skipped when no document in
+  the project has that field filled in (treated as "not used by this
+  project's naming standard") rather than reading the naming standard
+  definition from Forma.
