@@ -436,8 +436,6 @@ dialog.dialog .error-detail { padding: 12px; background: var(--bad-soft); color:
 .tabulator .tabulator-header .tabulator-col .tabulator-col-content { padding: 8px 10px; }
 .tabulator .tabulator-header .tabulator-col .tabulator-col-title { font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; }
 .tabulator .tabulator-header .tabulator-col.tabulator-sortable:hover { background: var(--bg); }
-.tabulator .tabulator-header-filter input,
-.tabulator .tabulator-header-filter select { height: 26px; border: 1px solid var(--border) !important; border-radius: var(--radius); padding: 0 6px !important; font-size: 12px; text-transform: none; letter-spacing: 0; }
 .tabulator .tabulator-tableholder .tabulator-table { background: var(--surface); }
 .tabulator-row { border-bottom: 1px solid var(--border); min-height: var(--row-h); }
 .tabulator-row.tabulator-row-even { background: var(--surface); }

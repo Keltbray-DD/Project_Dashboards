@@ -194,7 +194,7 @@ function renderRegister(container, ctx, config) {
 
   function renderSummary() {
     countText.textContent = `${resultText()} · ${config.description}`;
-    const n = activeFilterCount(filterState) + (table ? table.getHeaderFilters().length : 0);
+    const n = activeFilterCount(filterState);
     mount(filtersBtn, icon("filter"), "Filters", n > 0 && h("span", { class: "badge" }, String(n)));
     filtersBtn.classList.toggle("active", n > 0 || vs.panelOpen);
     renderChips();
@@ -223,16 +223,13 @@ function renderRegister(container, ctx, config) {
       const names = [...values].map((v) => (v === BLANK ? "(Blank)" : v));
       list.push(chip(labelOf(field), names.length <= 3 ? names.join(", ") : `${names.length} selected`, () => { values.clear(); applyFilters(); panel.sync(); }));
     }
-    const headerFilters = table ? table.getHeaderFilters().length : 0;
-    if (headerFilters) list.push(chip("", `Column filters (${headerFilters})`, () => table.clearHeaderFilter()));
-    if (list.length > 1 || (list.length && headerFilters)) {
+    if (list.length > 1) {
       list.push(h("button", {
         class: "chip clear",
         type: "button",
         onclick: () => {
           clearPanelState(filterState);
           toolbarSearch.value = "";
-          table?.clearHeaderFilter();
           applyFilters();
           panel.sync();
         },

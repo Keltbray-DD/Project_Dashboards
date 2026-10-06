@@ -129,7 +129,6 @@ const user = (cell) => cell.getValue() || "Forma system";
 //   titles        { field: "Title" } overrides (e.g. Modified → "Issued")
 export function buildColumns({ extraFields = [], editor, editable, cellEdited, onInfo, hidden = HIDDEN_BY_DEFAULT, titles = {} }) {
   const edit = { editor, editable, cellEdited };
-  const listFilter = { headerFilter: "list", headerFilterParams: { valuesLookup: "active", clearable: true, sort: "asc" } };
   const cols = [
     {
       title: "",
@@ -164,17 +163,17 @@ export function buildColumns({ extraFields = [], editor, editable, cellEdited, o
         if (!d._loading && !d._child) onInfo(d);
       },
     },
-    { title: "File Name", field: "name", widthGrow: 3, minWidth: 240, formatter: name, headerFilter: "input", headerFilterPlaceholder: "Filter…" },
-    { title: "Ver.", field: "version", width: 64, hozAlign: "center", headerFilter: "input", sorter: "number" },
+    { title: "File Name", field: "name", widthGrow: 3, minWidth: 240, formatter: name },
+    { title: "Ver.", field: "version", width: 64, hozAlign: "center", sorter: "number" },
     { title: "", field: "file_url", width: 44, hozAlign: "center", formatter: link, headerSort: false, titleDownload: "File URL" },
-    { title: "Rev", field: "revision", width: 92, formatter: revision, headerFilter: "input", ...edit },
-    { title: "Status", field: "status", width: 92, formatter: status, ...listFilter, ...edit },
-    { title: "Folder", field: "folder_path", widthGrow: 2, minWidth: 180, formatter: folder, ...listFilter },
-    { title: "Title Line 1", field: "title_line_1", widthGrow: 3, minWidth: 200, formatter: text("bad"), headerFilter: "input", ...edit },
+    { title: "Rev", field: "revision", width: 92, formatter: revision, ...edit },
+    { title: "Status", field: "status", width: 92, formatter: status, ...edit },
+    { title: "Folder", field: "folder_path", widthGrow: 2, minWidth: 180, formatter: folder },
+    { title: "Title Line 1", field: "title_line_1", widthGrow: 3, minWidth: 200, formatter: text("bad"), ...edit },
     { title: "Title Line 2", field: "title_line_2", widthGrow: 2, minWidth: 150, formatter: text("warn"), ...edit },
     { title: "Title Line 3", field: "title_line_3", widthGrow: 2, minWidth: 150, formatter: text("warn"), ...edit },
     { title: "Title Line 4", field: "title_line_4", widthGrow: 2, minWidth: 150, formatter: text("warn"), ...edit },
-    { title: "File Description", field: "file_description", widthGrow: 2, minWidth: 180, formatter: description, headerFilter: "input", ...edit },
+    { title: "File Description", field: "file_description", widthGrow: 2, minWidth: 180, formatter: description, ...edit },
     { title: "Form", field: "form", width: 78, formatter: text("warn") },
     { title: "Originator", field: "originator", width: 100, formatter: text("warn") },
     { title: "Function", field: "function", width: 96, formatter: text("warn") },

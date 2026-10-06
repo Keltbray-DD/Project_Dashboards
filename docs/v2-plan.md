@@ -86,6 +86,11 @@ ported, and are deleted in phase 6.
 
 ## Phases
 
+Status: phases 1–6 complete on the `v2` branch (Oct 2026). Remaining
+before merging to `main`: a real-data check (sign-in, enrichment with the
+user's token, an inline edit, a client account) — see Outstanding in
+CLAUDE.md for the follow-ups that sit outside this repo.
+
 1. **Foundation** — config, logging, storage, store; PKCE auth with
    token refresh; API layer (user token); data pipeline (extract parsing,
    file rows, stacking, enrichment, history, pending edits) as pure,
@@ -123,10 +128,12 @@ ported, and are deleted in phase 6.
 - **Power Automate flows are still unauthenticated** (project list,
   extract, feedback). Needs flow-side validation of the user's token.
 - **Stale modules after a deploy** — browsers cache ES modules (GitHub
-  Pages sends a 10-minute max-age), so right after a release a user can
-  get a mix of old and new files. Phase 6: version the entry module URL
-  per release and keep imports relative, or add a tiny loader that
-  appends `?v=<APP_VERSION>`.
+  Pages sends `max-age=600`). One visit fetches every module together,
+  so they expire together and a mixed old/new set is unlikely; users may
+  just see the previous version for up to ~10 minutes. Accepted for now
+  (a `?v=` on the entry module alone would make mixing *more* likely,
+  since nested imports stay cached). Revisit with a `version.json`
+  check if it causes problems.
 - **Compliance: naming-standard checks** are skipped when no document in
   the project has that field filled in (treated as "not used by this
   project's naming standard") rather than reading the naming standard
