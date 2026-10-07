@@ -25,6 +25,8 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
   const projectCode = h("span", { class: "code", hidden: true });
   const viewOnly = h("span", { class: "view-only", hidden: true, title: "You can view but not edit this project's data" }, icon("eye"), "View only");
   const freshness = h("div", { class: "freshness", hidden: true }, h("span", { class: "dot" }), h("span", {}));
+  const scopeSelect = h("select", { class: "scope-select", "aria-label": "Sub-project" });
+  const scopeWrap = h("label", { class: "scope", hidden: true, title: "Show one sub-project of this framework" }, icon("sitemap"), scopeSelect);
 
   const avatar = h("button", { class: "avatar", type: "button", "aria-haspopup": "menu", "aria-label": "Account" }, "…");
   const menu = h("div", { class: "menu", role: "menu", hidden: true });
@@ -44,6 +46,7 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
       h("span", { class: "app-name" }, "Project Dashboard")
     ),
     h("div", { class: "crumbs" }, projectName, projectCode, viewOnly),
+    scopeWrap,
     h("div", { class: "spacer" }),
     freshness,
     onRefresh && h("button", { class: "btn", type: "button", title: "Reload the latest data", onclick: onRefresh }, icon("rotate"), "Refresh"),
@@ -108,6 +111,25 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
       projectCode.hidden = !code;
       viewOnly.hidden = !readOnly;
       document.title = name ? `${name} · ${APP_NAME}` : APP_NAME;
+    },
+
+    // Framework sub-project picker. null hides it.
+    //   { groups: [{ program, projects: [...] }], value, onChange(name) }
+    setScope(scope) {
+      scopeWrap.hidden = !scope;
+      if (!scope) return;
+      const option = (name) => h("option", { value: name }, name);
+      mount(
+        scopeSelect,
+        h("option", { value: "" }, "All sub-projects"),
+        scope.groups.map((g) => (g.program ? h("optgroup", { label: g.program }, g.projects.map(option)) : g.projects.map(option)))
+      );
+      scopeSelect.value = scope.value || "";
+      scopeWrap.classList.toggle("active", !!scope.value);
+      scopeSelect.onchange = () => {
+        scopeWrap.classList.toggle("active", !!scopeSelect.value);
+        scope.onChange(scopeSelect.value);
+      };
     },
 
     // state: "loading" | "ready" | "error"

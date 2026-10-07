@@ -8,6 +8,8 @@ import { startRouter } from "../core/router.js";
 import { store } from "../core/store.js";
 import { loadProjectFiles, enrichProjectFiles } from "../data/project.js";
 import { stackDocuments } from "../data/stacking.js";
+import { subProjectGroups, hasSubProjectChoice, scopeFiles, validScope } from "../data/subProjects.js";
+import { local } from "../core/storage.js";
 import { startSession, findUserProject } from "../session.js";
 import { createShell, stateCard } from "../views/shell.js";
 import { midpView, drawingRegisterView } from "../views/registers.js";
@@ -132,8 +134,17 @@ async function loadData() {
     return;
   }
 
+  // Framework projects: restore the remembered sub-project (if it still
+  // exists) and offer the picker when there's more than one.
+  const subProject = validScope(local.get(scopeKey(), ""), extract.subProjects);
+  shell.setScope(
+    hasSubProjectChoice(extract.subProjects)
+      ? { groups: subProjectGroups(extract.subProjects), value: subProject, onChange: setSubProject }
+      : null
+  );
+
   // Render straight away with basic file data; attributes stream in.
-  store.set({ extract, files, documents: stackDocuments(files) });
+  store.set({ extract, files, subProject, documents: stackScoped(files, subProject) });
   if (!routerStarted) {
     routerStarted = true;
     startRouter({ routes, fallback: "midp", onChange: showView });
@@ -160,10 +171,9 @@ async function enrichMetadata(extract, files) {
   publish({ done: 0, total: 0 }, true);
   shell.setFreshness("loading", "Loading metadata…");
 
-  let documents;
   let stats = { failed: 0, unavailable: 0 };
   try {
-    ({ documents, stats } = await enrichProjectFiles({
+    ({ stats } = await enrichProjectFiles({
       aps,
       projectId: project.id,
       extract,
@@ -177,11 +187,10 @@ async function enrichMetadata(extract, files) {
     // Never leave the table half-loaded: publish whatever arrived.
     log.error(err);
     toast("Some metadata couldn't be loaded", err.message, { error: true, timeout: 12000 });
-    documents = stackDocuments(files);
   }
   store.set({
     files: [...files],
-    documents,
+    documents: stackScoped(files, store.get().subProject),
     metadataProgress: { complete: true, failed: stats.failed, unavailable: stats.unavailable },
   });
   if (stats.failed || stats.unavailable) log.warn("Metadata load incomplete", stats);
@@ -200,6 +209,22 @@ async function retryMetadata() {
   } finally {
     loading = false;
   }
+}
+
+// ---------- sub-project scope (framework projects) ----------
+
+const scopeKey = () => `v2.subProject.${ctx.project.id}`;
+
+// Documents for the current scope. Files are scoped before stacking, so a
+// document's revision history only ever includes its own sub-project's
+// copies.
+function stackScoped(files, subProject) {
+  return stackDocuments(scopeFiles(files, subProject));
+}
+
+function setSubProject(subProject) {
+  local.set(scopeKey(), subProject);
+  store.set({ subProject, documents: stackScoped(store.get().files, subProject) });
 }
 
 function freshnessText(updated) {

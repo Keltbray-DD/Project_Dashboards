@@ -27,7 +27,6 @@ export const FILTER_DEFS = [
   { field: "series", label: "Series" },
   { field: "tracking_status", label: "Tracking Status" },
   { field: "category", label: "Category" },
-  { field: "sub_project", label: "Sub-project" },
   { field: "created_by_user", label: "Created by" },
   { field: "last_modified_user", label: "Modified by" },
 ];

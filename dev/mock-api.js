@@ -119,8 +119,63 @@
 
   const PROJECTS = [
     { id: "b.mock-project-0001", name: "Example Project", code: "EX0001", image: "" },
-    { id: "b.mock-project-0002", name: "Example Framework (no data)", code: "EX0002", image: "" },
+    { id: "b.mock-project-0002", name: "Example Empty Project", code: "EX0002", image: "" },
+    { id: "b.mock-project-0003", name: "Example Framework", code: "EX0003", image: "" },
   ];
+
+  // Framework extract for "Example Framework", shaped like the real one
+  // (DT1117): a Parent record for the framework plus one Child record per
+  // sub-project, named by Sub_folder_name. Files are spread across the
+  // sub-projects by document; every 25th document also appears under the
+  // next sub-project (a shared folder) and every 40th sits on the Parent
+  // (framework-wide). "Depot" has no Sub_folder_name, to exercise the
+  // ProjectName fallback. subProgramName isn't in the real extract; it's
+  // here to exercise the optional programme grouping.
+  const FRAMEWORK = [
+    { name: "North", program: "Programme A" },
+    { name: "South", program: "Programme A" },
+    { name: "East", program: "Programme B" },
+    { name: "Depot", program: "", noFolderName: true },
+  ];
+  function frameworkExtract() {
+    const buckets = FRAMEWORK.map(() => []);
+    const parentFiles = [];
+    const docIndex = (f) => parseInt(f.Name.match(/-(\d{4})\./)[1], 10) - 1000;
+    for (const f of files) {
+      const d = docIndex(f);
+      if (d % 40 === 0) {
+        parentFiles.push(f);
+        continue;
+      }
+      const i = d % FRAMEWORK.length;
+      buckets[i].push(f);
+      if (d % 25 === 0) buckets[(i + 1) % FRAMEWORK.length].push(f);
+    }
+    const choice = (Value) => ({ Value });
+    return {
+      type: "framework",
+      data: [
+        {
+          Title: "mock-project-0003",
+          ProjectName: "Example Framework",
+          Framework_lineage: choice("Parent"),
+          Modified: iso(5 * 60000),
+          files_list: JSON.stringify(parentFiles),
+          folder_array_deliverables: "[]",
+        },
+        ...FRAMEWORK.map((sp, i) => ({
+          Title: "mock-project-0003",
+          ProjectName: "Example Framework " + sp.name,
+          Framework_lineage: choice("Child"),
+          ...(sp.noFolderName ? {} : { Sub_folder_name: sp.name }),
+          ...(sp.program ? { subProgramName: sp.program } : {}),
+          Modified: iso((10 + i) * 60000),
+          files_list: JSON.stringify(buckets[i]),
+          folder_array_deliverables: "[]",
+        })),
+      ],
+    };
+  }
 
   // ---------- routing ----------
   const json = (body, status = 200) =>
@@ -145,6 +200,7 @@
     }
     if (url.includes("aa3b3f6ba93f4901acef15184cd5b8de")) {
       await delay(700);
+      if (body && body.project_Name === "Example Framework") return json(frameworkExtract());
       return json({
         type: "single",
         data: [{
@@ -235,6 +291,9 @@
   };
 
   window.__MOCK__ = { files, attrs, PROJECTS, flakyStats, down: qs.get("down") === "1" };
-  window.__DEV_PROJECT_FEATURES__ = { "mock-project-0001": { code: "EX0001", registers: ["midp", "drawingRegister"], extraFields: [] } };
+  window.__DEV_PROJECT_FEATURES__ = {
+    "mock-project-0001": { code: "EX0001", registers: ["midp", "drawingRegister"], extraFields: [] },
+    "mock-project-0003": { code: "EX0003", registers: ["midp", "drawingRegister"], extraFields: [] },
+  };
   console.info(`[mock-api] active — ${files.length} file versions across ${new Set(files.map((f) => f.Name)).size} documents`);
 })();

@@ -6,7 +6,9 @@
 //   name, version, file_type, file_url
 //   folder_path, folder_id
 //   last_modified_user, last_modified_date, created_by_user, created_at
-//   sub_project, sub_program          (framework projects)
+//   sub_project, sub_program          (framework projects; first one if
+//                                      the file is in several)
+//   sub_projects       every sub-project the file belongs to
 //   attrs_loaded       false until enrichment has filled the attributes
 //   …every field in ATTR_NAME_MAP     (title_line_1, revision, status, …)
 //
@@ -59,6 +61,7 @@ function baseRow(fields) {
     created_at: "",
     sub_project: "",
     sub_program: "",
+    sub_projects: [],
     attrs_loaded: false,
   };
   for (const f of ATTR_FIELDS) row[f] = "";
@@ -82,6 +85,7 @@ export function fromExtractItem(item, projectId) {
     created_by_user: item.createUserName || "",
     sub_project: item._subProject || "",
     sub_program: item._subProgram || "",
+    sub_projects: item._subProject ? [item._subProject] : [],
   });
 }
 
@@ -124,6 +128,7 @@ export function fromVersion(version, context, projectId) {
     created_at: va.createTime || "",
     sub_project: context?.sub_project || "",
     sub_program: context?.sub_program || "",
+    sub_projects: context?.sub_projects ? [...context.sub_projects] : [],
   });
 }
 

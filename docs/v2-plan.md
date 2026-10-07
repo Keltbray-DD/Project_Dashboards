@@ -115,10 +115,9 @@ CLAUDE.md for the follow-ups that sit outside this repo.
 
 ## Open items
 
-- **Framework sub-projects** — the abandoned `claude/happy-brown-59cc93`
-  worktree started a sub-project picker. v2's extract parser already tags
-  rows with `sub_project` / `sub_program`; decide whether it becomes a
-  search-panel filter.
+- **Framework sub-projects** — done (Oct 2026): a top-bar sub-project
+  picker (grouped by programme) scopes every view; supersedes the
+  uncommitted picker in the old `claude/happy-brown-59cc93` worktree.
 - **ACC integration for the user-token app** — the APS app behind
   `apsClientId` must be added as a custom integration in the ACC account
   for the `bim360/docs` custom-attribute endpoints to accept user tokens.

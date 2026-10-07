@@ -61,8 +61,9 @@ function renderRegister(container, ctx, config) {
   const { aps, project, user } = ctx;
   const vs = stateFor(config.id);
   const filterState = vs.filters;
-  const exportStem = `${project.code ? project.code + " " : ""}${config.exportName}`;
+  const exportStem = () => [project.code, store.get().subProject, config.exportName].filter(Boolean).join(" ");
   let table = null;
+  let tableReady = false; // Tabulator rejects data calls before tableBuilt
   let documents = [];
   let docsByKey = new Map();
   // Rows passing all filters, as reported by Tabulator’s dataFiltered
@@ -107,7 +108,7 @@ function renderRegister(container, ctx, config) {
   });
 
   const exportBtn = h("button", { class: "btn primary", type: "button", title: "Export the filtered documents to Excel" }, icon("file-excel"), "Export");
-  exportBtn.addEventListener("click", () => table?.download("xlsx", `${exportStem}.xlsx`, { sheetName: config.title }, "active"));
+  exportBtn.addEventListener("click", () => table?.download("xlsx", `${exportStem()}.xlsx`, { sheetName: config.title }, "active"));
 
   // ---------- chips + selection ----------
   const chips = h("div", { class: "chips" });
@@ -120,7 +121,7 @@ function renderRegister(container, ctx, config) {
     h("button", {
       class: "btn",
       type: "button",
-      onclick: () => table?.download("xlsx", `${exportStem} selected.xlsx`, { sheetName: config.title }, "selected"),
+      onclick: () => table?.download("xlsx", `${exportStem()} selected.xlsx`, { sheetName: config.title }, "selected"),
     }, icon("download"), "Export selected"),
     h("button", { class: "link-btn", type: "button", onclick: () => table?.deselectRow() }, "Clear selection")
   );
@@ -224,7 +225,8 @@ function renderRegister(container, ctx, config) {
   }
 
   function renderSummary() {
-    countText.textContent = `${resultText()} · ${config.description}`;
+    const sub = store.get().subProject;
+    countText.textContent = `${sub ? sub + " · " : ""}${resultText()} · ${config.description}`;
     const n = activeFilterCount(filterState);
     mount(filtersBtn, icon("filter"), "Filters", n > 0 && h("span", { class: "badge" }, String(n)));
     filtersBtn.classList.toggle("active", n > 0 || vs.panelOpen);
@@ -310,8 +312,8 @@ function renderRegister(container, ctx, config) {
       // Filters apply to documents only; expanding always shows the full history.
       dataTreeFilter: false,
       // Selection only via the checkbox, so clicking a cell to edit doesn't select.
-      selectable: "highlight",
-      selectableCheck: (row) => !row.getData()._child && !row.getTreeParent(),
+      selectableRows: "highlight",
+      selectableRowsCheck: (row) => !row.getData()._child && !row.getTreeParent(),
       downloadConfig: { dataTree: false },
       reactiveData: false,
       rowFormatter: (row) => {
@@ -322,6 +324,7 @@ function renderRegister(container, ctx, config) {
     });
 
     table.on("tableBuilt", () => {
+      tableReady = true;
       applySavedColumns(table, config.id);
       applyFilters();
     });
@@ -377,7 +380,7 @@ function renderRegister(container, ctx, config) {
         : "Loading file metadata…";
       loadBar.style.width = `${pct}%`;
     }
-    if (!table || !progress || progress.complete) return;
+    if (!table || !tableReady || !progress || progress.complete) return;
     const next = config.select(store.get().documents || []);
     const sameMembers = next.length === documents.length && next.every((d, i) => d.key === documents[i].key);
     if (!sameMembers) {
@@ -392,10 +395,15 @@ function renderRegister(container, ctx, config) {
       }
     }
     if (updates.length) {
-      table.updateData(updates).then(() => {
-        table.refreshFilter();
-        panel.refresh();
-      });
+      table
+        .updateData(updates)
+        .then(() => {
+          table.refreshFilter();
+          panel.refresh();
+        })
+        // A row went missing mid-update (e.g. the data was replaced): just
+        // redraw from the store instead.
+        .catch(() => setDocuments(store.get().documents));
     }
   }
 

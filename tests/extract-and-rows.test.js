@@ -28,27 +28,55 @@ test("parseExtract merges framework records, tags sub-projects and keeps the old
     data: [
       {
         Title: "T",
-        ProjectName: "DT1117",
-        Modified: "2026-10-06T10:30:00Z",
-        subProjectName: "North",
+        ProjectName: "ARE - SSE - GSP",
+        Framework_lineage: { Value: "Parent" },
+        Modified: "2026-10-06T11:00:00Z",
+        files_list: JSON.stringify([{ Name: "fw.pdf" }]),
+      },
+      {
+        Title: "T",
+        ProjectName: "ARE - SSE - GSP Axminster",
+        Framework_lineage: { Value: "Child" },
+        Sub_folder_name: "Axminster",
         subProgramName: "Prog A",
+        Modified: "2026-10-06T10:30:00Z",
         files_list: JSON.stringify([JSON.stringify([{ Name: "a.pdf" }])]),
         folder_array_deliverables: "[]",
         additional_MIDP_folders: JSON.stringify([{ folderID: "urn:f1", folderName: "RAMS" }, { folderName: "no id" }]),
       },
       {
+        ProjectName: "ARE - SSE - GSP Melksham",
+        Framework_lineage: { Value: "Child" },
         Modified: "2026-10-06T10:00:00Z",
-        subProjectName: "South",
         files_list: JSON.stringify([{ Name: "b.pdf" }]),
       },
     ],
   };
   const ex = parseExtract(raw);
-  assert.equal(ex.projectName, "DT1117");
+  assert.equal(ex.projectName, "ARE - SSE - GSP");
   assert.equal(ex.updated, "2026-10-06T10:00:00.000Z");
-  assert.deepEqual(ex.items.map((i) => [i.Name, i._subProject]), [["a.pdf", "North"], ["b.pdf", "South"]]);
-  assert.equal(ex.items[0]._subProgram, "Prog A");
-  assert.deepEqual(ex.additionalFolders, [{ folderID: "urn:f1", folderName: "RAMS" }]);
+  assert.deepEqual(ex.items.map((i) => [i.Name, i._subProject]), [["fw.pdf", ""], ["a.pdf", "Axminster"], ["b.pdf", "Melksham"]]);
+  assert.equal(ex.items[1]._subProgram, "Prog A");
+  assert.deepEqual(ex.additionalFolders, [{ folderID: "urn:f1", folderName: "RAMS", _subProject: "Axminster", _subProgram: "Prog A" }]);
+  assert.deepEqual(ex.subProjects, [{ name: "Axminster", program: "Prog A" }, { name: "Melksham", program: "" }]);
+});
+
+test("parseExtract takes the project name from the Parent record wherever it is", () => {
+  const ex = parseExtract({
+    type: "framework",
+    data: [
+      { ProjectName: "FW North", Framework_lineage: { Value: "Child" }, Sub_folder_name: "North" },
+      { ProjectName: "FW", Framework_lineage: { Value: "Parent" } },
+    ],
+  });
+  assert.equal(ex.projectName, "FW");
+  assert.deepEqual(ex.subProjects.map((s) => s.name), ["North"]);
+});
+
+test("parseExtract ignores sub-project fields on a non-framework extract", () => {
+  const ex = parseExtract({ type: "single", data: [{ ProjectName: "P", Sub_folder_name: "X", files_list: JSON.stringify([{ Name: "a.pdf" }]) }] });
+  assert.deepEqual(ex.subProjects, []);
+  assert.equal(ex.items[0]._subProject, "");
 });
 
 test("parseExtract copes with an empty or missing payload", () => {

@@ -108,6 +108,24 @@ test("a full outage is reported straight away, without a second pass", async () 
   assert.ok(rows.every((r) => r.attrs_error));
 });
 
+test("a 400 for one malformed id is isolated; the rest of the batch loads", async () => {
+  const rows = rowsFor(8);
+  const bad = "urn:v5?version=1";
+  const aps = {
+    calls: 0,
+    async batchGetVersions(_pid, urns) {
+      this.calls++;
+      if (urns.includes(bad)) throw Object.assign(new Error("Bad Request"), { status: 400 });
+      return { results: urns.map((urn) => ({ urn, customAttributes: [{ name: "Revision", value: "R" }] })), errors: [] };
+    },
+  };
+  const stats = await enrichRows(rows, opts(aps, { chunkSize: 8 }));
+  assert.deepEqual([stats.failed, stats.unavailable], [0, 1]);
+  assert.ok(rows.filter((r) => r.id !== bad).every((r) => r.attrs_loaded));
+  assert.equal(rows[5].attrs_error, true);
+  assert.ok(aps.calls <= 8); // bisection, not one call per file
+});
+
 test("files Forma reports as unavailable are flagged, not retried or misaligned", async () => {
   const rows = rowsFor(4);
   const aps = fakeAps({ unavailable: ["urn:v1?version=1"] });

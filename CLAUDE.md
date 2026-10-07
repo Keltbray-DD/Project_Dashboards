@@ -97,6 +97,25 @@ user's **own token**, so ACC enforces what they can read and edit.
    siblings; `hasNewerRevision` flags work in progress past it.
 8. **Views** read `store.documents` and re-render on store changes.
 
+### Framework projects (sub-projects)
+
+A "framework" extract (`type: "framework"`) has a Parent record
+(`Framework_lineage.Value === "Parent"`, the framework itself) and one
+Child record per sub-project, named by `Sub_folder_name` (fallback:
+`ProjectName` minus the Parent's name). There's no programme field today;
+an optional `subProgramName` is read for picker grouping if it ever
+appears. `data/extract.js` merges the records and lists
+`extract.subProjects`; every file row carries `sub_projects` (a file in a
+shared folder can belong to several — `mergeDuplicateFiles` keeps one row
+per version). Parent files have no sub-project and are framework-wide:
+they show in every sub-project scope. Files from `additional_MIDP_folders`
+take their record's sub-project. When there are 2+ sub-projects the top bar shows a picker
+(grouped by programme); the choice (`store.subProject`, remembered per
+project in `localStorage[v2.subProject.<id>]`) scopes **every** view,
+Compliance and the nav counts — files are scoped before stacking
+(`data/subProjects.js`, `stackScoped` in `pages/dashboard.js`).
+Mock: project EX0003 "Example Framework".
+
 ### State
 
 `core/store.js` — one observable store:

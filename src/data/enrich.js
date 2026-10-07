@@ -10,6 +10,8 @@
 //     more, gentler pass — fewer in flight, one quick retry each — unless
 //     every file failed, which means Forma is down: then report at once
 //     rather than make the user wait through another round of back-offs.
+//   • A batch Forma rejects with 400 (typically one malformed file id) is
+//     split in halves until the bad file is isolated; the rest load.
 //   • Results are matched to rows by their urn. Files Forma reports as
 //     unavailable (deleted, no permission) are marked attrs_error rather
 //     than left looking "still loading" forever. Position is only used as
@@ -140,6 +142,19 @@ export async function enrichRows(rows, options) {
     try {
       response = await aps.batchGetVersions(projectId, batch, retries === undefined ? {} : { retries });
     } catch (e) {
+      // 400 = Forma rejected the request, usually one malformed file id —
+      // which fails the whole batch. Split it to find the bad one(s) so the
+      // rest still load; a single rejected file is flagged unavailable.
+      if (e.status === 400) {
+        if (batch.length === 1) {
+          log.warn("versions:batch-get rejected a file id", batch[0]);
+          unavailable.add(batch[0]);
+          for (const row of byUrn.get(batch[0]) || []) row.attrs_error = true;
+          return [];
+        }
+        const mid = Math.ceil(batch.length / 2);
+        return [...(await fetchBatch(batch.slice(0, mid), retries)), ...(await fetchBatch(batch.slice(mid), retries))];
+      }
       log.warn(`versions:batch-get failed for ${batch.length} files (${e.status || e.name})`, e);
       return batch;
     }
