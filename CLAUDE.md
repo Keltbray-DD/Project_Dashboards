@@ -12,6 +12,9 @@ GitHub Pages (`https://keltbray-dd.github.io/Project_Dashboards/`).
 
 v2.0.0 was a full rewrite of v1.x; the plan and decisions are in
 [docs/v2-plan.md](docs/v2-plan.md).
+v2.1.0 reads files live from Forma (single projects whole; frameworks one
+chosen sub-project / region at a time) and narrows Compliance to five
+checks on the deliverable folders.
 
 ---
 
