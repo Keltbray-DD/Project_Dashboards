@@ -251,8 +251,9 @@ Add/extend its entry in `PROJECT_FEATURES` in `src/core/config.js`
 Five checks, on documents in the deliverable folders only (WIP, SHARED,
 SHARED_TO_CLIENT, PUBLISHED — `compliance/engine.js isDeliverable`):
 Revision (ISO 19650), Status, File Description (not the TIDP placeholder),
-Title Line 1 and Document Classification (Forma attribute "Document
-Classification" or "Classification"). Documents elsewhere (e.g. an
+Title Line 1 and Document Classification (only the Forma attribute
+"Document Classification" — a separate "Classification" attribute, as on
+A66, is ignored). Documents elsewhere (e.g. an
 additional MIDP folder) are shown as "not checked". Originator, Function
 and Form aren't checked; the page's heat grid still groups by them.
 

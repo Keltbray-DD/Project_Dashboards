@@ -71,7 +71,8 @@ export const ATTR_NAME_MAP = {
   "State": "state",
   "Activity Code": "activity_code",
   "File Description": "file_description",
-  "Classification": "classification",
+  // Only "Document Classification" — some projects (A66) also have a
+  // separate "Classification" attribute, which isn't this field.
   "Document Classification": "classification",
   "Tracking Status": "tracking_status",
   "Notes": "notes",

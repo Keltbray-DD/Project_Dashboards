@@ -26,7 +26,7 @@ export function indexDefinitions(defs) {
   const byField = {};
   for (const field of Object.keys(FIELD_ATTR_NAME)) {
     // Some fields have more than one spelling across projects (Project
-    // PIN, Document Classification): use whichever this project defines.
+    // PIN): use whichever this project defines.
     const names = Object.keys(ATTR_NAME_MAP).filter((name) => ATTR_NAME_MAP[name] === field);
     const def = names.map((name) => byName.get(name)).find(Boolean);
     if (def) byField[field] = { id: def.id, name: def.name, type: def.type, options: optionsOf(def) };

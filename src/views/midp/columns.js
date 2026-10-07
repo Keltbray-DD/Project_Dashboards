@@ -177,7 +177,7 @@ export function buildColumns({ extraFields = [], editor, editable, cellEdited, o
     { title: "Title Line 3", field: "title_line_3", widthGrow: 2, minWidth: 150, formatter: text("warn"), ...edit },
     { title: "Title Line 4", field: "title_line_4", widthGrow: 2, minWidth: 150, formatter: text("warn"), ...edit },
     { title: "File Description", field: "file_description", widthGrow: 2, minWidth: 180, formatter: description, ...edit },
-    { title: "Classification", field: "classification", width: 130, formatter: text("bad"), ...edit },
+    { title: "Document Classification", field: "classification", width: 190, formatter: text("bad"), ...edit },
     { title: "Form", field: "form", width: 78, formatter: text("warn") },
     { title: "Originator", field: "originator", width: 100, formatter: text("warn") },
     { title: "Function", field: "function", width: 96, formatter: text("warn") },

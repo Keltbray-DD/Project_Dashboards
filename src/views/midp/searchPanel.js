@@ -23,7 +23,7 @@ export const FILTER_DEFS = [
   { field: "deliverable", label: "Deliverable" },
   { field: "project_pin", label: "Project PIN" },
   { field: "activity_code", label: "Activity Code" },
-  { field: "classification", label: "Classification" },
+  { field: "classification", label: "Document Classification" },
   { field: "series", label: "Series" },
   { field: "tracking_status", label: "Tracking Status" },
   { field: "category", label: "Category" },
