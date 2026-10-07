@@ -7,6 +7,7 @@ import { compactPreference, setCompact } from "../core/prefs.js";
 import { h, icon, mount } from "../ui/dom.js";
 import { initials } from "../ui/format.js";
 import { openFeedback } from "./feedback.js";
+import { FRAMEWORK_SCOPE, scopeLabel } from "../data/subProjects.js";
 
 export const LOGO_URL =
   "https://framerusercontent.com/images/L6zTiT4fl5YfHzIJMMOpRZ3wk.png?scale-down-to=512&width=1285&height=289";
@@ -27,6 +28,14 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
   const freshness = h("div", { class: "freshness", hidden: true }, h("span", { class: "dot" }), h("span", {}));
   const scopeSelect = h("select", { class: "scope-select", "aria-label": "Region or sub-project" });
   const scopeWrap = h("label", { class: "scope", hidden: true, title: "Show one region or sub-project of this framework" }, icon("sitemap"), scopeSelect);
+  const scopeBtnLabel = h("span", { class: "scope-label" });
+  const scopeBtn = h(
+    "button",
+    { class: "scope scope-btn active", type: "button", hidden: true, title: "Choose another sub-project, a region or the whole framework" },
+    icon("sitemap"),
+    scopeBtnLabel,
+    h("span", { class: "scope-change" }, "Change")
+  );
 
   const avatar = h("button", { class: "avatar", type: "button", "aria-haspopup": "menu", "aria-label": "Account" }, "…");
   const menu = h("div", { class: "menu", role: "menu", hidden: true });
@@ -47,6 +56,7 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
     ),
     h("div", { class: "crumbs" }, projectName, projectCode, viewOnly),
     scopeWrap,
+    scopeBtn,
     h("div", { class: "spacer" }),
     freshness,
     onRefresh && h("button", { class: "btn", type: "button", title: "Reload the latest data", onclick: onRefresh }, icon("rotate"), "Refresh"),
@@ -113,16 +123,28 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
       document.title = name ? `${name} · ${APP_NAME}` : APP_NAME;
     },
 
-    // Framework region / sub-project picker. null hides it.
+    // Framework region / sub-project picker. null hides it. Two forms:
+    //   { label, onOpen() }   live frameworks: a button showing the scope
+    //                         in view ("Choose a sub-project" before one is
+    //                         picked) that opens the chooser
     //   { groups: buildScopes() result, value: scope key, onChange(key) }
-    // Each region is a heading with "All <region>" then its sub-projects.
+    //                         extract mode: a dropdown; each region is a
+    //                         heading with "All <region>" then its
+    //                         sub-projects
     setScope(scope) {
-      scopeWrap.hidden = !scope;
+      scopeWrap.hidden = !scope || !!scope.onOpen;
+      scopeBtn.hidden = !scope?.onOpen;
       if (!scope) return;
+      if (scope.onOpen) {
+        scopeBtnLabel.textContent = scope.label || "Choose a sub-project";
+        scopeBtn.classList.toggle("empty", !scope.label);
+        scopeBtn.onclick = scope.onOpen;
+        return;
+      }
       const subOption = (sp) => h("option", { value: sp.key }, sp.cancelled ? `${sp.label} (cancelled)` : sp.label);
       mount(
         scopeSelect,
-        h("option", { value: "" }, "Whole framework"),
+        h("option", { value: "" }, scopeLabel(FRAMEWORK_SCOPE)),
         scope.groups.map((g) =>
           h("optgroup", { label: g.region }, h("option", { value: g.key }, `All ${g.region}`), g.subProjects.map(subOption))
         )

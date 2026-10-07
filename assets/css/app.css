@@ -191,6 +191,11 @@ body.compact .brand .app-name { display: none; }
 .scope.active { background: var(--navy); border-color: var(--navy); color: #fff; }
 .scope-select { border: 0; background: transparent; color: inherit; font: inherit; font-weight: 600; max-width: 220px; padding: 0 4px; cursor: pointer; outline: none; }
 .scope.active .scope-select option, .scope.active .scope-select optgroup { color: var(--text); }
+.scope-btn { padding: 0 6px 0 12px; font: inherit; font-size: 13px; }
+.scope-btn .scope-label { font-weight: 600; max-width: 280px; overflow: hidden; text-overflow: ellipsis; }
+.scope-btn .scope-change { font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; background: var(--lime); color: var(--navy); border-radius: 999px; padding: 2px 8px; }
+.scope-btn:hover { background: var(--navy-strong); }
+.scope-btn.empty .scope-change { display: none; }
 .view-only { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--info); background: var(--info-soft); padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
 .freshness { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); white-space: nowrap; }
 .freshness .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 0 3px rgba(155, 197, 61, 0.25); }
@@ -383,6 +388,23 @@ dialog.dialog footer { padding: 12px 20px; border-top: 1px solid var(--border); 
 .project-card h2 { margin: 0; font-size: 18px; font-weight: 700; line-height: 1.25; }
 .project-card .open { margin-top: auto; padding-top: 10px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
 .project-card:hover .open { color: var(--navy); }
+
+/* ---------- framework sub-project chooser ---------- */
+.chooser-regions { display: flex; flex-direction: column; gap: 16px; }
+.chooser-region { padding: 16px 18px 18px; }
+.chooser-region > header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.chooser-region > header h3 { font-size: 14px; }
+.chooser-region > header .muted { font-size: 12px; }
+.chooser-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 8px; }
+.chooser-tile { display: flex; align-items: baseline; gap: 8px; text-align: left; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); color: var(--text); font: inherit; font-size: 13px; cursor: pointer; transition: border-color 0.15s ease, box-shadow 0.15s ease; }
+.chooser-tile:hover { border-color: var(--navy); box-shadow: var(--shadow); }
+.chooser-tile .code { font-weight: 700; color: var(--navy); white-space: nowrap; }
+.chooser-tile .name { flex: 1; min-width: 0; }
+.chooser-tile .tag { margin-left: 0; align-self: center; }
+.chooser-tile.cancelled { color: var(--muted); background: var(--bg); }
+.chooser-tile.cancelled .code { color: var(--muted); }
+.chooser-tile.current { border-color: var(--navy); background: var(--navy-soft); box-shadow: inset 3px 0 0 var(--lime); }
+.chooser-error { font-size: 13px; }
 
 /* ---------- shared bits ---------- */
 .pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; line-height: 18px; }

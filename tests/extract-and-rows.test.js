@@ -38,6 +38,7 @@ test("parseExtract merges framework records, tags regions and keeps the oldest t
         ProjectName: "ARE - SSE - GSP Axminster",
         Framework_lineage: { Value: "Child" },
         Sub_folder_name: "Axminster",
+        start_folder_id: "urn:axminster",
         Modified: "2026-10-06T10:30:00Z",
         files_list: JSON.stringify([JSON.stringify([{ Name: "a.pdf" }])]),
         folder_array_deliverables: "[]",
@@ -56,7 +57,7 @@ test("parseExtract merges framework records, tags regions and keeps the oldest t
   assert.equal(ex.updated, "2026-10-06T10:00:00.000Z");
   assert.deepEqual(ex.items.map((i) => [i.Name, i._region]), [["fw.pdf", ""], ["a.pdf", "Axminster"], ["b.pdf", "Melksham"]]);
   assert.deepEqual(ex.additionalFolders, [{ folderID: "urn:f1", folderName: "RAMS", _region: "Axminster" }]);
-  assert.deepEqual(ex.regions, [{ name: "Axminster" }, { name: "Melksham" }]);
+  assert.deepEqual(ex.regions, [{ name: "Axminster", startFolderId: "urn:axminster" }, { name: "Melksham", startFolderId: "" }]);
 });
 
 test("parseExtract takes the project name from the Parent record wherever it is", () => {
@@ -68,7 +69,7 @@ test("parseExtract takes the project name from the Parent record wherever it is"
     ],
   });
   assert.equal(ex.projectName, "FW");
-  assert.deepEqual(ex.regions, [{ name: "North" }]);
+  assert.deepEqual(ex.regions.map((r) => r.name), ["North"]);
 });
 
 test("parseExtract ignores region fields on a non-framework extract", () => {
@@ -103,7 +104,7 @@ test("fromExtractItem builds a complete row", () => {
   assert.equal(r.created_by_user, "Sam");
   assert.equal(r.region, "North");
   assert.deepEqual(r.regions, ["North"]);
-  assert.equal(r.sub_project, "01 WIP", "top folder under Project Files");
+  assert.equal(r.sub_project, "", "a WIP folder at the top is region-level, not a sub-project");
   assert.equal(r.attrs_loaded, false);
   assert.equal(r.title_line_1, "");
   assert.equal(r.project_pin, "");

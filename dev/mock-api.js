@@ -123,88 +123,33 @@
     { id: "b.mock-project-0003", name: "Example Framework", code: "EX0003", image: "" },
   ];
 
-  // Framework extract for "Example Framework", shaped like the real one
-  // (DT1117): a Parent record for the framework plus one Child record per
-  // region, named by Sub_folder_name. Inside a region each top-level
-  // folder is a sub-project. Documents are spread by number: across
-  // regions, then across that region's sub-projects; every 17th sits at
-  // region level (0B.GENERAL), every 40th on the Parent (framework-wide)
-  // and every 53rd in a training folder (dropped by the dashboard).
-  // "Depot" has no Sub_folder_name (ProjectName fallback) and its paths
-  // start with the region folder, to exercise both shapes.
-  const FRAMEWORK = [
-    { name: "North", subs: ["NO101_Alder_Road (PS000101)", "NO102 - Birch Lane Substation (PS000102)", "NO103_Cedar_Park (PS000103) CANCELLED"] },
-    { name: "South", subs: ["SO201_Dock_Street (PS000201)", "SO202_Elm_Grove (PS000202)"] },
-    { name: "East", subs: ["EA301_Fen_Bridge (PS000301)", "EA302_Grange_Farm (PS000302)", "EA303_Heath_Lane (PS000303)"] },
-    { name: "Depot", subs: ["DE401_Main_Depot (PS000401)"], noFolderName: true, pathHasRegion: true },
-  ];
-  function frameworkExtract() {
-    const buckets = FRAMEWORK.map(() => []);
-    const parentFiles = [];
-    const docIndex = (f) => parseInt(f.Name.match(/-(\d{4})\./)[1], 10) - 1000;
-    const rest = (f) => f.folderPath.replace(/^Project Files \/ /, "");
-    for (const f of files) {
-      const d = docIndex(f);
-      if (d % 40 === 0) {
-        parentFiles.push({ ...f, folderPath: "XX-FRAMEWORK / " + rest(f) });
-        continue;
-      }
-      const i = d % FRAMEWORK.length;
-      const region = FRAMEWORK[i];
-      const top =
-        d % 53 === 0 ? "XX0000_Training_Example"
-        : d % 17 === 0 ? "0B.GENERAL"
-        : region.subs[Math.floor(d / FRAMEWORK.length) % region.subs.length];
-      const path = `${top} / ${rest(f)}`;
-      buckets[i].push({ ...f, folderPath: region.pathHasRegion ? `${region.name} / ${path}` : path });
-    }
-    const choice = (Value) => ({ Value });
-    return {
-      type: "framework",
-      data: [
-        {
-          Title: "mock-project-0003",
-          ProjectName: "Example Framework",
-          Framework_lineage: choice("Parent"),
-          Modified: iso(5 * 60000),
-          files_list: JSON.stringify(parentFiles),
-          folder_array_deliverables: "[]",
-        },
-        ...FRAMEWORK.map((region, i) => ({
-          Title: "mock-project-0003",
-          ProjectName: "Example Framework " + region.name,
-          Framework_lineage: choice("Child"),
-          ...(region.noFolderName ? {} : { Sub_folder_name: region.name }),
-          Modified: iso((10 + i) * 60000),
-          files_list: JSON.stringify(buckets[i]),
-          folder_array_deliverables: "[]",
-        })),
-      ],
-    };
-  }
-
-  // Live folder tree for "Example Project", built from the generated
-  // files' paths under the project's start folder (Project Files). Paged
-  // 100 entries at a time like Forma; clients get 403 on WIP folders.
+  // ---------- live folder trees ----------
+  // Each mock start folder is a tree built from its files' folderPaths
+  // (relative to that folder). Listed like Forma's folder contents: paged
+  // 100 entries at a time; clients get 403 on WIP folders.
   const ROOT_FOLDER = "urn:adsk.wipemea:fs.folder:co.ProjectFiles";
-  const folderIdFor = (path) => (path ? `urn:adsk.wipemea:fs.folder:co.${path.replace(/\W/g, "")}` : ROOT_FOLDER);
-  const folderPaths = new Map([[ROOT_FOLDER, ""]]);
-  for (const f of files) {
-    const parts = f.folderPath.split(" / ");
-    parts.forEach((_, i) => {
-      const path = parts.slice(0, i + 1).join(" / ");
-      folderPaths.set(folderIdFor(path), path);
-    });
+  const folderNodes = new Map(); // folder id → { rootId, list, path }
+  const folderIdFor = (rootId, path) => (path ? rootId + "." + path.replace(/\W/g, "") : rootId);
+  function addTree(rootId, list) {
+    const add = (path) => folderNodes.set(folderIdFor(rootId, path), { rootId, list, path });
+    add("");
+    for (const f of list) {
+      const parts = f.folderPath.split(" / ");
+      parts.forEach((_, i) => add(parts.slice(0, i + 1).join(" / ")));
+    }
   }
   function folderContents(folderId, url) {
-    const path = folderPaths.get(folderId);
-    if (path === undefined) return { data: [] };
+    const node = folderNodes.get(folderId);
+    if (!node) return { data: [] };
+    const { rootId, list, path } = node;
     if (AS_CLIENT && /WIP/.test(path)) return { forbidden: true };
     const depth = path ? path.split(" / ").length : 0;
-    const children = [...new Set([...folderPaths.values()].filter((p) => p && p.split(" / ").length === depth + 1 && (!path || p.startsWith(path + " / "))))];
+    const children = [...folderNodes.values()]
+      .filter((n) => n.rootId === rootId && n.path && n.path.split(" / ").length === depth + 1 && (!path || n.path.startsWith(path + " / ")))
+      .map((n) => n.path);
     const entries = [
-      ...children.map((p) => ({ type: "folders", id: folderIdFor(p), attributes: { displayName: p.split(" / ").pop() } })),
-      ...files.filter((f) => f.folderPath === path).map((f) => ({
+      ...children.map((p) => ({ type: "folders", id: folderIdFor(rootId, p), attributes: { displayName: p.split(" / ").pop() } })),
+      ...list.filter((f) => f.folderPath === path).map((f) => ({
         type: "items",
         id: f.itemID,
         attributes: { displayName: f.Name, createUserName: f.createUserName },
@@ -215,7 +160,7 @@
     const PAGE = 100;
     const page = Number(new URL(url).searchParams.get("page[number]") || 0);
     const slice = entries.slice(page * PAGE, (page + 1) * PAGE);
-    const next = (page + 1) * PAGE < entries.length ? url.replace(/&page\[number\]=\d+|$/, `&page[number]=${page + 1}`) : null;
+    const next = (page + 1) * PAGE < entries.length ? url.replace(/&page\[number\]=\d+|$/, "&page[number]=" + (page + 1)) : null;
     return {
       data: slice.map(({ _file, ...e }) => e),
       included: slice.filter((e) => e._file).map(({ _file: f }) => ({
@@ -224,6 +169,76 @@
         attributes: { displayName: f.Name, versionNumber: Number(f.itemIdVersion.split("=")[1]), lastModifiedUserName: f.lastModifiedUserName, lastModifiedTime: f.lastModifiedTime, createTime: f.lastModifiedTime },
       })),
       ...(next ? { links: { next: { href: next } } } : {}),
+    };
+  }
+
+  // "Example Project" (EX0001): one tree under Project Files.
+  addTree(ROOT_FOLDER, files);
+
+  // Framework extract for "Example Framework", shaped like the real one
+  // (DT1117): a Parent record for the framework plus one Child record per
+  // region, named by Sub_folder_name, each with its own start folder.
+  // Inside a region each top-level folder is a sub-project. Documents are
+  // spread by number: across regions, then across that region's
+  // sub-projects; every 17th sits at region level (the region's own WIP /
+  // SHARED / PUBLISHED folders), every 40th on the Parent (framework-wide)
+  // and every 53rd in a training folder (dropped by the dashboard).
+  // "Depot" has no Sub_folder_name (ProjectName fallback) and its extract
+  // paths start with the region folder, to exercise both shapes.
+  const FRAMEWORK = [
+    { name: "North", subs: ["NO101_Alder_Road (PS000101)", "NO102 - Birch Lane Substation (PS000102)", "NO103_Cedar_Park (PS000103) CANCELLED"] },
+    { name: "South", subs: ["SO201_Dock_Street (PS000201)", "SO202_Elm_Grove (PS000202)"] },
+    { name: "East", subs: ["EA301_Fen_Bridge (PS000301)", "EA302_Grange_Farm (PS000302)", "EA303_Heath_Lane (PS000303)"] },
+    { name: "Depot", subs: ["DE401_Main_Depot (PS000401)"], noFolderName: true, pathHasRegion: true },
+  ];
+  const FRAMEWORK_ROOT = "urn:adsk.wipemea:fs.folder:co.Framework";
+  const regionRoot = (region) => "urn:adsk.wipemea:fs.folder:co.Region" + region.name;
+  const frameworkParent = [];
+  const frameworkBuckets = FRAMEWORK.map(() => []);
+  {
+    const docIndex = (f) => parseInt(f.Name.match(/-(\d{4})\./)[1], 10) - 1000;
+    for (const f of files) {
+      const d = docIndex(f);
+      if (d % 40 === 0) {
+        frameworkParent.push({ ...f, folderPath: "XX-FRAMEWORK / " + f.folderPath });
+        continue;
+      }
+      const i = d % FRAMEWORK.length;
+      const region = FRAMEWORK[i];
+      const top =
+        d % 53 === 0 ? "XX0000_Training_Example"
+        : d % 17 === 0 ? ""
+        : region.subs[Math.floor(d / FRAMEWORK.length) % region.subs.length];
+      frameworkBuckets[i].push({ ...f, folderPath: top ? top + " / " + f.folderPath : f.folderPath });
+    }
+    addTree(FRAMEWORK_ROOT, frameworkParent);
+    FRAMEWORK.forEach((region, i) => addTree(regionRoot(region), frameworkBuckets[i]));
+  }
+  function frameworkExtract() {
+    const choice = (Value) => ({ Value });
+    return {
+      type: "framework",
+      data: [
+        {
+          Title: "mock-project-0003",
+          ProjectName: "Example Framework",
+          Framework_lineage: choice("Parent"),
+          start_folder_id: FRAMEWORK_ROOT,
+          Modified: iso(5 * 60000),
+          files_list: JSON.stringify(frameworkParent),
+          folder_array_deliverables: "[]",
+        },
+        ...FRAMEWORK.map((region, i) => ({
+          Title: "mock-project-0003",
+          ProjectName: "Example Framework " + region.name,
+          Framework_lineage: choice("Child"),
+          ...(region.noFolderName ? {} : { Sub_folder_name: region.name }),
+          start_folder_id: regionRoot(region),
+          Modified: iso((10 + i) * 60000),
+          files_list: JSON.stringify(region.pathHasRegion ? frameworkBuckets[i].map((f) => ({ ...f, folderPath: region.name + " / " + f.folderPath })) : frameworkBuckets[i]),
+          folder_array_deliverables: "[]",
+        })),
+      ],
     };
   }
 

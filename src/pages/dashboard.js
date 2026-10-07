@@ -4,11 +4,12 @@
 import { signOut } from "../auth/pkce.js";
 import { APP_NAME, projectFeatures, bareProjectId, SECTIONS } from "../core/config.js";
 import { log } from "../core/log.js";
-import { startRouter } from "../core/router.js";
+import { currentRoute, startRouter } from "../core/router.js";
 import { store } from "../core/store.js";
-import { loadProjectFiles, enrichProjectFiles } from "../data/project.js";
+import { fetchProjectExtract, loadProjectFiles, loadFrameworkCatalogue, loadScopeFiles, enrichProjectFiles } from "../data/project.js";
 import { stackDocuments } from "../data/stacking.js";
-import { buildScopes, hasScopeChoice, scopeFiles, scopeLabel, validScope } from "../data/subProjects.js";
+import { FRAMEWORK_SCOPE, buildScopes, hasScopeChoice, scopeFiles, scopeLabel, validScope } from "../data/subProjects.js";
+import { renderSubProjectChooser } from "../views/subProjectChooser.js";
 import { local } from "../core/storage.js";
 import { startSession, findUserProject } from "../session.js";
 import { createShell, stateCard } from "../views/shell.js";
@@ -115,32 +116,69 @@ async function load() {
 }
 
 async function loadData() {
-  const { aps, user, project, routes } = ctx;
+  const { aps, project } = ctx;
   if (!routerStarted) showSteps(2);
-  shell.setFreshness("loading", "Loading project files…");
+  shell.setFreshness("loading", "Loading project details…");
+  // ?source=extract uses the Power Automate file list instead of reading
+  // Forma live (for comparing the two).
+  const source = new URLSearchParams(location.search).get("source") === "extract" ? "extract" : "auto";
 
-  let extract, files, failedFolders;
+  let parsed;
   try {
-    ({ extract, files, failedFolders } = await loadProjectFiles({
+    parsed = await fetchProjectExtract({ projectName: project.name });
+  } catch (err) {
+    return loadFailed(err);
+  }
+
+  // Live frameworks: list the sub-projects, then load only the chosen
+  // scope — the one in the URL or remembered, else ask with the chooser.
+  if (parsed.type === "framework" && source !== "extract") {
+    shell.setFreshness("loading", "Listing sub-projects…");
+    const catalogue = await loadFrameworkCatalogue({ aps, projectId: project.id, extract: parsed });
+    if (catalogue.some((g) => g.subProjects.length)) {
+      framework = { parsed, catalogue };
+      const wanted = new URLSearchParams(location.search).get("scope") || local.get(scopeStorageKey(), "");
+      const scope = validScope(wanted, catalogue);
+      if (scope) return loadScope(scope);
+      return openChooser();
+    }
+    log.warn("Couldn't list the framework's sub-projects; loading every file from the extract");
+  }
+  framework = null;
+
+  let result;
+  try {
+    shell.setFreshness("loading", "Loading project files…");
+    result = await loadProjectFiles({
       aps,
       projectId: project.id,
       projectName: project.name,
-      // ?source=extract uses the Power Automate file list instead of
-      // reading Forma live (for comparing the two).
-      source: new URLSearchParams(location.search).get("source") === "extract" ? "extract" : "auto",
+      parsed,
+      source,
       onProgress: (p) => shell.setFreshness("loading", `Reading Forma folders ${formatNumber(p.done)} / ${formatNumber(p.queued)}`),
-    }));
-    // External clients only see client-facing folders (PUBLISHED /
-    // SHARED_TO_CLIENT). Filtered before stacking, so a WIP or SHARED copy
-    // can never surface as a document's current revision or in its history.
-    if (!user.isInternal) files = files.filter(isClientVisible);
+    });
   } catch (err) {
-    log.error(err);
-    if (!routerStarted) showSteps(2, `Couldn't load the project files: ${err.message}`);
-    else toast("Couldn't refresh the data", err.message, { error: true });
-    shell.setFreshness("error", "Data couldn't be loaded");
-    return;
+    return loadFailed(err);
   }
+  await showFiles(result);
+}
+
+function loadFailed(err) {
+  log.error(err);
+  if (!routerStarted) showSteps(2, `Couldn't load the project files: ${err.message}`);
+  else toast("Couldn't refresh the data", err.message, { error: true });
+  shell.setFreshness("error", "Data couldn't be loaded");
+}
+
+// Publishes loaded files to the store, starts (or re-renders) the views
+// and fills in attributes. For a live framework, `scope` is the scope
+// that was loaded; otherwise the scope picker is built from the files.
+async function showFiles({ extract, files, failedFolders }, scope) {
+  const { user, routes } = ctx;
+  // External clients only see client-facing folders (PUBLISHED /
+  // SHARED_TO_CLIENT). Filtered before stacking, so a WIP or SHARED copy
+  // can never surface as a document's current revision or in its history.
+  if (!user.isInternal) files = files.filter(isClientVisible);
   if (failedFolders.length) {
     const names = failedFolders.slice(0, 3).map((f) => f.folderPath || "(top folder)").join(", ");
     toast(
@@ -150,21 +188,136 @@ async function loadData() {
     );
   }
 
-  // Framework projects: restore the remembered region / sub-project (if
-  // it still exists) and offer the picker when there's a choice. Built
-  // after the client filter, so clients only see scopes they have files in.
-  scopes = buildScopes(extract.regions, files);
-  const scope = validScope(local.get(scopeStorageKey(), ""), scopes);
-  shell.setScope(hasScopeChoice(scopes) ? { groups: scopes, value: scope, onChange: setScope } : null);
+  if (framework) {
+    scopes = framework.catalogue;
+    shell.setScope({ label: scopeLabel(scope, scopes), onOpen: openChooser });
+  } else {
+    // Extract-mode frameworks: restore the remembered region /
+    // sub-project (if it still exists) and offer the dropdown when there's
+    // a choice. Built after the client filter, so clients only see scopes
+    // they have files in.
+    scopes = buildScopes(extract.regions, files);
+    scope = validScope(local.get(scopeStorageKey(), ""), scopes);
+    if (scope === FRAMEWORK_SCOPE) scope = "";
+    shell.setScope(hasScopeChoice(scopes) ? { groups: scopes, value: scope, onChange: setScope } : null);
+  }
 
   // Render straight away with basic file data; attributes stream in.
   store.set({ extract, files, scope, scopeLabel: scopeLabel(scope, scopes), documents: stackScoped(files, scope) });
   if (!routerStarted) {
     routerStarted = true;
     startRouter({ routes, fallback: "midp", onChange: showView });
+  } else if (framework) {
+    // The view was replaced by the chooser / loading card.
+    const route = currentRoute("midp");
+    showView(routes.includes(route) ? route : "midp");
   }
 
   await enrichMetadata(extract, files);
+}
+
+// ---------- live frameworks: chooser and scoped loading ----------
+
+let framework = null; // { parsed, catalogue } while a framework is read live
+
+function openChooser() {
+  if (!framework) return;
+  if (currentCleanup) currentCleanup();
+  currentCleanup = null;
+  shell.setActive(null);
+  // Opening the chooser abandons a scope load in progress, so it can't
+  // replace the chooser when it finishes.
+  scopeLoad++;
+  // `scope` is only set in the store once a scope has loaded.
+  const { scope: current, scopeLabel: label } = store.get();
+  renderSubProjectChooser(shell.content, {
+    project: ctx.project,
+    catalogue: framework.catalogue,
+    current,
+    currentLabel: label,
+    onChoose: (key) => chooseScope(key),
+    onCancel: current ? () => showView(ctx.routes.includes(currentRoute("midp")) ? currentRoute("midp") : "midp") : null,
+  });
+  if (!current) shell.setFreshness("ready", "Choose what to load");
+}
+
+// Picking a scope always wins: it supersedes a scope load (or Refresh)
+// still in progress — see scopeLoad in loadScope.
+function chooseScope(key) {
+  return loadScope(key);
+}
+
+let scopeLoad = 0; // bumped per scope load; an older load stops when it sees a newer one
+
+// Loads one framework scope live and shows it.
+async function loadScope(scope) {
+  const { aps, project } = ctx;
+  const { parsed, catalogue } = framework;
+  const thisLoad = ++scopeLoad;
+  const superseded = () => thisLoad !== scopeLoad;
+  const label = scopeLabel(scope, catalogue);
+  local.set(scopeStorageKey(), scope);
+  const url = new URL(location.href);
+  url.searchParams.set("scope", scope);
+  history.replaceState(null, "", url);
+  shell.setScope({ label, onOpen: openChooser });
+
+  // Loading card in place of the view until the files are in.
+  if (currentCleanup) currentCleanup();
+  currentCleanup = null;
+  const card = (finding) =>
+    mount(
+      shell.content,
+      stateCard({
+        eyebrow: project.name,
+        title: `Loading ${label}`,
+        steps: [
+          { label: "Finding its WIP / SHARED / PUBLISHED folders", state: finding ? "active" : "done" },
+          { label: "Reading the files from Forma", state: finding ? "pending" : "active" },
+        ],
+      })
+    );
+  card(true);
+  let phase = "finding";
+  try {
+    const result = await loadScopeFiles({
+      aps,
+      projectId: project.id,
+      extract: parsed,
+      catalogue,
+      scope,
+      onProgress: (p) => {
+        if (superseded()) return;
+        if (p.phase === "finding") {
+          shell.setFreshness("loading", `Finding folders ${formatNumber(p.done)} / ${formatNumber(p.total)}`);
+          return;
+        }
+        if (phase === "finding") {
+          phase = "reading";
+          card(false);
+        }
+        shell.setFreshness("loading", `Reading Forma folders ${formatNumber(p.done)} / ${formatNumber(p.queued)}`);
+      },
+    });
+    if (superseded()) return;
+    await showFiles(result, scope);
+  } catch (err) {
+    if (superseded()) return;
+    log.error(err);
+    shell.setFreshness("error", "Data couldn't be loaded");
+    mount(
+      shell.content,
+      stateCard({
+        eyebrow: project.name,
+        title: `Couldn't load ${label}`,
+        error: err.message,
+        actions: [
+          h("button", { class: "btn primary", onclick: () => chooseScope(scope) }, icon("rotate"), "Try again"),
+          h("button", { class: "btn", onclick: openChooser }, "Choose another"),
+        ],
+      })
+    );
+  }
 }
 
 // Fills custom attributes for the loaded files. Also run on its own by the
@@ -175,8 +328,12 @@ async function enrichMetadata(extract, files) {
   // Attributes are written into the rows in place as each batch arrives.
   // Views are told at most once a second (metadataProgress) so cells fill
   // in progressively instead of all at once at the very end.
+  // A framework scope switch replaces the store's extract; this load's
+  // results are then stale and mustn't overwrite the newer scope.
+  const stale = () => store.get().extract !== extract;
   let lastPublish = 0;
   const publish = (p, force = false) => {
+    if (stale()) return;
     const now = Date.now();
     if (!force && now - lastPublish < 1000) return;
     lastPublish = now;
@@ -193,15 +350,18 @@ async function enrichMetadata(extract, files) {
       extract,
       files,
       onProgress: (p) => {
+        if (stale()) return;
         if (p.total) shell.setFreshness("loading", `Loading metadata ${formatNumber(p.done)} / ${formatNumber(p.total)}`);
         publish(p, p.done === 0);
       },
     }));
   } catch (err) {
+    if (stale()) return;
     // Never leave the table half-loaded: publish whatever arrived.
     log.error(err);
     toast("Some metadata couldn't be loaded", err.message, { error: true, timeout: 12000 });
   }
+  if (stale()) return;
   store.set({
     files: [...files],
     documents: stackScoped(files, store.get().scope),

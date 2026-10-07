@@ -144,7 +144,7 @@ test("loadProjectFiles tags regions and sub-projects, crawls additional folders 
   };
   const { extract, files } = await loadProjectFiles({ aps, projectId: "p", projectName: "FW", fetchExtractImpl: async () => raw });
   assert.equal(extract.source, "extract", "frameworks keep the extract's file list");
-  assert.deepEqual(extract.regions, [{ name: "North" }, { name: "South" }]);
+  assert.deepEqual(extract.regions.map((r) => r.name), ["North", "South"]);
   assert.deepEqual(
     files.map((f) => [f.name, f.regions.join("+"), f.sub_project]),
     [["n.pdf", "North", "NO1_Alder"], ["s.pdf", "North+South", "NO1_Alder"], ["r.pdf", "North", "NO2_Birch"]]

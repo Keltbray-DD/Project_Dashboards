@@ -44,8 +44,8 @@ export function parseNestedJson(value) {
 //     deliverableFolders,
 //     additionalFolders,  [{ folderID, folderName, includeSubFolders,
 //                           _region }]
-//     regions,            [{ name }] — framework regions in record order,
-//                         de-duplicated ([] otherwise)
+//     regions,            [{ name, startFolderId }] — framework regions in
+//                         record order, de-duplicated ([] otherwise)
 //   }
 export function parseExtract(raw) {
   const records = Array.isArray(raw?.data) ? raw.data : [];
@@ -66,7 +66,7 @@ export function parseExtract(raw) {
     for (const folder of parseNestedJson(record.additional_MIDP_folders)) {
       additionalFolders.push({ ...folder, _region: region });
     }
-    if (region && !regions.some((r) => r.name === region)) regions.push({ name: region });
+    if (region && !regions.some((r) => r.name === region)) regions.push({ name: region, startFolderId: record.start_folder_id || "" });
 
     const modified = record.Modified ? new Date(record.Modified) : null;
     if (modified && !isNaN(modified) && (!updated || modified < updated)) updated = modified;

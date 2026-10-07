@@ -90,8 +90,8 @@ user's **own token**, so ACC enforces what they can read and edit.
      reads in ~6 s). Folders the user can't open (403/404, normal for
      clients) are skipped; other failures toast a warning. If nothing can
      be read it falls back to the extract's `files_list`.
-   - **Frameworks** use the extract's `files_list`; additional MIDP
-     folders are walked live.
+   - **Frameworks** load one chosen scope at a time, live — see
+     "Framework projects" below.
    `extract.source` says which ("live" | "extract"); `extract.updated` is
    when the list is as of, `extract.cacheEpoch` keys the attribute/history
    caches and the pending-edits cutoff (live: the current 30-min window).
@@ -118,27 +118,49 @@ user's **own token**, so ACC enforces what they can read and edit.
 A "framework" extract (`type: "framework"`) has a Parent record
 (`Framework_lineage.Value === "Parent"`, the framework itself) and one
 Child record per **region**, named by `Sub_folder_name` (fallback:
-`ProjectName` minus the Parent's name). Inside a region, each top-level
-folder is a **sub-project** (`AX027_Milborne_Port (PS009789)`), taken from
-the file's folder path (`data/subProjects.js subProjectFolder`; skips a
-leading `Project Files` / region folder; container folders like `0E.SHARED`
-are region-level, not sub-projects).
+`ProjectName` minus the Parent's name), each with its own
+`start_folder_id`. Inside a region, each top-level folder is a
+**sub-project** (`AX027_Milborne_Port (PS009789)`); top-level WIP / SHARED
+/ PUBLISHED folders are the region's own (region-level files); other
+container folders (`Z.PROJECT_ADMIN`, …) are ignored.
+
+**Live (default): choose first, then load only that.**
+1. `loadFrameworkCatalogue` lists each region's start folder (one request
+   per region) and `classifyRegionFolders` sorts the folders — no files
+   are loaded yet.
+2. The scope comes from `?scope=` in the URL, else the remembered one
+   (`localStorage[v2.scope.<id>]`); with neither, the **chooser**
+   (`views/subProjectChooser.js`) fills the page: a card per region with
+   sub-project tiles, "All of <region>", "Whole framework" and search.
+3. `loadScopeFiles` loads the scope: each sub-project's MIDP folders
+   (`aps.findFolders` under the sub-project folder, 3 at a time, paced)
+   plus each touched region's region-level folders and additional MIDP
+   folders, in one `walkFolders` walk. Parent (framework-wide) files are
+   not loaded. A region or the whole framework walks every sub-project in
+   it — slower, and labelled so.
+4. The top bar shows the scope as a button ("Change") that reopens the
+   chooser ("Back to …" returns). Picking a scope — or opening the chooser —
+   abandons a scope load still in progress (`scopeLoad` counter;
+   `enrichMetadata` drops stale results by comparing `store.extract`).
+
+**Extract mode** (`?source=extract`, or if no region can be listed):
+every file from `files_list` is loaded and the old top-bar dropdown filters
+in memory (`buildScopes` / `scopeFiles`); Parent files show in every scope.
 
 Rows carry `regions` (every region the file is listed under;
-`mergeDuplicateFiles` keeps one row per version) and `sub_project`.
-- Parent files have no region: framework-wide, shown in every scope.
+`mergeDuplicateFiles` keeps one row per version) and `sub_project`
+(`subProjectFolder`: the first path segment, skipping `Project Files` /
+the region folder; "" for region-level).
 - Region-level files show in each of that region's sub-projects.
-- `XX0000_*` (training) sub-projects are dropped on load.
-- Names ending `CANCELLED` are listed last and labelled "(cancelled)";
-  picker labels are tidied (`_` and ` - ` → spaces).
+- `XX0000_*` (training) sub-projects are left out.
+- Names ending `CANCELLED` are listed last and labelled "Cancelled";
+  labels are tidied (`_` and ` - ` → spaces).
 
-The top-bar picker (one grouped list: Whole framework → region → its
-sub-projects) shows when there's a choice. The choice
-(`store.scope` key + `store.scopeLabel`, remembered per project in
-`localStorage[v2.scope.<id>]`) scopes **every** view, Compliance and the
-nav counts — files are scoped before stacking (`stackScoped` in
-`pages/dashboard.js`). Additional MIDP folders take their record's region.
-Mock: project EX0003 "Example Framework".
+Scope keys: `framework`, `region:<region>`, `sub:<region>|<folder>`
+(`store.scope` + `store.scopeLabel`). Every view, Compliance and the nav
+counts see only the scope (`stackScoped` in `pages/dashboard.js`).
+Mock: project EX0003 "Example Framework" (per-region folder trees in
+`dev/mock-api.js`).
 
 ### State
 
@@ -171,6 +193,7 @@ src/
           midp/ index.js (shared register view) · columns · searchPanel
                 editing · historyDialog · columnPicker
           compliance.js
+          subProjectChooser.js (framework: pick a sub-project before loading)
   ui/     dom.js (safe element builder) · toast · format · charts (HTML/CSS)
 tests/    node --test unit tests (core/data/compliance)
 dev/      mock-api.js + mock pages (generated data, no sign-in)
