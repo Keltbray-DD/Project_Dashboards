@@ -27,6 +27,11 @@ export const PA_FLOWS = {
   feedback: PA_BASE + "9c87a5536bdb4693a934559d0ce9d483" + PA_QS + "47zaCSAjFCwW5znjpZKgifJK8YVhJQdsICqIJM91MQ4",
 };
 
+// Single projects read their files live from Forma: these MIDP container
+// folders (0C.WIP, 0E.SHARED, 0F.SHARED_TO_CLIENT, 0G.PUBLISHED, …) under
+// the extract's start folder, plus any additional MIDP folders.
+export const MIDP_FOLDER_PATTERN = /WIP|SHARED|PUBLISHED/i;
+
 // Sidebar sections. Each groups the views for one discipline, in order.
 // A section only appears when the user can see at least one of its views
 // (role + project features decide which views exist — see

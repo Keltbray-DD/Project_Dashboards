@@ -119,9 +119,17 @@ async function loadData() {
   if (!routerStarted) showSteps(2);
   shell.setFreshness("loading", "Loading project files…");
 
-  let extract, files;
+  let extract, files, failedFolders;
   try {
-    ({ extract, files } = await loadProjectFiles({ aps, projectId: project.id, projectName: project.name }));
+    ({ extract, files, failedFolders } = await loadProjectFiles({
+      aps,
+      projectId: project.id,
+      projectName: project.name,
+      // ?source=extract uses the Power Automate file list instead of
+      // reading Forma live (for comparing the two).
+      source: new URLSearchParams(location.search).get("source") === "extract" ? "extract" : "auto",
+      onProgress: (p) => shell.setFreshness("loading", `Reading Forma folders ${formatNumber(p.done)} / ${formatNumber(p.queued)}`),
+    }));
     // External clients only see client-facing folders (PUBLISHED /
     // SHARED_TO_CLIENT). Filtered before stacking, so a WIP or SHARED copy
     // can never surface as a document's current revision or in its history.
@@ -132,6 +140,14 @@ async function loadData() {
     else toast("Couldn't refresh the data", err.message, { error: true });
     shell.setFreshness("error", "Data couldn't be loaded");
     return;
+  }
+  if (failedFolders.length) {
+    const names = failedFolders.slice(0, 3).map((f) => f.folderPath || "(top folder)").join(", ");
+    toast(
+      `${failedFolders.length} folder${failedFolders.length === 1 ? "" : "s"} couldn't be read`,
+      `Files in ${names}${failedFolders.length > 3 ? "…" : ""} may be missing. Refresh to try again.`,
+      { error: true, timeout: 12000 }
+    );
   }
 
   // Framework projects: restore the remembered region / sub-project (if
@@ -192,7 +208,7 @@ async function enrichMetadata(extract, files) {
     metadataProgress: { complete: true, failed: stats.failed, unavailable: stats.unavailable },
   });
   if (stats.failed || stats.unavailable) log.warn("Metadata load incomplete", stats);
-  shell.setFreshness("ready", freshnessText(extract.updated));
+  shell.setFreshness("ready", freshnessText(extract));
 }
 
 // Re-fetches only the files whose metadata is missing.
@@ -225,8 +241,9 @@ function setScope(scope) {
   store.set({ scope, scopeLabel: scopeLabel(scope, scopes), documents: stackScoped(store.get().files, scope) });
 }
 
-function freshnessText(updated) {
+function freshnessText({ source, updated }) {
   if (!updated) return "Data loaded";
+  if (source === "live") return `Live from Forma · ${formatWhen(updated)}`;
   const next = new Date(new Date(updated).getTime() + EXTRACT_INTERVAL_MS);
   const nextText = next > new Date() ? ` · next update ~${next.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}` : "";
   return `Data as of ${formatWhen(updated)}${nextText}`;

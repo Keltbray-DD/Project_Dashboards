@@ -137,9 +137,13 @@ test("loadProjectFiles tags regions and sub-projects, crawls additional folders 
     ],
   };
   const aps = {
-    walkFolder: async () => [{ item: { id: "urn:lin", attributes: { displayName: "r.pdf" } }, tipVersion: { id: "urn:r?version=1", attributes: {} }, folderPath: "NO2_Birch / RAMS", folderId: "urn:rams" }],
+    walkFolders: async () => ({
+      files: [{ item: { id: "urn:lin", attributes: { displayName: "r.pdf" } }, tipVersion: { id: "urn:r?version=1", attributes: {} }, folderPath: "NO2_Birch / RAMS", folderId: "urn:rams", root: 0 }],
+      failed: [],
+    }),
   };
   const { extract, files } = await loadProjectFiles({ aps, projectId: "p", projectName: "FW", fetchExtractImpl: async () => raw });
+  assert.equal(extract.source, "extract", "frameworks keep the extract's file list");
   assert.deepEqual(extract.regions, [{ name: "North" }, { name: "South" }]);
   assert.deepEqual(
     files.map((f) => [f.name, f.regions.join("+"), f.sub_project]),

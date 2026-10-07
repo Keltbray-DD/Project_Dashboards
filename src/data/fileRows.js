@@ -90,7 +90,7 @@ export function fromExtractItem(item, projectId) {
   });
 }
 
-// From an aps.walkFolder() entry (additional MIDP folders crawled live).
+// From an aps.walkFolders() entry (files read live from Forma).
 export function fromFolderItem({ item, tipVersion, folderPath, folderId }, projectId) {
   const ia = item?.attributes || {};
   const va = tipVersion?.attributes || {};

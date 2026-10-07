@@ -34,6 +34,8 @@ export function parseNestedJson(value) {
 // Returns:
 //   {
 //     projectName, title,
+//     startFolderId,      the project's root folder in Forma (the Parent's
+//                         for a framework)
 //     updated,            ISO timestamp of the extract (oldest record's,
 //                         so pending edits survive until every record
 //                         has caught up)
@@ -73,6 +75,7 @@ export function parseExtract(raw) {
   return {
     type: raw?.type || "single",
     projectName: parent.ProjectName || "",
+    startFolderId: parent.start_folder_id || "",
     title: parent.Title || "",
     updated: updated ? updated.toISOString() : null,
     items,

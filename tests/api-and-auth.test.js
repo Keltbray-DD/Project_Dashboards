@@ -51,7 +51,7 @@ test("request recovers when a timed-out call succeeds on retry", async () => {
   assert.deepEqual(await request("u", { fetch, timeoutMs: 5, retryDelayMs: 1 }), { ok: true });
 });
 
-test("aps.walkFolder follows pagination and recurses with folder paths", async () => {
+test("aps.walkFolders follows pagination and recurses with folder paths", async () => {
   const pages = {
     "/folders/root/contents?includeHidden=false": {
       data: [
@@ -75,13 +75,55 @@ test("aps.walkFolder follows pagination and recurses with folder paths", async (
     return jsonResponse(200, pages[key]);
   };
   const aps = createAps({ getToken: async () => "T", fetch });
-  const found = await aps.walkFolder("b.p", "root", "Root");
+  const progress = [];
+  const { files, failed } = await aps.walkFolders("b.p", [{ id: "root", path: "Root" }], { gapMs: 0, onProgress: (p) => progress.push(p) });
   assert.deepEqual(
-    found.map((f) => [f.item.id, f.folderPath, f.folderId]).sort(),
-    [["i1", "Root", "root"], ["i2", "Root", "root"], ["i3", "Root / Sub", "sub"]]
+    files.map((f) => [f.item.id, f.folderPath, f.folderId, f.root]).sort(),
+    [["i1", "Root", "root", 0], ["i2", "Root", "root", 0], ["i3", "Root / Sub", "sub", 0]]
   );
-  const flat = await aps.walkFolder("b.p", "root", "Root", { recurse: false });
-  assert.equal(flat.length, 2);
+  assert.deepEqual(failed, []);
+  assert.deepEqual(progress.at(-1), { done: 2, queued: 2, files: 3 });
+  const flat = await aps.walkFolders("b.p", [{ id: "root", path: "Root", recurse: false }], { gapMs: 0 });
+  assert.equal(flat.files.length, 2);
+});
+
+test("aps.walkFolders skips a folder that fails, keeps the rest and caps parallel requests", async () => {
+  const tree = { root: ["a", "b", "c", "d"], a: [], b: [], c: [], d: [] };
+  let inFlight = 0;
+  let maxInFlight = 0;
+  const fetch = async (url) => {
+    const id = url.match(/folders\/([^/]+)\/contents/)[1];
+    inFlight++;
+    maxInFlight = Math.max(maxInFlight, inFlight);
+    await new Promise((r) => setTimeout(r, 5));
+    inFlight--;
+    if (id === "b") return jsonResponse(403, { reason: "no access" });
+    return jsonResponse(200, {
+      data: [
+        ...tree[id].map((child) => ({ type: "folders", id: child, attributes: { displayName: child.toUpperCase() } })),
+        { type: "items", id: `i-${id}`, relationships: { tip: { data: { id: `v-${id}` } } } },
+      ],
+      included: [{ id: `v-${id}` }],
+    });
+  };
+  const aps = createAps({ getToken: async () => "T", fetch });
+  const { files, failed } = await aps.walkFolders("b.p", [{ id: "root", path: "" }], { concurrency: 2, gapMs: 0 });
+  assert.deepEqual(files.map((f) => f.folderPath).sort(), ["", "A", "C", "D"]);
+  assert.deepEqual(failed.map((f) => [f.folderPath, f.status]), [["B", 403]]);
+  assert.ok(maxInFlight <= 2, `at most 2 requests at once (saw ${maxInFlight})`);
+});
+
+test("aps.findFolders finds matching folders up to two levels down, with relative paths", async () => {
+  const folders = (...names) => ({ data: names.map((n) => ({ type: "folders", id: n, attributes: { displayName: n } })) });
+  const pages = {
+    start: folders("0C.WIP", "Z.PROJECT_ADMIN", "Project Area"),
+    "Z.PROJECT_ADMIN": folders("Contracts"),
+    "Project Area": folders("0G.PUBLISHED"),
+  };
+  const fetch = async (url) => jsonResponse(200, pages[decodeURIComponent(url.match(/folders\/([^/]+)\/contents/)[1])] || { data: [] });
+  const aps = createAps({ getToken: async () => "T", fetch });
+  const found = await aps.findFolders("b.p", "start", /WIP|SHARED|PUBLISHED/i);
+  assert.deepEqual(found, [{ id: "0C.WIP", path: "0C.WIP" }, { id: "0G.PUBLISHED", path: "Project Area / 0G.PUBLISHED" }]);
 });
 
 test("aps.updateCustomAttributes reports per-attribute failures on HTTP 200", async () => {

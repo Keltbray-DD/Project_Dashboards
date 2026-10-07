@@ -80,7 +80,7 @@
         itemIdVersion: urn,
         itemID: lineage,
         folderID: `urn:adsk.wipemea:fs.folder:co.${folder.replace(/\W/g, "")}${sub.replace(/\W/g, "")}`,
-        folderPath: `Project Files / ${folder}${sub}`,
+        folderPath: `${folder}${sub}`,
         lastModifiedUserName: pick(["Jo Bloggs", "Sam Patel", "Alex Reid", "Chris Wong"]),
         lastModifiedTime: iso(rnd() * 40 * 86400000),
         createUserName: pick(["Jo Bloggs", "Sam Patel", "Alex Reid"]),
@@ -183,6 +183,50 @@
     };
   }
 
+  // Live folder tree for "Example Project", built from the generated
+  // files' paths under the project's start folder (Project Files). Paged
+  // 100 entries at a time like Forma; clients get 403 on WIP folders.
+  const ROOT_FOLDER = "urn:adsk.wipemea:fs.folder:co.ProjectFiles";
+  const folderIdFor = (path) => (path ? `urn:adsk.wipemea:fs.folder:co.${path.replace(/\W/g, "")}` : ROOT_FOLDER);
+  const folderPaths = new Map([[ROOT_FOLDER, ""]]);
+  for (const f of files) {
+    const parts = f.folderPath.split(" / ");
+    parts.forEach((_, i) => {
+      const path = parts.slice(0, i + 1).join(" / ");
+      folderPaths.set(folderIdFor(path), path);
+    });
+  }
+  function folderContents(folderId, url) {
+    const path = folderPaths.get(folderId);
+    if (path === undefined) return { data: [] };
+    if (AS_CLIENT && /WIP/.test(path)) return { forbidden: true };
+    const depth = path ? path.split(" / ").length : 0;
+    const children = [...new Set([...folderPaths.values()].filter((p) => p && p.split(" / ").length === depth + 1 && (!path || p.startsWith(path + " / "))))];
+    const entries = [
+      ...children.map((p) => ({ type: "folders", id: folderIdFor(p), attributes: { displayName: p.split(" / ").pop() } })),
+      ...files.filter((f) => f.folderPath === path).map((f) => ({
+        type: "items",
+        id: f.itemID,
+        attributes: { displayName: f.Name, createUserName: f.createUserName },
+        relationships: { tip: { data: { id: f.itemIdVersion } } },
+        _file: f,
+      })),
+    ];
+    const PAGE = 100;
+    const page = Number(new URL(url).searchParams.get("page[number]") || 0);
+    const slice = entries.slice(page * PAGE, (page + 1) * PAGE);
+    const next = (page + 1) * PAGE < entries.length ? url.replace(/&page\[number\]=\d+|$/, `&page[number]=${page + 1}`) : null;
+    return {
+      data: slice.map(({ _file, ...e }) => e),
+      included: slice.filter((e) => e._file).map(({ _file: f }) => ({
+        type: "versions",
+        id: f.itemIdVersion,
+        attributes: { displayName: f.Name, versionNumber: Number(f.itemIdVersion.split("=")[1]), lastModifiedUserName: f.lastModifiedUserName, lastModifiedTime: f.lastModifiedTime, createTime: f.lastModifiedTime },
+      })),
+      ...(next ? { links: { next: { href: next } } } : {}),
+    };
+  }
+
   // ---------- routing ----------
   const json = (body, status = 200) =>
     new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
@@ -213,6 +257,7 @@
           Title: "EX0001 extract",
           ProjectName: body && body.project_Name,
           Modified: iso(12 * 60000),
+          ...(body && body.project_Name === "Example Project" ? { start_folder_id: ROOT_FOLDER } : {}),
           files_list: JSON.stringify(body && body.project_Name === "Example Project" ? files : []),
           folder_array_deliverables: "[]",
         }],
@@ -247,7 +292,13 @@
       });
     }
     if (url.includes("/topFolders")) {
-      return json({ data: [{ id: "urn:adsk.wipemea:fs.folder:co.ProjectFiles", attributes: { name: "Project Files" } }] });
+      return json({ data: [{ id: ROOT_FOLDER, attributes: { name: "Project Files" } }] });
+    }
+    const contentsMatch = url.match(/\/folders\/([^/?]+)\/contents/);
+    if (contentsMatch) {
+      await delay(SLOW ? 600 : 120);
+      const contents = folderContents(decodeURIComponent(contentsMatch[1]), url);
+      return contents.forbidden ? json({ reason: "Forbidden" }, 403) : json(contents);
     }
     if (url.includes("/custom-attribute-definitions")) {
       await delay(200);

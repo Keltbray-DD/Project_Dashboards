@@ -300,7 +300,7 @@ function renderRegister(container, ctx, config) {
         cellEdited: editing ? (cell) => editing.cellEdited(cell) : undefined,
         onInfo: (row) => {
           const doc = docsByKey.get(row._key);
-          if (doc) openHistoryDialog(doc, { aps, projectId: project.id, extractUpdated: store.get().extract?.updated });
+          if (doc) openHistoryDialog(doc, { aps, projectId: project.id, extractUpdated: store.get().extract?.cacheEpoch });
         },
       }),
       dataTree: true,
@@ -343,7 +343,7 @@ function renderRegister(container, ctx, config) {
       data._historyLoaded = true;
       const doc = docsByKey.get(data._key);
       try {
-        const history = await documentHistory(doc, { aps, projectId: project.id, extractUpdated: store.get().extract?.updated });
+        const history = await documentHistory(doc, { aps, projectId: project.id, extractUpdated: store.get().extract?.cacheEpoch });
         const children = history.filter((r) => r.id !== data.id).reverse().map((r) => ({ ...r, _child: true }));
         row.update({ _children: children.length ? children : null });
         if (children.length) row.treeExpand();

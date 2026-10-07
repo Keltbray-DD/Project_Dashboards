@@ -31,7 +31,10 @@ sends no cache headers and browsers keep modules for a while).
   `?slow=1` simulates a slow metadata load, `?size=N` sets the number of
   documents, `?flaky=1` makes Forma randomly throttle / error / hang and
   report ~1% of files unavailable, and `?down=1` fails every metadata
-  request until `__MOCK__.down = false` — for testing Retry).
+  request until `__MOCK__.down = false` — for testing Retry). EX0001 is
+  read live from a mock folder tree (clients get 403 on WIP).
+- `?source=extract` on any dashboard (real or mock) uses the Power
+  Automate file list instead of reading Forma live, for comparing the two.
 - Tests: `npm test` (runs `node --test` over `tests/`; Node 20+).
 
 OAuth redirect URIs registered on the APS app (must match exactly):
@@ -76,20 +79,33 @@ user's **own token**, so ACC enforces what they can read and edit.
 2. **Project list** — Power Automate flow (`PA_FLOWS.projects`), cached
    per session; also used to resolve a project's name from `?id=`.
 3. **Project files** — PA flow `PA_FLOWS.extract` returns a SharePoint-
-   cached extract (~30-min refresh). `data/extract.js` parses both the
-   single-record and "framework" (one record per sub-project) shapes.
-   `additional_MIDP_folders` are crawled live via the Data Management API.
+   cached extract (~30-min refresh, but it can lag a day). `data/extract.js`
+   parses both the single-record and "framework" shapes. Then
+   (`data/project.js loadProjectFiles`):
+   - **Single projects are read live from Forma**: the MIDP containers
+     (`MIDP_FOLDER_PATTERN`: WIP / SHARED / PUBLISHED, found up to 2 levels
+     under the extract's `start_folder_id` by `aps.findFolders`) plus
+     `additional_MIDP_folders`, in one `aps.walkFolders` walk — 3 folder
+     listings at a time with a 150 ms gap (more than that gets 429s; A66
+     reads in ~6 s). Folders the user can't open (403/404, normal for
+     clients) are skipped; other failures toast a warning. If nothing can
+     be read it falls back to the extract's `files_list`.
+   - **Frameworks** use the extract's `files_list`; additional MIDP
+     folders are walked live.
+   `extract.source` says which ("live" | "extract"); `extract.updated` is
+   when the list is as of, `extract.cacheEpoch` keys the attribute/history
+   caches and the pending-edits cutoff (live: the current 30-min window).
 4. **Rows** — `data/fileRows.js` builds one row shape (one per file
    version) from every source.
 5. **Attributes** — `data/enrich.js` fills custom attributes via
    `versions:batch-get` (batches of 50, 6 workers, matched by URN; 30 s
    request timeout with back-off; one gentler retry pass; files Forma
    reports unavailable are flagged `attrs_error`), cached in
-   `sessionStorage` per project + extract timestamp. Views fill cells in
+   `sessionStorage` per project + `cacheEpoch`. Views fill cells in
    progressively (`metadataProgress`); a warning strip with Retry shows if
    anything still failed.
 6. **Pending edits** — `data/pendingEdits.js` overlays successful edits
-   newer than the extract (`localStorage[pendingEdits_<projectId>]`,
+   newer than `cacheEpoch` (`localStorage[pendingEdits_<projectId>]`,
    7-day max age).
 7. **Stacking** — `data/stacking.js stackDocuments()` collapses a
    document's WIP/SHARED/PUBLISHED copies into one Document with a
@@ -220,7 +236,7 @@ it up automatically.
 - Force a fresh sign-in: Local Storage → delete `user_refresh_token`.
 
 ### Project IDs
-- HI7411: `76c59b97-feaf-413c-9bd0-43cf8aaa3133`
+- HI7416 (A66 NTP Scheme 3A): `76c59b97-feaf-413c-9bd0-43cf8aaa3133`
 - DT1117: `2e6449f9-ce25-4a9c-8835-444cb5ea03bf`
 - DT1116: `7c7ca0c5-bfc3-4ef1-9396-c72c6270f457`
 
@@ -260,7 +276,7 @@ it up automatically.
 | `GET/POST /authentication/v2/authorize`, `/token` | `auth/pkce.js` |
 | `GET api.userprofile.autodesk.com/userinfo` | `api/aps.js userInfo` |
 | `GET /project/v1/hubs/{hub}/projects/b.{p}/topFolders` | `topFolders` |
-| `GET /data/v1/projects/b.{p}/folders/{f}/contents` (paged) | `folderContents`, `walkFolder` |
+| `GET /data/v1/projects/b.{p}/folders/{f}/contents` (paged) | `folderContents`, `walkFolders`, `findFolders` |
 | `GET /data/v1/projects/b.{p}/items/{lineage}/versions` (paged) | `itemVersions` |
 | `POST /bim360/docs/v1/projects/{p}/versions:batch-get` | `batchGetVersions` |
 | `GET /bim360/docs/v1/projects/{p}/folders/{f}/custom-attribute-definitions` | `customAttributeDefinitions` |
