@@ -8,7 +8,7 @@ const good = {
   revision: "P01",
   file_description: "Drainage layout",
   status: "S2",
-  classification: "Official",
+  document_classification: "Official",
   form: "DR",
   originator: "ARP",
   function: "DRN",
@@ -30,9 +30,11 @@ test("rules: revision must be ISO, description must not be the placeholder", () 
 });
 
 test("the five checks: Revision, Status, File Description, Title Line 1, Document Classification", () => {
-  assert.deepEqual(RULES.map((r) => r.id), ["revision", "status", "file_description", "title_line_1", "classification"]);
-  assert.equal(rule("classification").test({ classification: "" }), false);
-  assert.equal(rule("classification").test({ classification: "Official" }), true);
+  assert.deepEqual(RULES.map((r) => r.id), ["revision", "status", "file_description", "title_line_1", "document_classification"]);
+  assert.equal(rule("document_classification").test({ document_classification: "" }), false);
+  assert.equal(rule("document_classification").test({ document_classification: "Official" }), true);
+  // Classification is a separate field and isn't checked.
+  assert.equal(rule("document_classification").test({ classification: "Official" }), false);
   // Originator, Function, Form and Spatial aren't checked.
   assert.equal(evaluate([doc({ originator: "", function: "", form: "", spatial: "" })]).totals.compliant, 1);
 });

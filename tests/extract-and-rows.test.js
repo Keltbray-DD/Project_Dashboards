@@ -148,14 +148,15 @@ test("applyAttributes maps both Project PIN spellings and marks the row loaded",
   assert.equal(r.attrs_loaded, true);
 });
 
-test("applyAttributes reads Document Classification and ignores a separate Classification attribute", () => {
+test("applyAttributes keeps Document Classification and Classification as separate fields", () => {
   const both = applyAttributes(fromExtractItem({ Name: "a.pdf" }, PID), attributesFromResult({ customAttributes: [
     { name: "Document Classification", value: "Official" },
     { name: "Classification", value: "Something else" },
   ] }));
-  assert.equal(both.classification, "Official");
+  assert.equal(both.document_classification, "Official");
+  assert.equal(both.classification, "Something else");
   const onlyOld = applyAttributes(fromExtractItem({ Name: "b.pdf" }, PID), attributesFromResult({ customAttributes: [{ name: "Classification", value: "Something else" }] }));
-  assert.equal(onlyOld.classification, "");
+  assert.equal(onlyOld.document_classification, "");
 });
 
 test("fileTypeFromName", () => {

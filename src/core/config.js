@@ -3,7 +3,7 @@
 // one place to change a flow URL or add a project feature.
 
 export const APP_NAME = "Project Dashboard";
-export const APP_VERSION = "v2.1.0";
+export const APP_VERSION = "v2.1.1";
 
 export const APS_BASE = "https://developer.api.autodesk.com";
 export const APS_USERINFO_URL = "https://api.userprofile.autodesk.com/userinfo";
@@ -71,9 +71,10 @@ export const ATTR_NAME_MAP = {
   "State": "state",
   "Activity Code": "activity_code",
   "File Description": "file_description",
-  // Only "Document Classification" — some projects (A66) also have a
-  // separate "Classification" attribute, which isn't this field.
-  "Document Classification": "classification",
+  // Two separate attributes: Document Classification is the required one
+  // (a compliance check); Classification is a different field.
+  "Classification": "classification",
+  "Document Classification": "document_classification",
   "Tracking Status": "tracking_status",
   "Notes": "notes",
   "Category": "category",

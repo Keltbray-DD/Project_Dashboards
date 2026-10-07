@@ -41,7 +41,7 @@ export const RULES = [
     reason: (row) => (isBlank(row.file_description) ? "Missing" : "TIDP placeholder"),
   },
   { id: "title_line_1", label: "Title Line 1", field: "title_line_1", group: "core", test: present("title_line_1"), reason: missing },
-  { id: "classification", label: "Document Classification", field: "classification", group: "core", test: present("classification"), reason: missing },
+  { id: "document_classification", label: "Document Classification", field: "document_classification", group: "core", test: present("document_classification"), reason: missing },
 ];
 
 // The rules that apply to this set of rows: every core rule, plus the
