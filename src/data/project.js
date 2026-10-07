@@ -12,12 +12,14 @@
 import { log } from "../core/log.js";
 import { fetchExtract } from "../api/powerAutomate.js";
 import { parseExtract } from "./extract.js";
-import { fromExtractItem, fromFolderItem } from "./fileRows.js";
+import { fromExtractItem, fromFolderItem, regionFields } from "./fileRows.js";
+import { isTrainingFolder } from "./subProjects.js";
 import { enrichRows, sessionAttributeCache } from "./enrich.js";
 import { createPendingEdits } from "./pendingEdits.js";
 import { stackDocuments } from "./stacking.js";
 
-// Returns { extract: { projectName, title, updated, type, subProjects }, files }.
+// Returns { extract: { projectName, title, updated, type, regions }, files }.
+// Files in training sub-projects (XX0000_…) are left out.
 // fetchExtractImpl is injectable for tests.
 export async function loadProjectFiles({ aps, projectId, projectName, fetchExtractImpl = fetchExtract }) {
   const extract = parseExtract(await fetchExtractImpl(projectName));
@@ -39,11 +41,7 @@ export async function loadProjectFiles({ aps, projectId, projectName, fetchExtra
     const folder = extract.additionalFolders[i];
     for (const entry of list) {
       const row = fromFolderItem(entry, projectId);
-      if (folder._subProject) {
-        row.sub_project = folder._subProject;
-        row.sub_program = folder._subProgram || "";
-        row.sub_projects = [folder._subProject];
-      }
+      Object.assign(row, regionFields(folder._region, row.folder_path));
       files.push(row);
     }
   });
@@ -54,17 +52,17 @@ export async function loadProjectFiles({ aps, projectId, projectName, fetchExtra
       title: extract.title,
       updated: extract.updated,
       type: extract.type,
-      subProjects: extract.subProjects,
+      regions: extract.regions,
     },
-    files: mergeDuplicateFiles(files),
+    files: mergeDuplicateFiles(files.filter((f) => !isTrainingFolder(f.sub_project))),
   };
 }
 
 // In a framework the same file (same version URN) can be listed under
-// more than one sub-project, e.g. a shared folder. Keep one row and
-// record every sub-project it belongs to, so it isn't counted twice.
-// A file that's also listed framework-wide (no sub-project) stays
-// framework-wide: it shows in every scope.
+// more than one region, e.g. a shared folder. Keep one row and record
+// every region it belongs to, so it isn't counted twice. A file that's
+// also listed framework-wide (no region) stays framework-wide: it shows
+// in every scope.
 export function mergeDuplicateFiles(files) {
   const byId = new Map();
   const out = [];
@@ -79,14 +77,12 @@ export function mergeDuplicateFiles(files) {
       out.push(row);
       continue;
     }
-    if (existing.sub_projects.length === 0) continue;
-    if (row.sub_projects.length === 0) {
-      existing.sub_projects = [];
-      existing.sub_project = "";
-      existing.sub_program = "";
+    if (existing.regions.length === 0) continue;
+    if (row.regions.length === 0) {
+      Object.assign(existing, regionFields("", ""));
       continue;
     }
-    for (const sp of row.sub_projects) if (!existing.sub_projects.includes(sp)) existing.sub_projects.push(sp);
+    for (const r of row.regions) if (!existing.regions.includes(r)) existing.regions.push(r);
   }
   return out;
 }

@@ -61,7 +61,7 @@ function renderRegister(container, ctx, config) {
   const { aps, project, user } = ctx;
   const vs = stateFor(config.id);
   const filterState = vs.filters;
-  const exportStem = () => [project.code, store.get().subProject, config.exportName].filter(Boolean).join(" ");
+  const exportStem = () => [project.code, store.get().scopeLabel, config.exportName].filter(Boolean).join(" ");
   let table = null;
   let tableReady = false; // Tabulator rejects data calls before tableBuilt
   let documents = [];
@@ -225,7 +225,7 @@ function renderRegister(container, ctx, config) {
   }
 
   function renderSummary() {
-    const sub = store.get().subProject;
+    const sub = store.get().scopeLabel;
     countText.textContent = `${sub ? sub + " · " : ""}${resultText()} · ${config.description}`;
     const n = activeFilterCount(filterState);
     mount(filtersBtn, icon("filter"), "Filters", n > 0 && h("span", { class: "badge" }, String(n)));

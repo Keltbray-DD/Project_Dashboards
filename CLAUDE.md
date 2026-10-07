@@ -97,23 +97,31 @@ user's **own token**, so ACC enforces what they can read and edit.
    siblings; `hasNewerRevision` flags work in progress past it.
 8. **Views** read `store.documents` and re-render on store changes.
 
-### Framework projects (sub-projects)
+### Framework projects (regions and sub-projects)
 
 A "framework" extract (`type: "framework"`) has a Parent record
 (`Framework_lineage.Value === "Parent"`, the framework itself) and one
-Child record per sub-project, named by `Sub_folder_name` (fallback:
-`ProjectName` minus the Parent's name). There's no programme field today;
-an optional `subProgramName` is read for picker grouping if it ever
-appears. `data/extract.js` merges the records and lists
-`extract.subProjects`; every file row carries `sub_projects` (a file in a
-shared folder can belong to several — `mergeDuplicateFiles` keeps one row
-per version). Parent files have no sub-project and are framework-wide:
-they show in every sub-project scope. Files from `additional_MIDP_folders`
-take their record's sub-project. When there are 2+ sub-projects the top bar shows a picker
-(grouped by programme); the choice (`store.subProject`, remembered per
-project in `localStorage[v2.subProject.<id>]`) scopes **every** view,
-Compliance and the nav counts — files are scoped before stacking
-(`data/subProjects.js`, `stackScoped` in `pages/dashboard.js`).
+Child record per **region**, named by `Sub_folder_name` (fallback:
+`ProjectName` minus the Parent's name). Inside a region, each top-level
+folder is a **sub-project** (`AX027_Milborne_Port (PS009789)`), taken from
+the file's folder path (`data/subProjects.js subProjectFolder`; skips a
+leading `Project Files` / region folder; container folders like `0E.SHARED`
+are region-level, not sub-projects).
+
+Rows carry `regions` (every region the file is listed under;
+`mergeDuplicateFiles` keeps one row per version) and `sub_project`.
+- Parent files have no region: framework-wide, shown in every scope.
+- Region-level files show in each of that region's sub-projects.
+- `XX0000_*` (training) sub-projects are dropped on load.
+- Names ending `CANCELLED` are listed last and labelled "(cancelled)";
+  picker labels are tidied (`_` and ` - ` → spaces).
+
+The top-bar picker (one grouped list: Whole framework → region → its
+sub-projects) shows when there's a choice. The choice
+(`store.scope` key + `store.scopeLabel`, remembered per project in
+`localStorage[v2.scope.<id>]`) scopes **every** view, Compliance and the
+nav counts — files are scoped before stacking (`stackScoped` in
+`pages/dashboard.js`). Additional MIDP folders take their record's region.
 Mock: project EX0003 "Example Framework".
 
 ### State

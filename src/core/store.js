@@ -34,7 +34,9 @@ export function createStore(initial = {}) {
 //   documents     stacked documents (see data/stacking.js)
 //   attrDefs      Forma custom-attribute definitions (for editors)
 //   metadataProgress { done, total, complete } while attributes stream in
-//   subProject    framework sub-project in scope ("" = whole project)
+//   scope         framework region / sub-project in scope: a key from
+//                 data/subProjects.js ("" = whole project)
+//   scopeLabel    its display name ("" = whole project)
 //   editsVersion  bumped after each successful inline edit
 //   loading       { step, label } | null
 export const store = createStore({
@@ -45,6 +47,7 @@ export const store = createStore({
   documents: [],
   attrDefs: [],
   metadataProgress: null,
-  subProject: "",
+  scope: "",
+  scopeLabel: "",
   loading: null,
 });

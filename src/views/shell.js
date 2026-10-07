@@ -25,8 +25,8 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
   const projectCode = h("span", { class: "code", hidden: true });
   const viewOnly = h("span", { class: "view-only", hidden: true, title: "You can view but not edit this project's data" }, icon("eye"), "View only");
   const freshness = h("div", { class: "freshness", hidden: true }, h("span", { class: "dot" }), h("span", {}));
-  const scopeSelect = h("select", { class: "scope-select", "aria-label": "Sub-project" });
-  const scopeWrap = h("label", { class: "scope", hidden: true, title: "Show one sub-project of this framework" }, icon("sitemap"), scopeSelect);
+  const scopeSelect = h("select", { class: "scope-select", "aria-label": "Region or sub-project" });
+  const scopeWrap = h("label", { class: "scope", hidden: true, title: "Show one region or sub-project of this framework" }, icon("sitemap"), scopeSelect);
 
   const avatar = h("button", { class: "avatar", type: "button", "aria-haspopup": "menu", "aria-label": "Account" }, "…");
   const menu = h("div", { class: "menu", role: "menu", hidden: true });
@@ -113,16 +113,19 @@ export function createShell({ sidebar = true, onRefresh, onSignOut } = {}) {
       document.title = name ? `${name} · ${APP_NAME}` : APP_NAME;
     },
 
-    // Framework sub-project picker. null hides it.
-    //   { groups: [{ program, projects: [...] }], value, onChange(name) }
+    // Framework region / sub-project picker. null hides it.
+    //   { groups: buildScopes() result, value: scope key, onChange(key) }
+    // Each region is a heading with "All <region>" then its sub-projects.
     setScope(scope) {
       scopeWrap.hidden = !scope;
       if (!scope) return;
-      const option = (name) => h("option", { value: name }, name);
+      const subOption = (sp) => h("option", { value: sp.key }, sp.cancelled ? `${sp.label} (cancelled)` : sp.label);
       mount(
         scopeSelect,
-        h("option", { value: "" }, "All sub-projects"),
-        scope.groups.map((g) => (g.program ? h("optgroup", { label: g.program }, g.projects.map(option)) : g.projects.map(option)))
+        h("option", { value: "" }, "Whole framework"),
+        scope.groups.map((g) =>
+          h("optgroup", { label: g.region }, h("option", { value: g.key }, `All ${g.region}`), g.subProjects.map(subOption))
+        )
       );
       scopeSelect.value = scope.value || "";
       scopeWrap.classList.toggle("active", !!scope.value);

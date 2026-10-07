@@ -75,7 +75,7 @@ function render(root, ctx, documents, redraw) {
       {},
       h("div", { class: "eyebrow" }, `${project.code ? project.code + " · " : ""}${sectionOf("compliance")?.label || ""}`),
       h("h1", {}, "Compliance"),
-      h("div", { class: "sub" }, `${store.get().subProject ? store.get().subProject + " · " : ""}${formatNumber(totals.documents)} documents · ${ev.activeRules.length} metadata checks · click anything to see those documents in the MIDP`)
+      h("div", { class: "sub" }, `${store.get().scopeLabel ? store.get().scopeLabel + " · " : ""}${formatNumber(totals.documents)} documents · ${ev.activeRules.length} metadata checks · click anything to see those documents in the MIDP`)
     ),
     h(
       "div",
@@ -292,6 +292,6 @@ function exportGaps(ev, project) {
   const sheet = window.XLSX.utils.json_to_sheet(rows);
   const book = window.XLSX.utils.book_new();
   window.XLSX.utils.book_append_sheet(book, sheet, "Gaps");
-  const sub = store.get().subProject;
+  const sub = store.get().scopeLabel;
   window.XLSX.writeFile(book, `${[project.code || "Project", sub].filter(Boolean).join(" ")} compliance gaps${scope === "all" ? "" : " " + scope}.xlsx`);
 }

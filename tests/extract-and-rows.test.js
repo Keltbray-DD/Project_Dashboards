@@ -22,7 +22,7 @@ test("parseNestedJson flattens doubly-encoded arrays and tolerates junk", () => 
   assert.deepEqual(parseNestedJson([{ b: 1 }]), [{ b: 1 }]);
 });
 
-test("parseExtract merges framework records, tags sub-projects and keeps the oldest timestamp", () => {
+test("parseExtract merges framework records, tags regions and keeps the oldest timestamp", () => {
   const raw = {
     type: "framework",
     data: [
@@ -38,7 +38,6 @@ test("parseExtract merges framework records, tags sub-projects and keeps the old
         ProjectName: "ARE - SSE - GSP Axminster",
         Framework_lineage: { Value: "Child" },
         Sub_folder_name: "Axminster",
-        subProgramName: "Prog A",
         Modified: "2026-10-06T10:30:00Z",
         files_list: JSON.stringify([JSON.stringify([{ Name: "a.pdf" }])]),
         folder_array_deliverables: "[]",
@@ -55,10 +54,9 @@ test("parseExtract merges framework records, tags sub-projects and keeps the old
   const ex = parseExtract(raw);
   assert.equal(ex.projectName, "ARE - SSE - GSP");
   assert.equal(ex.updated, "2026-10-06T10:00:00.000Z");
-  assert.deepEqual(ex.items.map((i) => [i.Name, i._subProject]), [["fw.pdf", ""], ["a.pdf", "Axminster"], ["b.pdf", "Melksham"]]);
-  assert.equal(ex.items[1]._subProgram, "Prog A");
-  assert.deepEqual(ex.additionalFolders, [{ folderID: "urn:f1", folderName: "RAMS", _subProject: "Axminster", _subProgram: "Prog A" }]);
-  assert.deepEqual(ex.subProjects, [{ name: "Axminster", program: "Prog A" }, { name: "Melksham", program: "" }]);
+  assert.deepEqual(ex.items.map((i) => [i.Name, i._region]), [["fw.pdf", ""], ["a.pdf", "Axminster"], ["b.pdf", "Melksham"]]);
+  assert.deepEqual(ex.additionalFolders, [{ folderID: "urn:f1", folderName: "RAMS", _region: "Axminster" }]);
+  assert.deepEqual(ex.regions, [{ name: "Axminster" }, { name: "Melksham" }]);
 });
 
 test("parseExtract takes the project name from the Parent record wherever it is", () => {
@@ -70,13 +68,13 @@ test("parseExtract takes the project name from the Parent record wherever it is"
     ],
   });
   assert.equal(ex.projectName, "FW");
-  assert.deepEqual(ex.subProjects.map((s) => s.name), ["North"]);
+  assert.deepEqual(ex.regions, [{ name: "North" }]);
 });
 
-test("parseExtract ignores sub-project fields on a non-framework extract", () => {
+test("parseExtract ignores region fields on a non-framework extract", () => {
   const ex = parseExtract({ type: "single", data: [{ ProjectName: "P", Sub_folder_name: "X", files_list: JSON.stringify([{ Name: "a.pdf" }]) }] });
-  assert.deepEqual(ex.subProjects, []);
-  assert.equal(ex.items[0]._subProject, "");
+  assert.deepEqual(ex.regions, []);
+  assert.equal(ex.items[0]._region, "");
 });
 
 test("parseExtract copes with an empty or missing payload", () => {
@@ -96,14 +94,16 @@ test("fromExtractItem builds a complete row", () => {
       lastModifiedUserName: "Jo",
       lastModifiedTime: "2026-09-01T00:00:00Z",
       createUserName: "Sam",
-      _subProject: "North",
+      _region: "North",
     },
     PID
   );
   assert.equal(r.version, 4);
   assert.equal(r.file_type, "PDF");
   assert.equal(r.created_by_user, "Sam");
-  assert.equal(r.sub_project, "North");
+  assert.equal(r.region, "North");
+  assert.deepEqual(r.regions, ["North"]);
+  assert.equal(r.sub_project, "01 WIP", "top folder under Project Files");
   assert.equal(r.attrs_loaded, false);
   assert.equal(r.title_line_1, "");
   assert.equal(r.project_pin, "");

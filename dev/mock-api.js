@@ -125,31 +125,38 @@
 
   // Framework extract for "Example Framework", shaped like the real one
   // (DT1117): a Parent record for the framework plus one Child record per
-  // sub-project, named by Sub_folder_name. Files are spread across the
-  // sub-projects by document; every 25th document also appears under the
-  // next sub-project (a shared folder) and every 40th sits on the Parent
-  // (framework-wide). "Depot" has no Sub_folder_name, to exercise the
-  // ProjectName fallback. subProgramName isn't in the real extract; it's
-  // here to exercise the optional programme grouping.
+  // region, named by Sub_folder_name. Inside a region each top-level
+  // folder is a sub-project. Documents are spread by number: across
+  // regions, then across that region's sub-projects; every 17th sits at
+  // region level (0B.GENERAL), every 40th on the Parent (framework-wide)
+  // and every 53rd in a training folder (dropped by the dashboard).
+  // "Depot" has no Sub_folder_name (ProjectName fallback) and its paths
+  // start with the region folder, to exercise both shapes.
   const FRAMEWORK = [
-    { name: "North", program: "Programme A" },
-    { name: "South", program: "Programme A" },
-    { name: "East", program: "Programme B" },
-    { name: "Depot", program: "", noFolderName: true },
+    { name: "North", subs: ["NO101_Alder_Road (PS000101)", "NO102 - Birch Lane Substation (PS000102)", "NO103_Cedar_Park (PS000103) CANCELLED"] },
+    { name: "South", subs: ["SO201_Dock_Street (PS000201)", "SO202_Elm_Grove (PS000202)"] },
+    { name: "East", subs: ["EA301_Fen_Bridge (PS000301)", "EA302_Grange_Farm (PS000302)", "EA303_Heath_Lane (PS000303)"] },
+    { name: "Depot", subs: ["DE401_Main_Depot (PS000401)"], noFolderName: true, pathHasRegion: true },
   ];
   function frameworkExtract() {
     const buckets = FRAMEWORK.map(() => []);
     const parentFiles = [];
     const docIndex = (f) => parseInt(f.Name.match(/-(\d{4})\./)[1], 10) - 1000;
+    const rest = (f) => f.folderPath.replace(/^Project Files \/ /, "");
     for (const f of files) {
       const d = docIndex(f);
       if (d % 40 === 0) {
-        parentFiles.push(f);
+        parentFiles.push({ ...f, folderPath: "XX-FRAMEWORK / " + rest(f) });
         continue;
       }
       const i = d % FRAMEWORK.length;
-      buckets[i].push(f);
-      if (d % 25 === 0) buckets[(i + 1) % FRAMEWORK.length].push(f);
+      const region = FRAMEWORK[i];
+      const top =
+        d % 53 === 0 ? "XX0000_Training_Example"
+        : d % 17 === 0 ? "0B.GENERAL"
+        : region.subs[Math.floor(d / FRAMEWORK.length) % region.subs.length];
+      const path = `${top} / ${rest(f)}`;
+      buckets[i].push({ ...f, folderPath: region.pathHasRegion ? `${region.name} / ${path}` : path });
     }
     const choice = (Value) => ({ Value });
     return {
@@ -163,12 +170,11 @@
           files_list: JSON.stringify(parentFiles),
           folder_array_deliverables: "[]",
         },
-        ...FRAMEWORK.map((sp, i) => ({
+        ...FRAMEWORK.map((region, i) => ({
           Title: "mock-project-0003",
-          ProjectName: "Example Framework " + sp.name,
+          ProjectName: "Example Framework " + region.name,
           Framework_lineage: choice("Child"),
-          ...(sp.noFolderName ? {} : { Sub_folder_name: sp.name }),
-          ...(sp.program ? { subProgramName: sp.program } : {}),
+          ...(region.noFolderName ? {} : { Sub_folder_name: region.name }),
           Modified: iso((10 + i) * 60000),
           files_list: JSON.stringify(buckets[i]),
           folder_array_deliverables: "[]",

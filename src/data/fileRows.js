@@ -6,9 +6,11 @@
 //   name, version, file_type, file_url
 //   folder_path, folder_id
 //   last_modified_user, last_modified_date, created_by_user, created_at
-//   sub_project, sub_program          (framework projects; first one if
-//                                      the file is in several)
-//   sub_projects       every sub-project the file belongs to
+//   region             framework region (first one if the file is
+//                      listed under several; "" = framework-wide)
+//   regions            every region the file is listed under
+//   sub_project        sub-project folder within the region ("" =
+//                      region-level) — see data/subProjects.js
 //   attrs_loaded       false until enrichment has filled the attributes
 //   …every field in ATTR_NAME_MAP     (title_line_1, revision, status, …)
 //
@@ -16,6 +18,7 @@
 // created_by / created_by_user mismatch); these builders replace them.
 
 import { ATTR_NAME_MAP, bareProjectId } from "../core/config.js";
+import { subProjectFolder } from "./subProjects.js";
 
 const ATTR_FIELDS = [...new Set(Object.values(ATTR_NAME_MAP))];
 
@@ -59,9 +62,9 @@ function baseRow(fields) {
     last_modified_date: "",
     created_by_user: "",
     created_at: "",
+    region: "",
+    regions: [],
     sub_project: "",
-    sub_program: "",
-    sub_projects: [],
     attrs_loaded: false,
   };
   for (const f of ATTR_FIELDS) row[f] = "";
@@ -83,9 +86,7 @@ export function fromExtractItem(item, projectId) {
     last_modified_user: item.lastModifiedUserName || "",
     last_modified_date: item.lastModifiedTime || "",
     created_by_user: item.createUserName || "",
-    sub_project: item._subProject || "",
-    sub_program: item._subProgram || "",
-    sub_projects: item._subProject ? [item._subProject] : [],
+    ...regionFields(item._region, item.folderPath),
   });
 }
 
@@ -126,10 +127,16 @@ export function fromVersion(version, context, projectId) {
     // createTime is when this version was uploaded into its folder — the
     // reliable lifecycle signal (lastModifiedTime moves on metadata edits).
     created_at: va.createTime || "",
+    region: context?.region || "",
+    regions: context?.regions ? [...context.regions] : [],
     sub_project: context?.sub_project || "",
-    sub_program: context?.sub_program || "",
-    sub_projects: context?.sub_projects ? [...context.sub_projects] : [],
   });
+}
+
+// Framework region + sub-project fields for a row in `region`'s record.
+export function regionFields(region, folderPath) {
+  if (!region) return { region: "", regions: [], sub_project: "" };
+  return { region, regions: [region], sub_project: subProjectFolder(folderPath, region) };
 }
 
 // One versions:batch-get result → { "Title Line 1": "…", … }

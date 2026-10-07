@@ -8,7 +8,7 @@ import { startRouter } from "../core/router.js";
 import { store } from "../core/store.js";
 import { loadProjectFiles, enrichProjectFiles } from "../data/project.js";
 import { stackDocuments } from "../data/stacking.js";
-import { subProjectGroups, hasSubProjectChoice, scopeFiles, validScope } from "../data/subProjects.js";
+import { buildScopes, hasScopeChoice, scopeFiles, scopeLabel, validScope } from "../data/subProjects.js";
 import { local } from "../core/storage.js";
 import { startSession, findUserProject } from "../session.js";
 import { createShell, stateCard } from "../views/shell.js";
@@ -134,17 +134,15 @@ async function loadData() {
     return;
   }
 
-  // Framework projects: restore the remembered sub-project (if it still
-  // exists) and offer the picker when there's more than one.
-  const subProject = validScope(local.get(scopeKey(), ""), extract.subProjects);
-  shell.setScope(
-    hasSubProjectChoice(extract.subProjects)
-      ? { groups: subProjectGroups(extract.subProjects), value: subProject, onChange: setSubProject }
-      : null
-  );
+  // Framework projects: restore the remembered region / sub-project (if
+  // it still exists) and offer the picker when there's a choice. Built
+  // after the client filter, so clients only see scopes they have files in.
+  scopes = buildScopes(extract.regions, files);
+  const scope = validScope(local.get(scopeStorageKey(), ""), scopes);
+  shell.setScope(hasScopeChoice(scopes) ? { groups: scopes, value: scope, onChange: setScope } : null);
 
   // Render straight away with basic file data; attributes stream in.
-  store.set({ extract, files, subProject, documents: stackScoped(files, subProject) });
+  store.set({ extract, files, scope, scopeLabel: scopeLabel(scope, scopes), documents: stackScoped(files, scope) });
   if (!routerStarted) {
     routerStarted = true;
     startRouter({ routes, fallback: "midp", onChange: showView });
@@ -190,7 +188,7 @@ async function enrichMetadata(extract, files) {
   }
   store.set({
     files: [...files],
-    documents: stackScoped(files, store.get().subProject),
+    documents: stackScoped(files, store.get().scope),
     metadataProgress: { complete: true, failed: stats.failed, unavailable: stats.unavailable },
   });
   if (stats.failed || stats.unavailable) log.warn("Metadata load incomplete", stats);
@@ -211,20 +209,20 @@ async function retryMetadata() {
   }
 }
 
-// ---------- sub-project scope (framework projects) ----------
+// ---------- region / sub-project scope (framework projects) ----------
 
-const scopeKey = () => `v2.subProject.${ctx.project.id}`;
+let scopes = [];
+const scopeStorageKey = () => `v2.scope.${ctx.project.id}`;
 
 // Documents for the current scope. Files are scoped before stacking, so a
-// document's revision history only ever includes its own sub-project's
-// copies.
-function stackScoped(files, subProject) {
-  return stackDocuments(scopeFiles(files, subProject));
+// document's revision history only ever includes copies in scope.
+function stackScoped(files, scope) {
+  return stackDocuments(scopeFiles(files, scope));
 }
 
-function setSubProject(subProject) {
-  local.set(scopeKey(), subProject);
-  store.set({ subProject, documents: stackScoped(store.get().files, subProject) });
+function setScope(scope) {
+  local.set(scopeStorageKey(), scope);
+  store.set({ scope, scopeLabel: scopeLabel(scope, scopes), documents: stackScoped(store.get().files, scope) });
 }
 
 function freshnessText(updated) {
