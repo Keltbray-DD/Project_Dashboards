@@ -6,6 +6,7 @@ import {
   folderRank,
   compareByCreation,
   pickCurrent,
+  lifecycleTag,
   stackDocuments,
 } from "../src/data/stacking.js";
 
@@ -60,6 +61,25 @@ test("pickCurrent: approved row with nothing newer is not flagged", () => {
   const shared = row("D.pdf", "02 SHARED", "P02");
   const wip = row("D.pdf", "01 WIP", "P01.03");
   assert.equal(pickCurrent([wip, shared]).hasNewerRevision, false);
+});
+
+test("lifecycleTag: SHARED_TO_CLIENT gets its own badge but ranks as SHARED", () => {
+  assert.deepEqual(lifecycleTag("0F.SHARED_TO_CLIENT / Drawings"), ["client", "SHARED TO CLIENT"]);
+  assert.deepEqual(lifecycleTag("0E.SHARED"), ["shared", "SHARED"]);
+  assert.deepEqual(lifecycleTag("0G.PUBLISHED"), ["pub", "PUBLISHED"]);
+  assert.equal(lifecycleTag("RAMS"), null);
+  assert.equal(folderRank("0F.SHARED_TO_CLIENT"), folderRank("0E.SHARED"));
+});
+
+test("pickCurrent: between SHARED and SHARED_TO_CLIENT copies the most recently uploaded wins", () => {
+  const shared = row("D.pdf", "0E.SHARED", "P02", { created_at: "2026-03-01T00:00:00Z" });
+  const client = row("D.pdf", "0F.SHARED_TO_CLIENT", "P01", { created_at: "2026-04-01T00:00:00Z" });
+  assert.equal(pickCurrent([shared, client]).current, client);
+  assert.equal(pickCurrent([client, { ...shared, created_at: "2026-05-01T00:00:00Z" }]).current.folder_path, "0E.SHARED");
+  // Without upload times (extract rows) the higher revision still wins.
+  const a = row("E.pdf", "0E.SHARED", "P02");
+  const b = row("E.pdf", "0F.SHARED_TO_CLIENT", "P01");
+  assert.equal(pickCurrent([b, a]).current, a);
 });
 
 test("pickCurrent: WIP-only documents take the highest revision, then the latest date", () => {

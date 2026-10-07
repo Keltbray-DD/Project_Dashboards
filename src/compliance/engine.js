@@ -15,6 +15,11 @@ export const LIFECYCLES = ["WIP", "SHARED", "PUBLISHED"];
 const LIFECYCLE_BY_RANK = { 1: "WIP", 2: "SHARED", 3: "PUBLISHED" };
 export const lifecycleOf = (row) => LIFECYCLE_BY_RANK[folderRank(row.folder_path)] || "Other";
 
+// Only documents in the deliverable folders — WIP, SHARED,
+// SHARED_TO_CLIENT, PUBLISHED — are checked. Others (e.g. an additional
+// MIDP folder like RAMS) are counted as "not checked".
+export const isDeliverable = (row) => lifecycleOf(row) !== "Other";
+
 const pct = (part, whole) => (whole ? (part / whole) * 100 : 0);
 
 // documents: stacked documents (data/stacking.js)
@@ -24,7 +29,10 @@ const pct = (part, whole) => (whole ? (part / whole) * 100 : 0);
 //   rules,          applicable rules (with .skipped)
 //   activeRules,    rules actually checked
 //   results,        [{ row, failed: [ruleId…] }] per checked document
-//   pending,        documents whose metadata hasn't loaded (not checked)
+//   pending,        deliverable documents whose metadata hasn't loaded
+//                   (not checked yet)
+//   notChecked,     documents outside the deliverable folders (scope
+//                   "all" only — a lifecycle scope never includes them)
 //   totals: { documents, compliant, withGaps, checks, passed,
 //             compliantPct, passedPct }
 //   byRule:  [{ rule, pass, fail, pct }]   (active rules, input order)
@@ -34,7 +42,8 @@ const pct = (part, whole) => (whole ? (part / whole) * 100 : 0);
 //   revisions: { valid, missing, invalid }
 // }
 export function evaluate(documents, { scope = "all", rules = RULES } = {}) {
-  const all = documents.map((d) => d.current);
+  const current = documents.map((d) => d.current);
+  const all = current.filter(isDeliverable);
   const inScope = scope === "all" ? all : all.filter((r) => lifecycleOf(r) === scope);
   const loaded = inScope.filter((r) => r.attrs_loaded);
 
@@ -85,6 +94,7 @@ export function evaluate(documents, { scope = "all", rules = RULES } = {}) {
     activeRules,
     results,
     pending: inScope.length - loaded.length,
+    notChecked: scope === "all" ? current.length - all.length : 0,
     totals: {
       documents: results.length,
       compliant,

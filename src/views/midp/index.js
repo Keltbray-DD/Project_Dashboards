@@ -64,6 +64,7 @@ function renderRegister(container, ctx, config) {
   const exportStem = () => [project.code, store.get().scopeLabel, config.exportName].filter(Boolean).join(" ");
   let table = null;
   let tableReady = false; // Tabulator rejects data calls before tableBuilt
+  let rowsWhenBuilt = null; // latest rows from setDocuments while building
   let documents = [];
   let docsByKey = new Map();
   // Rows passing all filters, as reported by Tabulator’s dataFiltered
@@ -326,6 +327,17 @@ function renderRegister(container, ctx, config) {
     table.on("tableBuilt", () => {
       tableReady = true;
       applySavedColumns(table, config.id);
+      // Data that arrived while the table was building (e.g. attributes
+      // straight from the session cache) goes in now.
+      if (rowsWhenBuilt) {
+        const pendingRows = rowsWhenBuilt;
+        rowsWhenBuilt = null;
+        table.replaceData(pendingRows).then(() => {
+          applyFilters();
+          panel.refresh();
+        });
+        return;
+      }
       applyFilters();
     });
     table.on("dataFiltered", (_filters, rows) => {
@@ -415,6 +427,11 @@ function renderRegister(container, ctx, config) {
     const rows = toRows(documents);
     if (!table) {
       buildTable(rows);
+      return;
+    }
+    // Tabulator rejects data calls until tableBuilt; it applies these then.
+    if (!tableReady) {
+      rowsWhenBuilt = rows;
       return;
     }
     // Keep the user's selection and expanded rows across a data refresh.

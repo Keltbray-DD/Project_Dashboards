@@ -72,6 +72,7 @@ export const ATTR_NAME_MAP = {
   "Activity Code": "activity_code",
   "File Description": "file_description",
   "Classification": "classification",
+  "Document Classification": "classification",
   "Tracking Status": "tracking_status",
   "Notes": "notes",
   "Category": "category",

@@ -1,13 +1,14 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { RULES, applicableRules } from "../src/compliance/rules.js";
-import { evaluate, breakdown, biggestGap, lifecycleOf } from "../src/compliance/engine.js";
+import { evaluate, breakdown, biggestGap, lifecycleOf, isDeliverable } from "../src/compliance/engine.js";
 
 const good = {
   title_line_1: "Layout",
   revision: "P01",
   file_description: "Drainage layout",
   status: "S2",
+  classification: "Official",
   form: "DR",
   originator: "ARP",
   function: "DRN",
@@ -28,11 +29,17 @@ test("rules: revision must be ISO, description must not be the placeholder", () 
   assert.equal(rule("file_description").reason({ file_description: "TIDP Placeholder File" }), "TIDP placeholder");
 });
 
-test("naming-standard rules are skipped when no document uses the field", () => {
-  const rules = applicableRules([good, { ...good, spatial: "" }]);
-  assert.equal(rules.find((r) => r.id === "spatial").skipped, true);
-  assert.equal(rules.find((r) => r.id === "form").skipped, false);
-  // Core rules never skip, even if every value is blank.
+test("the five checks: Revision, Status, File Description, Title Line 1, Document Classification", () => {
+  assert.deepEqual(RULES.map((r) => r.id), ["revision", "status", "file_description", "title_line_1", "classification"]);
+  assert.equal(rule("classification").test({ classification: "" }), false);
+  assert.equal(rule("classification").test({ classification: "Official" }), true);
+  // Originator, Function, Form and Spatial aren't checked.
+  assert.equal(evaluate([doc({ originator: "", function: "", form: "", spatial: "" })]).totals.compliant, 1);
+});
+
+test("naming-group rules are skipped when no document uses the field; core rules never are", () => {
+  const custom = [...RULES, { id: "spatial", field: "spatial", group: "naming", test: (r) => !!r.spatial }];
+  assert.equal(applicableRules([good, { ...good, spatial: "" }], custom).find((r) => r.id === "spatial").skipped, true);
   assert.equal(applicableRules([{ title_line_1: "" }]).find((r) => r.id === "title_line_1").skipped, false);
 });
 
@@ -44,12 +51,11 @@ test("evaluate: totals are per document and per check", () => {
     doc({ attrs_loaded: false }), // metadata not loaded → not checked
   ];
   const ev = evaluate(docs);
-  // spatial is unused by every doc → 7 active rules
-  assert.equal(ev.activeRules.length, 7);
+  assert.equal(ev.activeRules.length, 5);
   assert.equal(ev.pending, 1);
   assert.deepEqual(
     { documents: ev.totals.documents, compliant: ev.totals.compliant, withGaps: ev.totals.withGaps, checks: ev.totals.checks, passed: ev.totals.passed },
-    { documents: 3, compliant: 1, withGaps: 2, checks: 21, passed: 16 }
+    { documents: 3, compliant: 1, withGaps: 2, checks: 15, passed: 10 }
   );
   assert.equal(Math.round(ev.totals.compliantPct), 33);
   const status = ev.byRule.find((b) => b.rule.id === "status");
@@ -73,13 +79,25 @@ test("evaluate: lifecycle bands, statuses and revision formats", () => {
   assert.deepEqual(ev.revisions, { valid: 2, missing: 1, invalid: 1 });
 });
 
-test("evaluate: scope limits documents but rule applicability uses the whole project", () => {
-  const docs = [doc({ spatial: "CH01", folder_path: "03 PUBLISHED" }), doc({ folder_path: "01 WIP" })];
+test("evaluate: a lifecycle scope limits the documents checked", () => {
+  const docs = [doc({ folder_path: "03 PUBLISHED" }), doc({ folder_path: "01 WIP", status: "" })];
   const ev = evaluate(docs, { scope: "WIP" });
   assert.equal(ev.totals.documents, 1);
-  // Spatial is used somewhere in the project, so the WIP doc fails it.
-  assert.equal(ev.results[0].failed.includes("spatial"), true);
+  assert.deepEqual(ev.results[0].failed, ["status"]);
   assert.equal(lifecycleOf({ folder_path: "Archive" }), "Other");
+});
+
+test("only deliverable folders are checked; the rest are counted as not checked", () => {
+  assert.equal(isDeliverable({ folder_path: "0F.SHARED_TO_CLIENT / Drawings" }), true);
+  assert.equal(isDeliverable({ folder_path: "0C.WIP / JAC - Jacobs" }), true);
+  assert.equal(isDeliverable({ folder_path: "RAMS" }), false);
+  const docs = [doc({}), doc({ folder_path: "RAMS", status: "" }), doc({ folder_path: "RAMS / Old", attrs_loaded: false })];
+  const ev = evaluate(docs);
+  assert.equal(ev.totals.documents, 1);
+  assert.equal(ev.totals.withGaps, 0);
+  assert.equal(ev.pending, 0, "an unloaded file outside the deliverable folders isn't pending");
+  assert.equal(ev.notChecked, 2);
+  assert.equal(evaluate(docs, { scope: "SHARED" }).notChecked, 0);
 });
 
 test("breakdown groups by a field with per-rule pass rates", () => {

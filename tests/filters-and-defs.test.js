@@ -81,9 +81,11 @@ test("indexDefinitions maps Forma names to field keys", () => {
     { id: 1, name: "Status", type: "array", arrayValues: ["S2"] },
     { id: 2, name: "Title Line 1", type: "string" },
     { id: 3, name: "Project PIN", type: "string" },
+    { id: 4, name: "Document Classification", type: "array", arrayValues: ["Official"] },
   ]);
   assert.deepEqual(byField.status, { id: 1, name: "Status", type: "array", options: ["S2"] });
   assert.equal(byField.title_line_1.options, null);
   assert.equal(byField.project_pin.id, 3);
+  assert.deepEqual(byField.classification, { id: 4, name: "Document Classification", type: "array", options: ["Official"] });
   assert.equal(byField.revision, undefined);
 });

@@ -42,13 +42,21 @@ export function revisionRank(rev) {
   return cycleBase + 101;
 }
 
-// PUBLISHED 3 > SHARED 2 > WIP 1 > anything else 0.
+// PUBLISHED 3 > SHARED 2 > WIP 1 > anything else 0. SHARED_TO_CLIENT is
+// SHARED (rank 2) — only its badge differs (lifecycleTag).
 export function folderRank(folderPath) {
   const fp = String(folderPath || "").toUpperCase();
   if (fp.includes("PUBLISHED")) return 3;
   if (fp.includes("SHARED")) return 2;
   if (fp.includes("WIP")) return 1;
   return 0;
+}
+
+// Badge for a folder path: [css class, label].
+const TAGS = { 3: ["pub", "PUBLISHED"], 2: ["shared", "SHARED"], 1: ["wip", "WIP"] };
+export function lifecycleTag(folderPath) {
+  if (/SHARED_TO_CLIENT/i.test(String(folderPath || ""))) return ["client", "SHARED TO CLIENT"];
+  return TAGS[folderRank(folderPath)] || null;
 }
 
 const time = (v) => (v ? new Date(v).getTime() || 0 : 0);
@@ -82,8 +90,10 @@ export function compareByCreation(a, b) {
 // — what everyone downstream consumes — so the current row comes from
 // there when possible, PUBLISHED beating SHARED regardless of revision
 // (a client-approved C01 stays current even with a re-approved P02 in
-// SHARED); revision only breaks ties within a folder rank. WIP is the
-// fallback for documents not yet approved.
+// SHARED). Within a folder rank (e.g. a SHARED and a SHARED_TO_CLIENT
+// copy) the most recently uploaded wins — compareByCreation: created_at,
+// then revision, then last-modified. WIP is the fallback for documents
+// not yet approved.
 //
 // hasNewerRevision: the current row is approved and some other row has a
 // higher revision rank (a WIP draft past it, or a SHARED re-approval
@@ -92,7 +102,7 @@ export function pickCurrent(group) {
   const approved = group.filter((r) => folderRank(r.folder_path) >= 2);
   if (approved.length) {
     const current = [...approved].sort(
-      (a, b) => folderRank(b.folder_path) - folderRank(a.folder_path) || compareLatest(b, a)
+      (a, b) => folderRank(b.folder_path) - folderRank(a.folder_path) || compareByCreation(b, a)
     )[0];
     const rank = revisionRank(current.revision);
     return { current, hasNewerRevision: group.some((r) => r !== current && revisionRank(r.revision) > rank) };

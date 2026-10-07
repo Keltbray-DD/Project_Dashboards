@@ -17,8 +17,10 @@ import { isBlank } from "../data/fileRows.js";
 const present = (field) => (row) => !isBlank(row[field]);
 const missing = () => "Missing";
 
+// The five checks for files in the deliverable (MIDP) folders — see
+// isDeliverable in compliance/engine.js. Originator, Function, Form and
+// Spatial aren't checked (the Compliance page still groups by them).
 export const RULES = [
-  { id: "title_line_1", label: "Title Line 1", field: "title_line_1", group: "core", test: present("title_line_1"), reason: missing },
   {
     id: "revision",
     label: "Revision",
@@ -28,6 +30,7 @@ export const RULES = [
     test: (row) => !isBlank(row.revision) && ISO_REVISION_PATTERN.test(row.revision),
     reason: (row) => (isBlank(row.revision) ? "Missing" : `Not ISO format (${row.revision})`),
   },
+  { id: "status", label: "Status", field: "status", group: "core", test: present("status"), reason: missing },
   {
     id: "file_description",
     label: "File Description",
@@ -37,11 +40,8 @@ export const RULES = [
     test: (row) => !isBlank(row.file_description) && row.file_description !== PLACEHOLDER_DESCRIPTION,
     reason: (row) => (isBlank(row.file_description) ? "Missing" : "TIDP placeholder"),
   },
-  { id: "status", label: "Status", field: "status", group: "core", test: present("status"), reason: missing },
-  { id: "form", label: "Form", hint: "naming standard", field: "form", group: "naming", test: present("form"), reason: missing },
-  { id: "originator", label: "Originator", hint: "naming standard", field: "originator", group: "naming", test: present("originator"), reason: missing },
-  { id: "function", label: "Function", hint: "naming standard", field: "function", group: "naming", test: present("function"), reason: missing },
-  { id: "spatial", label: "Spatial", hint: "naming standard", field: "spatial", group: "naming", test: present("spatial"), reason: missing },
+  { id: "title_line_1", label: "Title Line 1", field: "title_line_1", group: "core", test: present("title_line_1"), reason: missing },
+  { id: "classification", label: "Document Classification", field: "classification", group: "core", test: present("classification"), reason: missing },
 ];
 
 // The rules that apply to this set of rows: every core rule, plus the

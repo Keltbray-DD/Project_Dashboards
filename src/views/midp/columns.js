@@ -3,7 +3,7 @@
 // from Forma can't inject markup.
 
 import { ISO_REVISION_PATTERN, PLACEHOLDER_DESCRIPTION } from "../../core/config.js";
-import { folderRank } from "../../data/stacking.js";
+import { folderRank, lifecycleTag } from "../../data/stacking.js";
 import { isBlank } from "../../data/fileRows.js";
 import { h, icon } from "../../ui/dom.js";
 import { formatDateTime } from "../../ui/format.js";
@@ -31,9 +31,9 @@ export const EDITABLE_FIELDS = [
   "status",
   "activity_code",
   "series",
+  "classification",
 ];
 
-const LIFECYCLE = { 3: ["pub", "PUBLISHED"], 2: ["shared", "SHARED"], 1: ["wip", "WIP"] };
 
 // ---------- formatters ----------
 
@@ -90,7 +90,7 @@ function status(cell) {
 function folder(cell) {
   const v = String(cell.getValue() || "");
   const row = cell.getRow().getData();
-  const [cls, label] = LIFECYCLE[folderRank(v)] || ["other", ""];
+  const [cls, label] = lifecycleTag(v) || ["other", ""];
   const parts = v.split("/").map((s) => s.trim()).filter(Boolean);
   const idx = parts.findIndex((p) => /WIP|SHARED|PUBLISHED/i.test(p));
   const rest = idx >= 0 ? parts.slice(idx + 1).join(" / ") : parts.slice(1).join(" / ") || v;
@@ -177,6 +177,7 @@ export function buildColumns({ extraFields = [], editor, editable, cellEdited, o
     { title: "Title Line 3", field: "title_line_3", widthGrow: 2, minWidth: 150, formatter: text("warn"), ...edit },
     { title: "Title Line 4", field: "title_line_4", widthGrow: 2, minWidth: 150, formatter: text("warn"), ...edit },
     { title: "File Description", field: "file_description", widthGrow: 2, minWidth: 180, formatter: description, ...edit },
+    { title: "Classification", field: "classification", width: 130, formatter: text("bad"), ...edit },
     { title: "Form", field: "form", width: 78, formatter: text("warn") },
     { title: "Originator", field: "originator", width: 100, formatter: text("warn") },
     { title: "Function", field: "function", width: 96, formatter: text("warn") },

@@ -6,7 +6,7 @@
 import { sectionOf } from "../core/config.js";
 import { navigate } from "../core/router.js";
 import { store } from "../core/store.js";
-import { evaluate, breakdown, biggestGap, lifecycleOf, LIFECYCLES } from "../compliance/engine.js";
+import { evaluate, breakdown, biggestGap, lifecycleOf, isDeliverable, LIFECYCLES } from "../compliance/engine.js";
 import { h, icon, mount } from "../ui/dom.js";
 import { formatNumber } from "../ui/format.js";
 import { kpi, passBar, stackedBar, countBars, heatCell, roundPct } from "../ui/charts.js";
@@ -43,12 +43,16 @@ function render(root, ctx, documents, redraw) {
 
   // Click-through: open the MIDP filtered to the documents matching
   // `pred`, within the current scope and only those actually checked.
-  const inScope = (row) => row.attrs_loaded && (scope === "all" || lifecycleOf(row) === scope);
+  const inScope = (row) => row.attrs_loaded && isDeliverable(row) && (scope === "all" || lifecycleOf(row) === scope);
   const show = (label, pred) => () => {
     setMidpExternalFilter({ label: scope === "all" ? label : `${label} · ${scope}`, predicate: (row) => inScope(row) && pred(row) });
     navigate("midp");
   };
   const failsAny = (row) => ev.activeRules.some((r) => !r.test(row));
+  const showNotChecked = () => {
+    setMidpExternalFilter({ label: "Not checked · outside WIP / SHARED / PUBLISHED", predicate: (row) => !isDeliverable(row) });
+    navigate("midp");
+  };
   const ruleById = Object.fromEntries(ev.activeRules.map((r) => [r.id, r]));
 
   const scopeBtns = h(
@@ -75,7 +79,13 @@ function render(root, ctx, documents, redraw) {
       {},
       h("div", { class: "eyebrow" }, `${project.code ? project.code + " · " : ""}${sectionOf("compliance")?.label || ""}`),
       h("h1", {}, "Compliance"),
-      h("div", { class: "sub" }, `${store.get().scopeLabel ? store.get().scopeLabel + " · " : ""}${formatNumber(totals.documents)} documents · ${ev.activeRules.length} metadata checks · click anything to see those documents in the MIDP`)
+      h(
+        "div",
+        { class: "sub" },
+        `${store.get().scopeLabel ? store.get().scopeLabel + " · " : ""}${formatNumber(totals.documents)} documents · ${ev.activeRules.length} metadata checks`,
+        ev.notChecked > 0 && [" · ", h("button", { class: "link-btn", type: "button", onclick: showNotChecked }, `${formatNumber(ev.notChecked)} not checked`)],
+        " · click anything to see those documents in the MIDP"
+      )
     ),
     h(
       "div",
@@ -177,7 +187,19 @@ function render(root, ctx, documents, redraw) {
           ]),
           h("span", { class: "muted lc-total" }, formatNumber(l.total))
         );
-      })
+      }),
+      ev.notChecked > 0 &&
+        h(
+          "div",
+          { class: "lc-row" },
+          h("span", { class: "lc other" }, "Other"),
+          h(
+            "button",
+            { class: "link-btn lc-note", type: "button", title: "Show these documents in the MIDP", onclick: showNotChecked },
+            `${formatNumber(ev.notChecked)} not checked — outside the WIP / SHARED / PUBLISHED folders`
+          ),
+          h("span", { class: "muted lc-total" }, formatNumber(ev.notChecked))
+        )
     ),
     h(
       "div",

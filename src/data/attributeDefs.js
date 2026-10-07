@@ -4,7 +4,7 @@
 // Definitions are read from the project's "Project Files" folder, as v1
 // did; sub-folders inherit them.
 
-import { FIELD_ATTR_NAME } from "../core/config.js";
+import { ATTR_NAME_MAP, FIELD_ATTR_NAME } from "../core/config.js";
 
 // Dropdown options for a definition, or null for free text. Forma
 // exposes dropdowns as { type: "array", arrayValues: [...] }; the other
@@ -24,9 +24,11 @@ export function optionsOf(def) {
 export function indexDefinitions(defs) {
   const byName = new Map((defs || []).map((d) => [d.name, d]));
   const byField = {};
-  for (const [field, name] of Object.entries(FIELD_ATTR_NAME)) {
-    // project_pin has two spellings across projects.
-    const def = byName.get(name) || (field === "project_pin" ? byName.get("Project PIN") : undefined);
+  for (const field of Object.keys(FIELD_ATTR_NAME)) {
+    // Some fields have more than one spelling across projects (Project
+    // PIN, Document Classification): use whichever this project defines.
+    const names = Object.keys(ATTR_NAME_MAP).filter((name) => ATTR_NAME_MAP[name] === field);
+    const def = names.map((name) => byName.get(name)).find(Boolean);
     if (def) byField[field] = { id: def.id, name: def.name, type: def.type, options: optionsOf(def) };
   }
   return byField;

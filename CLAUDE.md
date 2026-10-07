@@ -109,8 +109,10 @@ user's **own token**, so ACC enforces what they can read and edit.
    7-day max age).
 7. **Stacking** — `data/stacking.js stackDocuments()` collapses a
    document's WIP/SHARED/PUBLISHED copies into one Document with a
-   `current` row (PUBLISHED > SHARED > WIP, revision rank within) plus
-   siblings; `hasNewerRevision` flags work in progress past it.
+   `current` row (PUBLISHED > SHARED > WIP; within a level the most
+   recently uploaded copy wins, then revision rank) plus siblings;
+   `hasNewerRevision` flags work in progress past it. SHARED_TO_CLIENT
+   ranks as SHARED but has its own badge (`lifecycleTag`).
 8. **Views** read `store.documents` and re-render on store changes.
 
 ### Framework projects (regions and sub-projects)
@@ -242,11 +244,19 @@ Add/extend its entry in `PROJECT_FEATURES` in `src/core/config.js`
 4. If it should be filterable, add it to `FILTER_DEFS` in
    `views/midp/searchPanel.js`.
 
-### Add a compliance check
-Add a rule to `RULES` in `src/compliance/rules.js` (`group: "core"` always
-applies; `"naming"` is skipped when no document uses the field) and a test
-in `tests/compliance.test.js`. The page, bars, heat grid and export pick
-it up automatically.
+### Compliance checks
+Five checks, on documents in the deliverable folders only (WIP, SHARED,
+SHARED_TO_CLIENT, PUBLISHED — `compliance/engine.js isDeliverable`):
+Revision (ISO 19650), Status, File Description (not the TIDP placeholder),
+Title Line 1 and Document Classification (Forma attribute "Document
+Classification" or "Classification"). Documents elsewhere (e.g. an
+additional MIDP folder) are shown as "not checked". Originator, Function
+and Form aren't checked; the page's heat grid still groups by them.
+
+To add one: a rule in `RULES` in `src/compliance/rules.js`
+(`group: "core"` always applies; `"naming"` is skipped when no document
+uses the field) and a test in `tests/compliance.test.js`. The page,
+bars, heat grid and export pick it up automatically.
 
 ### Open another view pre-filtered
 `setExternalFilter("midp", { label, predicate })` then
@@ -286,9 +296,6 @@ it up automatically.
    for up to ~10 minutes after a release users may still get the previous
    version. If that becomes a problem, add a version check against a
    `version.json` fetched with `cache: "no-store"`.
-7. **Naming-standard compliance checks** use "no document has the field"
-   to decide a project doesn't use it, rather than reading the naming
-   standard from Forma.
 
 ---
 

@@ -100,6 +100,7 @@
         { name: "Spatial", value: blankOr(spatial, 0.22) },
         { name: "Discipline", value: func === "STR" ? "S" : "C" },
         { name: "Activity Code", value: blankOr("AC-" + pad(i % 40, 3), 0.4) },
+        { name: "Document Classification", value: blankOr(pick(["Official", "Official", "Official-Sensitive"]), 0.07) },
       ];
     });
   }
@@ -115,6 +116,7 @@
     def("Title Line 1", "string"), def("Title Line 2", "string"), def("Title Line 3", "string"), def("Title Line 4", "string"),
     def("Revision", "string"), def("Status", "array", ["S0", "S1", "S2", "S3", "S4", "A1", "A2", "A3", "B1"]),
     def("File Description", "string"), def("Activity Code", "string"),
+    def("Document Classification", "array", ["Official", "Official-Sensitive"]),
   ];
 
   const PROJECTS = [
@@ -174,6 +176,24 @@
 
   // "Example Project" (EX0001): one tree under Project Files.
   addTree(ROOT_FOLDER, files);
+
+  // An additional MIDP folder ("RAMS") outside the WIP / SHARED / PUBLISHED
+  // folders: loaded and shown, but Compliance counts it as "not checked".
+  const RAMS_FOLDER = "urn:adsk.wipemea:fs.folder:co.RAMS";
+  const ramsFiles = [1, 2, 3, 4, 5].map((n) => {
+    const urn = `urn:adsk.wipemea:fs.file:vf.mockrams${n}?version=1`;
+    attrs[urn] = [{ name: "Title Line 1", value: n === 3 ? "" : `Method statement ${n}` }, { name: "Status", value: "S0" }];
+    return {
+      Name: `EX0001-KEL-GEN-ZZ-RA-C-${pad(n, 4)}.pdf`,
+      itemIdVersion: urn,
+      itemID: `urn:adsk.wipemea:dm.lineage:mockrams${n}`,
+      folderPath: "",
+      lastModifiedUserName: "Sam Patel",
+      lastModifiedTime: iso(n * 86400000),
+      createUserName: "Sam Patel",
+    };
+  });
+  addTree(RAMS_FOLDER, ramsFiles);
 
   // Framework extract for "Example Framework", shaped like the real one
   // (DT1117): a Parent record for the framework plus one Child record per
@@ -272,7 +292,9 @@
           Title: "EX0001 extract",
           ProjectName: body && body.project_Name,
           Modified: iso(12 * 60000),
-          ...(body && body.project_Name === "Example Project" ? { start_folder_id: ROOT_FOLDER } : {}),
+          ...(body && body.project_Name === "Example Project"
+            ? { start_folder_id: ROOT_FOLDER, additional_MIDP_folders: JSON.stringify([{ folderID: RAMS_FOLDER, folderName: "RAMS" }]) }
+            : {}),
           files_list: JSON.stringify(body && body.project_Name === "Example Project" ? files : []),
           folder_array_deliverables: "[]",
         }],

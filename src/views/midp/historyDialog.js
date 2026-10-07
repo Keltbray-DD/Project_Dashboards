@@ -4,11 +4,10 @@
 // Ported from v1's openVersionsModal.
 
 import { documentHistory } from "../../data/history.js";
-import { folderRank, revisionRank } from "../../data/stacking.js";
+import { lifecycleTag, revisionRank } from "../../data/stacking.js";
 import { h, icon, mount } from "../../ui/dom.js";
 import { formatDateTime } from "../../ui/format.js";
 
-const LIFECYCLE = { 3: ["pub", "PUBLISHED"], 2: ["shared", "SHARED"], 1: ["wip", "WIP"] };
 
 // One row per revision code — repeated uploads of the same revision keep
 // the highest version — ordered by lifecycle rank.
@@ -67,7 +66,7 @@ export async function openHistoryDialog(doc, { aps, projectId, extractUpdated })
         {},
         rows.map((r) => {
           const isCurrent = r.revision === current.revision && r.folder_path === current.folder_path;
-          const [cls, label] = LIFECYCLE[folderRank(r.folder_path)] || ["other", "—"];
+          const [cls, label] = lifecycleTag(r.folder_path) || ["other", "—"];
           return h(
             "tr",
             { class: isCurrent ? "is-current" : r === newest ? "is-newer" : "" },
