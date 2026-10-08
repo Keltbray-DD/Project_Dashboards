@@ -196,6 +196,7 @@ src/
   data/   extract · fileRows · enrich · history · pendingEdits · project
           stacking · filters (search-panel logic) · attributeDefs · registers
           tags (the Tags list attribute) · packageTags (tag + write logic)
+          namingStandard (value descriptions for the filter dropdowns)
   compliance/ rules.js · engine.js
   views/  shell.js (top bar, sidebar, state cards) · feedback.js
           registers.js (MIDP + Drawing Register configs)
@@ -249,7 +250,11 @@ Add/extend its entry in `PROJECT_FEATURES` in `src/core/config.js`
 3. If users should edit it, add the field to `EDITABLE_FIELDS` (the
    editor appears when Forma defines that attribute).
 4. If it should be filterable, add it to `FILTER_DEFS` in
-   `views/midp/searchPanel.js`.
+   `views/midp/searchPanel.js`. If the naming standard has a field of
+   the same name, its value descriptions ("ARP" → "Arup") show in the
+   dropdown and are searchable automatically (`data/namingStandard.js`:
+   a deliverable folder's `namingStandardIds` → the standard's fields;
+   cached in Session Storage `namingStandard:<project>`).
 
 ### Compliance checks
 Five checks, on documents in the deliverable folders only (WIP, SHARED,
@@ -296,6 +301,7 @@ Add-on: Plan" doc; this version needs no backend.
 ### Bust caches
 - Attribute cache: Session Storage → keys `customAttrs:<project>:*`.
 - Revision history: Session Storage → keys `history:*`.
+- Value descriptions: Session Storage → `namingStandard:<project>`.
 - Pending edits: Local Storage → `pendingEdits_<projectId>`.
 - Force a fresh sign-in: Local Storage → delete `user_refresh_token`.
 
@@ -339,6 +345,8 @@ Add-on: Plan" doc; this version needs no backend.
 | `GET /project/v1/hubs/{hub}/projects/b.{p}/topFolders` | `topFolders` |
 | `GET /data/v1/projects/b.{p}/folders/{f}/contents` (paged) | `folderContents`, `walkFolders`, `findFolders` |
 | `GET /data/v1/projects/b.{p}/items/{lineage}/versions` (paged) | `itemVersions` |
+| `GET /data/v1/projects/b.{p}/folders/{f}` | `folder` (naming standard id) |
+| `GET /bim360/docs/v1/projects/{p}/naming-standards/{id}` | `namingStandard` |
 | `POST /bim360/docs/v1/projects/{p}/versions:batch-get` | `batchGetVersions` |
 | `GET /bim360/docs/v1/projects/{p}/folders/{f}/custom-attribute-definitions` | `customAttributeDefinitions` |
 | `POST /bim360/docs/v1/projects/{p}/versions/{urn}/custom-attributes:batch-update` | `updateCustomAttributes` |

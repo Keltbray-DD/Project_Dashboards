@@ -49,7 +49,9 @@ function loadFields() {
 //   onChange   () => void after any state change
 //   onClose    () => void
 //   resultText () => "48 of 1,284 documents"
-export function createSearchPanel({ state, getRows, onChange, onClose, resultText }) {
+//   getDescriptions () => { field: { value: description } } from the
+//              naming standard — shown under values and searchable
+export function createSearchPanel({ state, getRows, onChange, onClose, resultText, getDescriptions = () => ({}) }) {
   let fields = loadFields();
   let openMenu = null; // { field } of the open dropdown
   let dragField = null;
@@ -244,7 +246,9 @@ export function createSearchPanel({ state, getRows, onChange, onClose, resultTex
     const draw = () => {
       const needle = find.value.trim().toLowerCase();
       const counts = valueCounts(getRows(), field);
-      const shown = counts.filter(([v]) => !needle || (v === BLANK ? "(blank)" : v.toLowerCase()).includes(needle));
+      const described = getDescriptions()[field] || {};
+      const shown = counts.filter(([v]) =>
+        !needle || (v === BLANK ? "(blank)" : v.toLowerCase()).includes(needle) || (described[v] || "").toLowerCase().includes(needle));
       mount(
         list,
         shown.length
@@ -263,7 +267,9 @@ export function createSearchPanel({ state, getRows, onChange, onClose, resultTex
                 "label",
                 { class: `sp-option${value === BLANK ? " blank" : ""}` },
                 cb,
-                h("span", { class: "sp-option-text" }, value === BLANK ? "(Blank)" : value),
+                h("span", { class: "sp-option-text", title: described[value] ? `${value} — ${described[value]}` : null },
+                  value === BLANK ? "(Blank)" : value,
+                  described[value] && h("span", { class: "sp-option-desc" }, described[value])),
                 h("span", { class: "sp-option-count" }, formatNumber(count))
               );
             })

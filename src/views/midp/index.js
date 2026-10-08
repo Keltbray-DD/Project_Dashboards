@@ -9,10 +9,12 @@
 // Filter state and panel visibility are kept per register at module level
 // so they survive switching to another view and back.
 
-import { sectionOf } from "../../core/config.js";
+import { MIDP_FOLDER_PATTERN, sectionOf } from "../../core/config.js";
+import { log } from "../../core/log.js";
 import { store } from "../../core/store.js";
 import { projectAttributeDefinitions } from "../../data/attributeDefs.js";
 import { documentHistory } from "../../data/history.js";
+import { loadValueDescriptions } from "../../data/namingStandard.js";
 import { makePackageTag } from "../../data/packageTags.js";
 import { createPendingEdits } from "../../data/pendingEdits.js";
 import { emptyFilterState, buildPredicate, activeFilterCount, BLANK } from "../../data/filters.js";
@@ -195,6 +197,8 @@ function renderRegister(container, ctx, config) {
   );
 
   // ---------- panel ----------
+  let descriptions = {}; // field → { value: description }
+  let descriptionsRequested = false;
   const panel = createSearchPanel({
     state: filterState,
     getRows: () => documents.map((d) => d.current),
@@ -204,7 +208,23 @@ function renderRegister(container, ctx, config) {
     },
     onClose: () => setPanel(false),
     resultText: () => resultText(),
+    getDescriptions: () => descriptions,
   });
+
+  // Naming-standard value descriptions for the dropdowns, read once the
+  // documents (and so their folders) are known. Without them the
+  // dropdowns just show values.
+  function loadDescriptions(docs) {
+    const folderIds = [...new Set(docs.filter((d) => MIDP_FOLDER_PATTERN.test(d.current.folder_path || "")).map((d) => d.current.folder_id).filter(Boolean))];
+    if (descriptionsRequested || !folderIds.length) return;
+    descriptionsRequested = true;
+    loadValueDescriptions(aps, project.id, folderIds)
+      .then((found) => {
+        descriptions = found;
+        if (Object.keys(found).length) panel.refresh();
+      })
+      .catch((err) => log.warn("Couldn't read the naming standard for value descriptions:", err.message));
+  }
 
   const tableHost = h("div", { class: "table-host" });
   const loadText = h("span", {});
@@ -488,6 +508,7 @@ function renderRegister(container, ctx, config) {
 
   function setDocuments(next) {
     documents = config.select(next || []);
+    loadDescriptions(documents);
     loadedKeys = new Set(documents.filter((d) => d.current.attrs_loaded).map((d) => d.key));
     activeCount = null;
     docsByKey = new Map(documents.map((d) => [d.key, d]));

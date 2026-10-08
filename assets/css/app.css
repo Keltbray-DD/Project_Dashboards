@@ -590,6 +590,7 @@ dialog.package-tag footer .pt-left { margin-right: auto; font-size: 13px; }
 .sp-option { display: flex; align-items: center; gap: 8px; padding: 4px; cursor: pointer; font-size: 13px; }
 .sp-option:hover { background: var(--navy-soft); }
 .sp-option-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sp-option-desc { color: var(--muted); margin-left: 6px; }
 .sp-option.blank .sp-option-text { font-style: italic; color: var(--muted); }
 .sp-option-count { color: var(--muted); font-size: 12px; }
 .sp-menu-foot { display: flex; justify-content: flex-end; border-top: 1px solid var(--border); margin-top: 4px; padding-top: 4px; }

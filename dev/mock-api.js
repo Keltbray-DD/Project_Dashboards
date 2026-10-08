@@ -337,6 +337,27 @@
     if (url.includes("/topFolders")) {
       return json({ data: [{ id: ROOT_FOLDER, attributes: { name: "Project Files" } }] });
     }
+    // Folder details: every folder uses one naming standard.
+    const folderMatch = url.match(/\/data\/v1\/projects\/[^/]+\/folders\/([^/?]+)$/);
+    if (folderMatch) {
+      await delay(120);
+      return json({ data: { id: decodeURIComponent(folderMatch[1]), type: "folders", attributes: { extension: { data: { namingStandardIds: ["mock-naming-standard"] } } } } });
+    }
+    if (url.includes("/naming-standards/")) {
+      await delay(200);
+      const field = (name, pairs) => ({ name, options: Object.entries(pairs).map(([value, description]) => ({ value, description })) });
+      return json({
+        id: "mock-naming-standard",
+        definition: {
+          fields: [
+            field("Originator", { ARP: "Arup", KEL: "Keltbray", JAC: "Jacobs", WSP: "WSP" }),
+            field("Function", DISCIPLINE_FOLDER),
+            field("Spatial", { ZZ: "Multiple / none", CH01: "Chainage 0–1 km", CH02: "Chainage 1–2 km", CH03: "Chainage 2–3 km" }),
+            field("Form", { DR: "Drawing", M3: "3D model", RP: "Report", SP: "Specification", SH: "Schedule" }),
+          ],
+        },
+      });
+    }
     const contentsMatch = url.match(/\/folders\/([^/?]+)\/contents/);
     if (contentsMatch) {
       await delay(SLOW ? 600 : 120);
