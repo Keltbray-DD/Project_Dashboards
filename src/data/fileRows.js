@@ -43,6 +43,13 @@ export function fileUrl(projectId, folderId, itemId) {
   );
 }
 
+// The project's Files tool in Forma. sampleUrn is any of the project's
+// item / version URNs, used only to pick the .eu or .com host.
+export function projectFilesUrl(projectId, sampleUrn) {
+  const region = String(sampleUrn || "").includes("wipemea") ? "eu" : "com";
+  return `https://acc.autodesk.${region}/docs/files/projects/${bareProjectId(projectId)}`;
+}
+
 function versionFromUrn(urn) {
   const m = String(urn || "").match(/[?&]version=(\d+)/);
   return m ? parseInt(m[1], 10) : 1;

@@ -32,6 +32,9 @@
   // ?flaky=1: batch-get randomly throttles (429), errors (500) or hangs,
   // and ~1% of files are reported unavailable (deleted / no access).
   const FLAKY = qs.get("flaky") === "1";
+  // ?notags=1: the project has no Tags attribute, so "Tag for package"
+  // is greyed out.
+  const NO_TAGS = qs.get("notags") === "1";
   // ?hang=ms shortens how long a hung request waits (default: until the
   // app's own timeout aborts it).
   const flakyStats = { calls: 0, throttled: 0, errored: 0, hung: 0 };
@@ -101,6 +104,8 @@
         { name: "Discipline", value: func === "STR" ? "S" : "C" },
         { name: "Activity Code", value: blankOr("AC-" + pad(i % 40, 3), 0.4) },
         { name: "Document Classification", value: blankOr(pick(["Official", "Official", "Official-Sensitive"]), 0.07) },
+        // A few existing tags (from i, so the random sequence is unchanged).
+        ...(NO_TAGS ? [] : [{ name: "Tags", value: i % 37 === 0 ? "PKG-EX0001-260915-1012; REVIEW-01" : i % 23 === 0 ? "REVIEW-01" : "" }]),
       ];
     });
   }
@@ -117,6 +122,7 @@
     def("Revision", "string"), def("Status", "array", ["S0", "S1", "S2", "S3", "S4", "A1", "A2", "A3", "B1"]),
     def("File Description", "string"), def("Activity Code", "string"),
     def("Document Classification", "array", ["Official", "Official-Sensitive"]),
+    ...(NO_TAGS ? [] : [def("Tags", "string")]),
   ];
 
   const PROJECTS = [
@@ -345,8 +351,9 @@
       await delay(300);
       const urn = decodeURIComponent(url.split("/versions/")[1].split("/custom-attributes")[0]);
       const values = JSON.parse(init.body);
-      // A value of "FAIL" simulates Forma rejecting the change.
-      if (values.some((v) => v.value === "FAIL")) return json({ results: values.map((v) => ({ id: v.id, status: 400 })) });
+      // A value containing "FAIL" (e.g. tag PKG-FAIL) simulates Forma
+      // rejecting the change.
+      if (values.some((v) => String(v.value).includes("FAIL"))) return json({ results: values.map((v) => ({ id: v.id, status: 400 })) });
       for (const v of values) {
         const def = ATTR_DEFS.find((d) => d.id === v.id);
         const list = attrs[urn] || (attrs[urn] = []);

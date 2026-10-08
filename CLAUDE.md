@@ -34,7 +34,9 @@ sends no cache headers and browsers keep modules for a while).
   `?slow=1` simulates a slow metadata load, `?size=N` sets the number of
   documents, `?flaky=1` makes Forma randomly throttle / error / hang and
   report ~1% of files unavailable, and `?down=1` fails every metadata
-  request until `__MOCK__.down = false` — for testing Retry). EX0001 is
+  request until `__MOCK__.down = false` — for testing Retry, and
+  `?notags=1` removes the Tags attribute so "Tag for package" is greyed
+  out; a tag containing `FAIL` is rejected per file). EX0001 is
   read live from a mock folder tree (clients get 403 on WIP).
 - `?source=extract` on any dashboard (real or mock) uses the Power
   Automate file list instead of reading Forma live, for comparing the two.
@@ -66,7 +68,8 @@ round trip (`auth/pkce.js` restores them).
 `auth/roles.js isInternalEmail()` — exact domain match against
 `INTERNAL_EMAIL_DOMAINS` in `core/config.js`.
 
-- **Internal**: MIDP, Drawing Register, Compliance, inline editing.
+- **Internal**: MIDP, Drawing Register, Compliance, inline editing,
+  package tagging.
 - **External client**: MIDP + Drawing Register, read-only, "View only"
   tag, files limited to PUBLISHED / SHARED_TO_CLIENT folders
   (`data/registers.js isClientVisible`), filtered before stacking.
@@ -192,11 +195,12 @@ src/
   api/    http.js (retry/back-off, HttpError) · aps.js · powerAutomate.js
   data/   extract · fileRows · enrich · history · pendingEdits · project
           stacking · filters (search-panel logic) · attributeDefs · registers
+          tags (the Tags list attribute) · packageTags (tag + write logic)
   compliance/ rules.js · engine.js
   views/  shell.js (top bar, sidebar, state cards) · feedback.js
           registers.js (MIDP + Drawing Register configs)
           midp/ index.js (shared register view) · columns · searchPanel
-                editing · historyDialog · columnPicker
+                editing · historyDialog · columnPicker · packageTagDialog
           compliance.js
           subProjectChooser.js (framework: pick a sub-project before loading)
   ui/     dom.js (safe element builder) · toast · format · charts (HTML/CSS)
@@ -261,6 +265,29 @@ To add one: a rule in `RULES` in `src/compliance/rules.js`
 (`group: "core"` always applies; `"naming"` is skipped when no document
 uses the field) and a test in `tests/compliance.test.js`. The page,
 bars, heat grid and export pick it up automatically.
+
+### Package tagging
+The File Packages API is read-only, so ticked files get a package tag
+(`PKG-<project code>-YYMMDD-HHMM`, editable) added to the Forma **Tags**
+text attribute; the user then filters Tags on it in Forma and uses Add to
+package. The plan this came from (with a backend) is the "Package Tagging
+Add-on: Plan" doc; this version needs no backend.
+- "Tag for package" sits in the register's selection bar (internal only)
+  and is greyed out, reason on hover, unless the project's Project Files
+  folder defines `Tags` / `tags` (`projectAttributeDefinitions`, shared
+  with inline editing and read once per project).
+- Tags is a list (`"PKG-…; REVIEW-01"`, `data/tags.js`) shared with any
+  future feature: package tagging adds its tag and "Remove package tags"
+  removes only `PKG-…` tags. `writeTags` re-reads each file's current
+  value with `versions:batch-get` just before writing, so tags the
+  dashboard hasn't loaded are never lost.
+- It tags the row's own file (`doc.current`), not its other copies.
+- The Tags column (hidden by default, shown after tagging) and the Tags
+  filter treat the list per tag (`LIST_FIELDS` in `data/filters.js`).
+- Not built: checking which tagged files reached a package (Packages
+  API) — needs the endpoints verified and Outstanding #4.
+- To check in Forma: a "contains" filter on a text attribute, and
+  whether the value carries forward to a new version.
 
 ### Open another view pre-filtered
 `setExternalFilter("midp", { label, predicate })` then

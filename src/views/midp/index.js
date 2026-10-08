@@ -11,7 +11,10 @@
 
 import { sectionOf } from "../../core/config.js";
 import { store } from "../../core/store.js";
+import { projectAttributeDefinitions } from "../../data/attributeDefs.js";
 import { documentHistory } from "../../data/history.js";
+import { makePackageTag } from "../../data/packageTags.js";
+import { createPendingEdits } from "../../data/pendingEdits.js";
 import { emptyFilterState, buildPredicate, activeFilterCount, BLANK } from "../../data/filters.js";
 import { h, icon, mount } from "../../ui/dom.js";
 import { formatNumber } from "../../ui/format.js";
@@ -20,6 +23,7 @@ import { buildColumns } from "./columns.js";
 import { applySavedColumns, columnPickerButton } from "./columnPicker.js";
 import { createEditing } from "./editing.js";
 import { openHistoryDialog } from "./historyDialog.js";
+import { openPackageTagDialog } from "./packageTagDialog.js";
 import { createSearchPanel, clearPanelState, labelOf } from "./searchPanel.js";
 
 const viewStates = new Map();
@@ -111,6 +115,68 @@ function renderRegister(container, ctx, config) {
   const exportBtn = h("button", { class: "btn primary", type: "button", title: "Export the filtered documents to Excel" }, icon("file-excel"), "Export");
   exportBtn.addEventListener("click", () => table?.download("xlsx", `${exportStem()}.xlsx`, { sheetName: config.title }, "active"));
 
+  // ---------- package tagging ----------
+  // Internal users only, and only usable when the project's Forma folders
+  // define a Tags attribute; otherwise the button stays greyed out with
+  // the reason on hover. aria-disabled rather than disabled, so the
+  // tooltip still shows.
+  let tagsDef = null;
+  const tagBtn = user.isInternal && h("button", { class: "btn", type: "button" }, icon("tag"), "Tag for package");
+  const setTagAvailable = (available, reason) => {
+    tagBtn.setAttribute("aria-disabled", String(!available));
+    tagBtn.title = available ? "Add one package tag to the selected files, to find them in Forma and add them to a File Package" : reason;
+  };
+  if (tagBtn) {
+    setTagAvailable(false, "Checking whether this project has a Tags attribute…");
+    projectAttributeDefinitions(aps, project.id)
+      .then((defs) => {
+        tagsDef = defs.tags || null;
+        setTagAvailable(!!tagsDef, "This project has no Tags attribute in Forma. Ask a Forma admin to add a text attribute called \"Tags\" to the Project Files folder.");
+      })
+      .catch((err) => setTagAvailable(false, `Couldn't read this project's attribute definitions: ${err.message}`));
+    tagBtn.addEventListener("click", () => {
+      if (!tagsDef || !table) return;
+      const rows = table.getSelectedData().filter((r) => r.id && !r._child);
+      if (!rows.length) return;
+      openPackageTagDialog({
+        rows,
+        defaultTag: makePackageTag(project.code),
+        attrId: tagsDef.id,
+        aps,
+        projectId: project.id,
+        onWritten: recordPackageTag,
+        onShowTag: showPackageTag,
+      });
+    });
+  }
+  const tagEdits = tagBtn ? createPendingEdits(project.id) : null;
+
+  // Keep the store, the table and the pending-edit overlay in step with
+  // Tags values just written, as inline edits do.
+  //   written: [{ row, value }]
+  function recordPackageTag(written) {
+    for (const { row, value } of written) {
+      tagEdits.record(row.id, "tags", value);
+      const doc = docsByKey.get(row._key);
+      if (doc) doc.current.tags = value;
+    }
+    table?.updateData(written.map(({ row, value }) => ({ id: row.id, tags: value }))).then(() => {
+      table.refreshFilter();
+      panel.refresh();
+    });
+    table?.showColumn("tags");
+    store.set((s) => ({ editsVersion: (s.editsVersion || 0) + 1 }));
+  }
+
+  // Filter the register to one tag (replacing any Tags filter).
+  function showPackageTag(tag) {
+    filterState.values.set("tags", new Set([tag]));
+    table?.deselectRow();
+    table?.showColumn("tags");
+    applyFilters();
+    panel.sync();
+  }
+
   // ---------- chips + selection ----------
   const chips = h("div", { class: "chips" });
   const selCount = h("strong", {});
@@ -118,6 +184,7 @@ function renderRegister(container, ctx, config) {
     "div",
     { class: "selection-bar", hidden: true },
     selCount,
+    tagBtn,
     h("button", { class: "btn", type: "button", onclick: copyNames }, icon("copy", "regular"), "Copy names"),
     h("button", {
       class: "btn",

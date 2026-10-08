@@ -5,6 +5,7 @@
 import { ISO_REVISION_PATTERN, PLACEHOLDER_DESCRIPTION } from "../../core/config.js";
 import { folderRank, lifecycleTag } from "../../data/stacking.js";
 import { isBlank } from "../../data/fileRows.js";
+import { parseTags } from "../../data/tags.js";
 import { h, icon } from "../../ui/dom.js";
 import { formatDateTime } from "../../ui/format.js";
 
@@ -18,6 +19,7 @@ export const HIDDEN_BY_DEFAULT = new Set([
   "last_modified_date",
   "created_by_user",
   "spatial",
+  "tags",
 ]);
 
 // Fields the inline editor may change (when Forma defines them).
@@ -119,6 +121,8 @@ const date = (cell) => formatDateTime(cell.getValue());
 // ISO timestamps; blanks sort first. (Tabulator’s "datetime" sorter needs Luxon.)
 const dateSorter = (a, b) => (Date.parse(a) || 0) - (Date.parse(b) || 0);
 const user = (cell) => cell.getValue() || "Forma system";
+// One chip per tag. Optional, so a blank is just blank (not "Missing").
+const tags = (cell) => h("span", { class: "tag-list", title: cell.getValue() || "" }, parseTags(cell.getValue()).map((t) => h("span", { class: "tag-chip" }, t)));
 
 // ---------- columns ----------
 
@@ -189,6 +193,7 @@ export function buildColumns({ extraFields = [], editor, editable, cellEdited, o
     cols.push({ title: "Series", field: "series", width: 90, formatter: text("warn"), ...edit });
   }
   cols.push(
+    { title: "Tags", field: "tags", width: 200, formatter: tags },
     { title: "Modified by", field: "last_modified_user", width: 150, formatter: user },
     { title: "Modified", field: "last_modified_date", width: 150, formatter: date, sorter: dateSorter },
     { title: "Created by", field: "created_by_user", width: 150, formatter: user }

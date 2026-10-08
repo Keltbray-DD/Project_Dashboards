@@ -40,3 +40,16 @@ export async function loadAttributeDefinitions(aps, projectId) {
   if (!projectFiles) throw new Error('No "Project Files" folder found in this project');
   return indexDefinitions(await aps.customAttributeDefinitions(projectId, projectFiles.id));
 }
+
+// loadAttributeDefinitions, read once per project and shared by the
+// inline editor and package tagging. A failed read isn't kept, so the
+// next caller tries again.
+const cache = new Map();
+export function projectAttributeDefinitions(aps, projectId) {
+  if (!cache.has(projectId)) {
+    const promise = loadAttributeDefinitions(aps, projectId);
+    promise.catch(() => cache.delete(projectId));
+    cache.set(projectId, promise);
+  }
+  return cache.get(projectId);
+}

@@ -26,6 +26,7 @@ export const FILTER_DEFS = [
   { field: "document_classification", label: "Document Classification" },
   { field: "classification", label: "Classification" },
   { field: "series", label: "Series" },
+  { field: "tags", label: "Tags" },
   { field: "tracking_status", label: "Tracking Status" },
   { field: "category", label: "Category" },
   { field: "created_by_user", label: "Created by" },

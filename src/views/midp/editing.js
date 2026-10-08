@@ -9,7 +9,7 @@
 // • New in v2: a rejected edit puts the old value back in the cell
 //   (v1 left the rejected value showing).
 
-import { loadAttributeDefinitions } from "../../data/attributeDefs.js";
+import { projectAttributeDefinitions } from "../../data/attributeDefs.js";
 import { createPendingEdits } from "../../data/pendingEdits.js";
 import { h } from "../../ui/dom.js";
 import { toast } from "../../ui/toast.js";
@@ -34,7 +34,7 @@ export function createEditing({ aps, projectId, onSaved }) {
     async toggle() {
       if (!enabled && !defs) {
         try {
-          defs = await loadAttributeDefinitions(aps, projectId);
+          defs = await projectAttributeDefinitions(aps, projectId);
         } catch (err) {
           toast("Can't enable editing", `Couldn't read the project's attribute definitions: ${err.message}`, { error: true });
           return false;

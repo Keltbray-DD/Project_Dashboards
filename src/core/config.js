@@ -91,6 +91,10 @@ export const ATTR_NAME_MAP = {
   "Project Pin": "project_pin",
   "Project PIN": "project_pin",
   "Spatial": "spatial",
+  // A list of tags, "PKG-HI7411-261008-1432; …" (data/tags.js). Package
+  // tagging is only offered on projects whose Forma folders define it.
+  "Tags": "tags",
+  "tags": "tags",
 };
 
 // Field key → the Forma attribute name to PATCH. Reverse of the map

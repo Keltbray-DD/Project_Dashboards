@@ -13,6 +13,7 @@
 //   }
 
 import { isBlank } from "./fileRows.js";
+import { parseTags } from "./tags.js";
 
 export const BLANK = "";
 
@@ -40,13 +41,26 @@ export function folderList(rows) {
   return [...paths].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
 }
 
+// Fields holding a list ("A; B"): filtered and counted per item, so a
+// row with tags A and B matches a filter on A.
+export const LIST_FIELDS = new Set(["tags"]);
+
+// A row's filter values for a field: [BLANK], [value] or, for list
+// fields, each item.
+export function filterValues(row, field) {
+  if (LIST_FIELDS.has(field)) {
+    const items = parseTags(row[field]);
+    return items.length ? items : [BLANK];
+  }
+  return [isBlank(row[field]) ? BLANK : String(row[field])];
+}
+
 // [[value, count], …] for one field, alphabetical (numeric-aware) with
 // (Blank) last.
 export function valueCounts(rows, field) {
   const counts = new Map();
   for (const row of rows) {
-    const v = isBlank(row[field]) ? BLANK : String(row[field]);
-    counts.set(v, (counts.get(v) || 0) + 1);
+    for (const v of filterValues(row, field)) counts.set(v, (counts.get(v) || 0) + 1);
   }
   return [...counts.entries()].sort((a, b) => {
     if (a[0] === BLANK) return 1;
@@ -85,7 +99,7 @@ export function buildPredicate(state) {
 
   for (const [field, values] of state.values) {
     if (!values.size) continue;
-    preds.push((row) => values.has(isBlank(row[field]) ? BLANK : String(row[field])));
+    preds.push((row) => filterValues(row, field).some((v) => values.has(v)));
   }
 
   if (state.external?.predicate) preds.push(state.external.predicate);
