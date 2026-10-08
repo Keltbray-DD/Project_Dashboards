@@ -3,7 +3,7 @@
 // one place to change a flow URL or add a project feature.
 
 export const APP_NAME = "Project Dashboard";
-export const APP_VERSION = "v2.1.1";
+export const APP_VERSION = "v2.2.0";
 
 export const APS_BASE = "https://developer.api.autodesk.com";
 export const APS_USERINFO_URL = "https://api.userprofile.autodesk.com/userinfo";

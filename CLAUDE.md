@@ -15,6 +15,9 @@ v2.0.0 was a full rewrite of v1.x; the plan and decisions are in
 v2.1.0 reads files live from Forma (single projects whole; frameworks one
 chosen sub-project / region at a time) and narrows Compliance to five
 checks on the deliverable folders.
+v2.2.0 adds package tagging (a PKG tag in the Forma Tags attribute, see
+"Package tagging") and naming-standard value descriptions in the filter
+dropdowns.
 
 ---
 

@@ -1,6 +1,6 @@
 {
   "name": "forma-docs-dashboard",
-  "version": "2.1.1",
+  "version": "2.2.0",
   "private": true,
   "description": "Aureos Forma (ACC) document control dashboard. Static site, no build step; package.json only enables ES modules for node --test.",
   "type": "module",
